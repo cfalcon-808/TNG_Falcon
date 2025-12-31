@@ -1,0 +1,182 @@
+============================================================
+TIGERS & GOATS — FALCON BRANCH
+QUICKSTART WORKFLOW (Unified Env, Experiments & Variations)
+============================================================
+
+This guide walks new users through:
+  • environment setup
+  • running a training experiment (suite of variations)
+  • evaluating and debugging trained models
+
+----------------------------------------------------------------
+0) Prerequisites
+----------------------------------------------------------------
+- Python 3.10+ recommended
+- NVIDIA GPU optional but preferred
+- Install PyTorch matching your CUDA version if using GPU
+
+----------------------------------------------------------------
+1) Create a virtual environment & install dependencies
+----------------------------------------------------------------
+    python -m venv .venv
+    .\.venv\Scripts\activate          # Windows PowerShell
+    pip install --upgrade pip
+    pip install stable-baselines3[extra] sb3_contrib
+
+    # Then install the correct PyTorch wheel for your CUDA version:
+    # https://pytorch.org/get-started/locally/
+
+----------------------------------------------------------------
+2) Project layout (key files)
+----------------------------------------------------------------
+    env_tng_falcon.py
+        Unified Gymnasium environment.
+        Supports greedy or smart tiger via TIGER_AI_MODE.
+
+    experiment_sweep.py
+        Training runner.
+        Executes ONE EXPERIMENT (suite) consisting of multiple VARIATIONS.
+
+    eval_falcon.py
+        Evaluation & debugging tool.
+        Runs deterministic rollouts and batch statistics.
+
+    artifacts/
+        models/train/{ALGO}/{CORE}/{EXPERIMENT}/
+        logging/train/{ALGO}/{CORE}/{EXPERIMENT}/
+
+----------------------------------------------------------------
+3) Run a fast training experiment (smoke test)
+----------------------------------------------------------------
+1) Open experiment_sweep.py and set:
+        EXPERIMENT_NAME = "my_first_experiment"
+        TIGER_AI_MODE   = TIGER_AI_GREEDY   # or TIGER_AI_SMART
+        DEBUG_MODE      = True              # shorter runs
+
+2) Define variations:
+        VARIATIONS = {
+            "defaultSettings": None
+        }
+
+3) Run:
+        python experiment_sweep.py
+
+4) Outputs:
+        Models:
+          artifacts/models/train/{ALGO}/{CORE}/{EXPERIMENT}/
+        Logs:
+          artifacts/logging/train/{ALGO}/{CORE}/{EXPERIMENT}/
+
+----------------------------------------------------------------
+4) Monitor training with TensorBoard
+----------------------------------------------------------------
+    tensorboard --logdir artifacts/logging/train --port 6006
+
+Each VARIATION appears as a separate run:
+    {ALGO}_{CORE}_{variation}
+
+----------------------------------------------------------------
+5) Evaluate or debug a trained model
+----------------------------------------------------------------
+Latest model in an experiment:
+    python eval_falcon.py
+
+Evaluate a specific model:
+    python eval_falcon.py artifacts/models/train/.../mppo_GvST_defaultSettings.zip
+
+Evaluation modes include:
+  • step-by-step debug episodes
+  • batch evaluation (win / timeout rates)
+  • action masks + decoded moves
+  • optional ASCII board rendering
+
+Logs are written under:
+    artifacts/logging/eval_debug/
+    eval_falcon.py accepts up to TWO positional arguments, in order:
+
+    python eval_falcon.py [MODE] [MODEL_PATH]
+
+MODE (optional):
+    normal   → greedy / normal tiger (default)
+    battle   → smart tiger
+
+MODEL_PATH (optional):
+    Path to a trained .zip model file.
+    If omitted, the most recent model is loaded automatically.
+
+    ------------------------------------------------------------
+    VALID INVOCATIONS
+    ------------------------------------------------------------
+
+    1) No arguments (default):
+        python eval_falcon.py
+        → normal mode, latest model
+
+    2) Mode only:
+        python eval_falcon.py battle
+        → battle mode, latest model
+
+    3) Model path only:
+        python eval_falcon.py path/to/model.zip
+        → normal mode, specified model
+
+    4) Mode + model path (recommended):
+        python eval_falcon.py battle path/to/model.zip
+
+    ------------------------------------------------------------
+    IMPORTANT NOTES
+    ------------------------------------------------------------
+    • MODE must come before MODEL_PATH if both are provided.
+    • If a single argument ends with ".zip", it is treated as MODEL_PATH.
+    • Invalid modes will raise an error.
+    • eval_falcon.py never trains — it only loads and evaluates models.
+
+----------------------------------------------------------------
+6) What to look at
+----------------------------------------------------------------
+Training (TensorBoard):
+  • custom/episodes_total
+  • goat / tiger win rates
+  • timeout and stall rates
+  • learning curves
+
+Evaluation (eval logs):
+  • per-step transitions
+  • illegal move masking
+  • winners and termination causes
+  • summary statistics
+
+----------------------------------------------------------------
+7) Common configuration knobs
+----------------------------------------------------------------
+experiment_sweep.py:
+    TIGER_AI_MODE       = TIGER_AI_GREEDY | TIGER_AI_SMART
+    DEBUG_MODE          = True / False
+    TIMESTEPS           = adjust for runtime
+    VARIATIONS          = reward/knob ablations
+    DEVICE_MODE         = "gpu" or "cpu"
+
+eval_falcon.py:
+    N_DEBUG_EPISODES
+    N_EVAL_GAMES
+    PRINT_DEBUG_TO_CONSOLE
+
+----------------------------------------------------------------
+8) If something breaks
+----------------------------------------------------------------
+- Confirm the virtualenv is active
+- Verify PyTorch matches your CUDA version
+- Delete old artifacts/logging/train if TensorBoard is cluttered
+- Run eval_falcon.py on a small model to confirm env loads cleanly
+
+----------------------------------------------------------------
+Summary
+----------------------------------------------------------------
+• One EXPERIMENT = a suite of VARIATIONS
+• One VARIATION  = one PPO training run
+• One CORE       = one learner/opponent matchup
+• Same environment file for all runs
+
+Train with experiment_sweep.py,
+inspect with TensorBoard,
+and debug/evaluate with eval_falcon.py.

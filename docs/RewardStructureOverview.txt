@@ -1,0 +1,106 @@
+# ============================================================
+#  Reward Structure Overview (env4.0)
+#
+#  All rewards are computed as:
+#
+#      reward += KNOB[key] * WEIGHT[key]
+#
+#  where:
+#      • KNOB   = base magnitude / constant
+#      • WEIGHT = scaling factor (used for ablation or emphasis)
+#
+#  This allows:
+#      • clean reward ablations (set WEIGHT → 0)
+#      • magnitude tuning (adjust KNOB)
+#      • shared evaluation across greedy & smart tiger opponents
+#
+# ------------------------------------------------------------
+#  1. Terminal Outcomes (Sparse, Dominant Signals)
+# ------------------------------------------------------------
+#    • Goat win:
+#         + REWARD_GOAT_WIN
+#
+#    • Tiger win:
+#         - REWARD_TIGER_WIN
+#
+#    • Timeout outcomes:
+#         - GoatTimeout:
+#             scaled tiger-win penalty via GOAT_TIMEOUT_SCALE
+#
+#         - StallTimeout (repeat-state / no progress):
+#             scaled tiger-win penalty via GOAT_STALL_SCALE
+#
+#    Terminal rewards are applied once and dominate episode return.
+#
+# ------------------------------------------------------------
+#  2. Capture & Material-Based Shaping
+# ------------------------------------------------------------
+#    • Goat eaten by tiger:
+#         - REWARD_GOAT_EATEN
+#
+#    • Tiger blocked from capture:
+#         + REWARD_BLOCK_TIGER
+#
+#    • Near-capture deterrence:
+#         + REWARD_NEAR_LOCK
+#
+#    These terms shape tactical awareness:
+#      • discourage sacrifice-heavy goat play
+#      • encourage containment and lock-building
+#
+# ------------------------------------------------------------
+#  3. Positional & Formation Shaping
+# ------------------------------------------------------------
+#    • Bubble / encirclement formation:
+#         + REWARD_BUBBLE
+#
+#    • Tight enclosure / mobility restriction:
+#         + REWARD_TIGHT_FORMATION
+#
+#    These rewards encourage long-horizon strategic structure
+#    rather than short-sighted captures.
+#
+# ------------------------------------------------------------
+#  4. Step & Progress Penalties
+# ------------------------------------------------------------
+#    • Per-step penalty:
+#         - REWARD_STEP
+#
+#    • Move-phase ramping penalty:
+#         MOVE_STEP_BASE + MOVE_STEP_SLOPE * move_steps
+#
+#    These penalties:
+#      • prevent endless cycling
+#      • push the policy toward decisive outcomes
+#
+# ------------------------------------------------------------
+#  5. Tiger Difficulty & Bias Knobs (Non-reward)
+# ------------------------------------------------------------
+#    These DO NOT directly add to reward, but affect dynamics:
+#
+#    • BASE_TIGER_CAPTURE_BIAS
+#         - affects greedy tiger capture preference
+#
+#    • Tiger AI selection:
+#         - TIGER_AI_GREEDY
+#         - TIGER_AI_SMART
+#
+#    Reward shaping remains identical regardless of tiger type.
+#
+# ------------------------------------------------------------
+#  6. Ablation & Analysis Notes
+# ------------------------------------------------------------
+#    • Every shaping term can be independently ablated:
+#         reward_weights = {"bubble": 0.0}
+#
+#    • Trackers log:
+#         - per-term reward contribution
+#         - goats eaten per episode
+#         - goats eaten in winning episodes
+#
+#    This enables:
+#      • reward importance ranking
+#      • detection of emergent tactics (e.g., sacrifice play)
+#      • fair comparison across opponent types
+#
+# ============================================================

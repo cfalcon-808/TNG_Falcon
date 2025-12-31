@@ -1,0 +1,8 @@
+pip install stable-baselines3[extra]
+
+pip install sb3_contrib
+
+also uninstall the cpu version of pytorch and check the current cuda
+    for the correct gpu version of pytorch
+
+    

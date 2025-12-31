@@ -1,0 +1,182 @@
+============================================================
+Tigers & Goats – PPO Hyperparameter Guide
+============================================================
+
+This document summarizes the effect of each PPO and training
+hyperparameter used in the Falcons Tigers & Goats project.
+It explains what each parameter controls and how changing it
+will impact the behavior and performance of the agent.
+
+============================================================
+1. ENVIRONMENT-SCALE PARAMETERS
+============================================================
+
+TIMESTEPS
+    - Total number of training steps across all workers.
+    - Larger values allow the policy to discover deeper
+      strategies (bubbles, containment, sacrifices).
+    - Too small: policy stays random and shallow.
+    - Recommended:
+          Quick test: 2e5 – 3e5
+          Serious training: 1e6 – 5e6
+
+NUM_CPU
+    - Number of parallel environments.
+    - Higher = faster exploration and more stable gradients.
+    - Too high may cause CPU overload on small systems.
+    - Recommended: 4–16 depending on machine.
+
+SEED
+    - Controls randomness (env reset, PPO, numpy, torch).
+    - Same seed → reproducible runs.
+    - Change seed to test robustness.
+
+============================================================
+2. PPO ROLLOUT STRUCTURE
+============================================================
+
+N_STEPS
+    - Number of steps collected per environment before PPO
+      performs an optimization update.
+    - Larger N_STEPS = more accurate advantage estimates.
+    - Smaller N_STEPS = more frequent, noisier updates.
+    - In multi-step strategy games, large N_STEPS helps.
+    - Recommended: 1024 or 2048 (your default = 2048 good).
+
+BATCH_SIZE
+    - Number of samples per gradient update.
+    - Too small: noisy gradients → unstable learning.
+    - Too large: slow training, may over-smooth behavior.
+    - Recommended: 64–128. (Your default: 64 fine.)
+
+GAMMA (discount factor)
+    - Controls how far into the future the agent “cares.”
+    - High values (0.99–0.999): long-term planning.
+    - Low values (0.90–0.95): short-term reactive play.
+    - For this game (100 turn episodes), 0.99 is ideal.
+
+============================================================
+3. PPO OPTIMIZER PARAMETERS
+============================================================
+
+LEARNING_RATE
+    - Size of gradient step.
+    - High LR = fast learning but risks divergence.
+    - Low LR = stable but slow.
+    - Recommended: 3e-4 to 1e-5.
+    - Your default (3e-4) is standard for PPO.
+
+ENT_COEF (entropy coefficient)
+    - Encourages exploration by adding noise to policy.
+    - Higher ENT_COEF → more random actions early.
+    - Too high: agent stays chaotic.
+    - Too low: agent converges too early.
+    - Recommended: 0.01 – 0.05 for strategy games.
+    - Your default: 0.02 (good exploration).
+
+CLIP_RANGE (not manually set)
+    - PPO-specific stability control.
+    - Too small → conservative updates.
+    - Too large → unstable policy.
+    - SB3 defaults are safe.
+
+VF_COEF (value loss weight)
+    - Importance of value function in loss.
+    - High: stable training but slower.
+    - Default is typically fine.
+
+MAX_GRAD_NORM
+    - Clips gradients to avoid exploding updates.
+    - Lower values = more stable but slower learning.
+    - Default 0.5 is recommended.
+
+============================================================
+4. COMPUTATION DEVICE
+============================================================
+
+DEVICE = "auto" or "cuda"
+    - Controls GPU vs CPU.
+    - GPU accelerates neural network forward/backward passes.
+    - CPU-only is fine, but slower for larger models.
+
+============================================================
+5. MODEL ARCHITECTURE
+============================================================
+
+"MlpPolicy"
+    - Uses fully connected layers.
+    - Depth and width controlled by "policy_kwargs".
+    - Larger networks → better strategy representation.
+    - Too large → slow and overfits.
+    - You can tune via:
+          policy_kwargs={"net_arch": [128, 128]}
+      or deeper if needed.
+
+============================================================
+6. CHECKPOINTING / LOGGING
+============================================================
+
+SAVE_FREQ
+    - How often to save intermediate models.
+    - Too frequent: unnecessary disk usage.
+    - Too infrequent: risk losing progress.
+
+tensorboard_log
+    - Enables visualization of:
+        * policy loss
+        * value loss
+        * entropy
+        * reward curves
+        * explained variance
+        * episode lengths
+
+Monitoring these helps diagnose training problems.
+
+============================================================
+7. ENVIRONMENT-SPECIFIC SHAPING INTERACTION
+============================================================
+
+Reward shaping makes PPO more sensitive to:
+
+- ENT_COEF  
+      Exploration must be balanced so shaping rewards
+      are discovered but not overly exploited.
+
+- N_STEPS and BATCH_SIZE  
+      Larger values stabilize learning in environments
+      with custom shaping signals.
+
+- GAMMA  
+      Needs to capture the long-term value of bubble
+      creation and tiger immobilization.
+
+- LEARNING_RATE  
+      If shaping is complex, a lower LR may improve
+      stability (1e-4 or 5e-5).
+
+============================================================
+8. PRACTICAL RECOMMENDATIONS FOR TnG env2.0
+============================================================
+
+Strong baseline config:
+    N_STEPS       = 2048
+    BATCH_SIZE    = 64
+    GAMMA         = 0.99
+    LEARNING_RATE = 3e-4
+    ENT_COEF      = 0.02
+    TIMESTEPS     = 1_000_000
+    NUM_CPU       = 8
+
+If learning is unstable:
+    → Reduce LR to 1e-4
+    → Raise BATCH_SIZE to 128
+    → Reduce ENT_COEF slightly (0.01)
+
+If learning is too slow or stuck:
+    → Increase ENT_COEF (0.03–0.05)
+    → Increase TIMESTEPS
+    → Increase network size using policy_kwargs
+
+============================================================
+End of Document
+============================================================

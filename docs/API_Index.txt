@@ -1,0 +1,231 @@
+============================================================
+API INDEX — env_tng_falcon.py (Unified Env: greedy tiger OR smart tiger)
+============================================================
+
+CONSTANTS / ENUMS
+    BOARD_SIZE, DIR_CODES, TOTAL_GOATS_TO_PLACE, GOATS_EATEN_FOR_TIGER_WIN, ...
+    TIGER_AI_GREEDY = "greedy"
+    TIGER_AI_SMART  = "smart"
+    VALID_TIGER_AI  = {TIGER_AI_GREEDY, TIGER_AI_SMART}
+
+DICTS (TUNING)
+    DEFAULT_KNOBS
+        Base magnitudes/constants (terminal rewards, step costs, limits, bias knobs).
+    DEFAULT_WEIGHTS
+        Shaping multipliers (enable/ablate/scale shaping terms).
+    NOTE:
+        reward_weights passed to TnGEnv can override ANY key in either dict
+        via env._w(key) resolution.
+
+CLASS TnGEnv
+    Full Tigers & Goats Gymnasium env:
+        - placing phase + moving phase
+        - action masking (MaskablePPO-friendly)
+        - repetition / stall detection
+        - reward shaping with ablation/tuning via DEFAULT_KNOBS + DEFAULT_WEIGHTS
+        - unified tiger opponent selection (greedy or smart) via tiger_ai
+
+    METHOD __init__(reward_weights=None, tiger_ai=TIGER_AI_GREEDY, ...)
+        Configure spaces, board state, counters, caches, and opponent selection.
+        Validates tiger_ai ∈ VALID_TIGER_AI.
+
+    METHOD get_action_mask()
+        Return legality mask for (pos, dir) actions.
+
+    METHOD reset(seed=None, options=None)
+        Reset board/state/shaping; rebuild valid moves and mask.
+
+    METHOD get_state()
+        Return observation vector (flattened board + counters + phase).
+
+    METHOD render(...)
+        ASCII board with optional coordinates and status line.
+
+    METHOD _decode_action(action)
+        Normalize flat or MultiDiscrete action to (pos, dir_code).
+
+    METHOD step(action)
+        Apply goat action, apply tiger response (greedy or smart),
+        compute shaping + terminal checks, and return:
+            obs, reward, terminated, truncated, info
+        info includes info["winner"] on terminal outcomes.
+
+    METHOD _tiger_moves(...)
+        Enumerate tiger legal moves/captures.
+
+    METHOD _tiger_ai_greedy(...)
+        Greedy/capture-biased tiger policy (fast baseline).
+
+    METHOD _tiger_ai_smart(...)
+        Strong heuristic tiger policy (hard opponent).
+
+    METHOD _update_valid_moves()
+        Recompute goat actions for current phase; update mask source.
+
+    METHOD _compute_unreachable_safe_cells()
+        Tiger-unreachable bubble count via BFS.
+
+    METHOD _precompute_all_pairs_dist()
+        Precompute shortest paths on board graph.
+
+    METHOD _shortest_path_len(start, goal)
+        Cached hop distance lookup.
+
+    METHOD _tiger_spread()
+        Pairwise tiger spread metric.
+
+    METHOD _w(key)
+        Resolve per-term knob/weight value:
+            - checks reward_weights override first
+            - then DEFAULT_WEIGHTS
+            - then DEFAULT_KNOBS
+
+
+CLASS FlattenTnGActionWrapper
+    Wraps TnGEnv to expose Discrete(BOARD_SIZE * DIR_CODES) instead of MultiDiscrete([23, 5]).
+
+    METHOD __init__(env)
+        Set flat action space; forward observation_space.
+
+    METHOD get_action_mask()
+        Forward action mask from base env.
+
+    METHOD step(action)
+        Convert flat action index -> (pos, dir_code) MultiDiscrete, then step base env.
+
+    METHOD reset(seed=None, options=None)
+        Forward reset.
+
+
+============================================================
+API INDEX — eval_falcon.py (Debug + Evaluation CLI)
+============================================================
+
+CLI / MODE PARSING
+    FUNCTION parse_cli_args()
+        Parses up to two positional args:
+            python eval_falcon.py
+            python eval_falcon.py model.zip
+            python eval_falcon.py normal
+            python eval_falcon.py normal model.zip
+            python eval_falcon.py battle
+            python eval_falcon.py battle model.zip
+
+        Behavior:
+            - "normal"/"greedy" -> tiger_ai = TIGER_AI_GREEDY
+            - "battle"/"smart"  -> tiger_ai = TIGER_AI_SMART
+            - one arg ending in ".zip" is treated as MODEL_PATH (mode defaults to greedy)
+
+LOGGING UTILITIES
+    CLASS Tee
+        Mirror stdout to multiple streams.
+        METHOD __init__(streams)
+        METHOD write(data)
+        METHOD flush()
+
+    FUNCTION build_log_path(model_path)
+        Build log filename under artifacts/logging/eval_debug/.
+
+    FUNCTION setup_logging(log_path)
+        Open log file, install Tee on sys.stdout, return original stdout + handle.
+
+MODEL RESOLUTION
+    FUNCTION load_latest_model_path(models_dir)
+        Find most recent .zip model in the models directory.
+
+ENV BUILDERS
+    FUNCTION _mask_fn(env)
+        Return env.unwrapped.get_action_mask() for ActionMasker.
+
+    FUNCTION make_debug_env(seed)
+        Env pipeline:
+            BaseEnv(tiger_ai=...) → FlattenWrapper → Monitor → ActionMasker (+ seed)
+
+    FUNCTION make_eval_env()
+        Env pipeline:
+            BaseEnv(tiger_ai=...) → FlattenWrapper → ActionMasker
+
+DEBUG / EVAL RUNNERS
+    FUNCTION decode_flat_action(flat_action, dir_codes)
+        Map flat index -> (pos, dir_code).
+
+    FUNCTION run_debug_episodes(...)
+        Load model; run deterministic debug episodes with renders, masks, decoded actions.
+
+    FUNCTION classify_outcome(reward, info)
+        Determine winner label using info["winner"] or reward thresholds.
+
+    FUNCTION run_batch_evaluation(...)
+        Run N evaluation games; tally Goat/Tiger/GoatTimeout/StallTimeout,
+        compute avg reward/length; print detailed + condensed summary.
+
+MAIN
+    Resolve tiger_ai + model path (default: latest), set up logging,
+    run debug episodes, then run batch evaluation.
+
+
+============================================================
+API INDEX — experiment_sweep.py (MaskablePPO training sweep: EXPERIMENT suite of VARIATIONS)
+============================================================
+
+NAMING / DIRECTORY LAYOUT
+    EXPERIMENT_NAME
+        Suite identifier (collection of variations).
+
+    VARIATIONS
+        dict: variation_name -> overrides (dict) or None (baseline).
+
+    CORE
+        Matchup tag from core_tag(), e.g.:
+            "GvNT" = goat learner vs greedy/normal tiger
+            "GvST" = goat learner vs smart tiger
+
+    Output paths:
+        LOG_DIR   = artifacts/logging/train/{ALGO_TAG}/{CORE}/{EXPERIMENT_NAME}
+        MODEL_DIR = artifacts/models/train/{ALGO_TAG}/{CORE}/{EXPERIMENT_NAME}
+
+    TensorBoard run name per variation:
+        tb_log_name = "{ALGO_TAG}_{CORE}_{variation}"
+
+HELPERS
+    FUNCTION core_tag(learner, tiger_ai)
+        Return "GvNT"/"GvST" (or "TvNT"/"TvST" if learner="T").
+
+    FUNCTION mask_fn(env)
+        Return env.unwrapped.get_action_mask() for ActionMasker.
+
+    FUNCTION make_env(rank, seed, reward_weights)
+        Factory returning one env initializer for SubprocVecEnv:
+            BaseEnv(reward_weights=..., tiger_ai=...) → Flatten → Monitor → ActionMasker (+seed)
+
+    FUNCTION unique_filename(directory, base_name, ext=".zip")
+        Produce non-colliding filename with numeric suffixes.
+
+CALLBACKS
+    CLASS EpisodeCounterCallback (BaseCallback)
+        Logs:
+            custom/episodes_total
+
+    CLASS WinStatsCallback (BaseCallback)
+        Tracks cumulative + rolling-window:
+            custom/goat_win_rate
+            custom/tiger_win_rate
+            custom/goat_timeout_rate
+            custom/stall_timeout_rate
+            custom/window_* variants
+
+CORE RUNNER
+    FUNCTION run_single_variation(variation_name, reward_weights)
+        Train one MaskablePPO run for a single variation:
+            - builds SubprocVecEnv(NUM_CPU)
+            - trains with shared PPO hyperparams
+            - saves checkpoints:
+                cp_{ALGO_TAG}_{CORE}_{variation}_*.zip
+            - saves final model:
+                {ALGO_TAG}_{CORE}_{variation}.zip (auto-suffixed)
+
+MAIN
+    Prints EXPERIMENT suite header, then iterates VARIATIONS:
+        for variation_name, overrides in VARIATIONS.items():
+            run_single_variation(variation_name, overrides)
+    Prints sweep summary table at end.
