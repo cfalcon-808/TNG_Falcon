@@ -1,8 +1,5 @@
-pip install stable-baselines3[extra]
+stable-baselines3[extra]
+sb3-contrib
 
-pip install sb3_contrib
-
-also uninstall the cpu version of pytorch and check the current cuda
-    for the correct gpu version of pytorch
-
-    
+# If you need a specific CUDA-enabled PyTorch build, install it separately:
+#   pip install --index-url https://download.pytorch.org/whl/cu121 torch torchvision torchaudio
