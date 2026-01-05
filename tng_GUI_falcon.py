@@ -114,7 +114,7 @@ import argparse
 import json
 import os
 import tkinter as tk
-from tkinter import ttk, filedialog
+from tkinter import ttk, filedialog, messagebox
 
 import numpy as np
 
@@ -307,35 +307,64 @@ class TigersGoatsGUI:
         subtitle = ttk.Label(self.home_frame, text="Choose a mode to begin")
         subtitle.pack(pady=(0, 20))
 
-        buttons_frame = ttk.Frame(self.home_frame)
-        buttons_frame.pack(pady=(0, 10))
+        cards_frame = ttk.Frame(self.home_frame)
+        cards_frame.pack(fill="x", pady=(0, 10))
+        cards_frame.columnconfigure(0, weight=1)
 
-        self.btn_home_goat = ttk.Button(
-            buttons_frame,
-            text="Play as Goat",
+        def add_mode_card(row, title, description, command=None, enabled=True):
+            card = ttk.Frame(cards_frame, padding=10, relief="ridge")
+            card.grid(row=row, column=0, sticky="we", pady=8)
+            card.columnconfigure(0, weight=1)
+            btn_state = "normal" if enabled else "disabled"
+            btn = ttk.Button(card, text=title, command=command, state=btn_state)
+            btn.grid(row=0, column=0, sticky="we")
+            desc = ttk.Label(card, text=description)
+            desc.grid(row=1, column=0, sticky="w", pady=(4, 0))
+            return btn
+
+        self.btn_home_goat = add_mode_card(
+            0,
+            "Play as Goat",
+            "Human plays goats vs AI tiger. Load a goat model or play manually.",
             command=self._start_goat_mode,
+            enabled=True,
         )
-        self.btn_home_goat.pack(fill="x", pady=6, ipadx=10)
-
-        self.btn_home_tiger = ttk.Button(
-            buttons_frame,
-            text="Play as Tiger (coming soon)",
-            state="disabled",
+        self.btn_home_tiger = add_mode_card(
+            1,
+            "Play as Tiger (coming soon)",
+            "Human plays tigers vs random or model-based goats.",
+            enabled=False,
         )
-        self.btn_home_tiger.pack(fill="x", pady=6, ipadx=10)
-
-        self.btn_home_cvc = ttk.Button(
-            buttons_frame,
-            text="Computer vs Computer (coming soon)",
-            state="disabled",
+        self.btn_home_cvc = add_mode_card(
+            2,
+            "Computer vs Computer (coming soon)",
+            "Run model vs model matchups for evaluation or demos.",
+            enabled=False,
         )
-        self.btn_home_cvc.pack(fill="x", pady=6, ipadx=10)
 
     def _start_goat_mode(self):
         self.switch_view("goat_play")
 
     def _quit_to_home(self):
+        if self._should_confirm_quit():
+            confirm = messagebox.askyesno(
+                "Return to Home",
+                "A game is in progress. Return to the home screen?",
+            )
+            if not confirm:
+                return
         self.switch_view("home")
+
+    def _should_confirm_quit(self) -> bool:
+        if not self._game_active:
+            return False
+        mid_episode = (
+            self.base_env is not None
+            and self.last_winner is None
+            and getattr(self.base_env, "turns", 0) > 0
+        )
+        replay_playing = self.replay is not None and (self.playing or self.replay_animating)
+        return mid_episode or replay_playing
 
     def _build_game_view(self):
         self._game_active = True
@@ -350,8 +379,11 @@ class TigersGoatsGUI:
         nav_frame = ttk.Frame(self.game_frame)
         nav_frame.grid(row=0, column=0, sticky="we", padx=10, pady=(10, 0))
         nav_frame.columnconfigure(0, weight=1)
+        nav_frame.columnconfigure(1, weight=0)
+        self.mode_label_var = tk.StringVar(value="Mode: Play as Goat")
+        ttk.Label(nav_frame, textvariable=self.mode_label_var).grid(row=0, column=0, sticky="w")
         self.btn_quit_home = ttk.Button(nav_frame, text="Quit to Home", command=self._quit_to_home)
-        self.btn_quit_home.grid(row=0, column=0, sticky="e")
+        self.btn_quit_home.grid(row=0, column=1, sticky="e")
 
         self.status_var = tk.StringVar()
         self.reward_var = tk.StringVar(value="Running reward: 0.000")
@@ -551,15 +583,7 @@ class TigersGoatsGUI:
         blocked_txt = f"{blocked}/{TIGER_COUNT}"
         if self.overlay_items:
             if "game_state" in self.overlay_items:
-                if self.replay:
-                    state_text = "REPLAY"
-                    state_color = "#f4d03f"
-                elif self.last_winner:
-                    state_text = f"GAME OVER: {self.last_winner}"
-                    state_color = "#ff4d4d"
-                else:
-                    state_text = "IN PLAY"
-                    state_color = "#2ecc71"
+                state_text, state_color = self._current_game_state()
                 self.canvas.itemconfig(
                     self.overlay_items["game_state"], text=state_text, fill=state_color
                 )
@@ -576,6 +600,18 @@ class TigersGoatsGUI:
             # Phase indicator
             phase_label = "Place" if int(phase) == 0 else "Move"
             self.canvas.itemconfig(self.overlay_items["phase_text"], text=f"Phase: {phase_label}")
+
+    def _current_game_state(self):
+        if self.last_winner:
+            return f"GAME OVER: {self.last_winner}", "#ff4d4d"
+        if self.replay:
+            return "REPLAY", "#f4d03f"
+        if self.base_env is None:
+            return "IDLE", "#f4d03f"
+        turns = getattr(self.base_env, "turns", 0)
+        if turns <= 0 and not self.input_locked and not self.playing:
+            return "IDLE", "#f4d03f"
+        return "IN PLAY", "#2ecc71"
 
     def _init_env_or_replay(self):
         if self.replay:
