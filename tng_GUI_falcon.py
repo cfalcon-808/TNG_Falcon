@@ -19,7 +19,7 @@
 #          ("Model Move") or continuously ("Play") with action masking.
 #
 #    (3) REPLAY VIEWER (optional)
-#        - Load a saved JSON replay timeline and browse the episode using:
+#        - Browse an in-memory replay timeline using:
 #            Prev / Next buttons, a timeline slider, and Play/Pause.
 #        - Each step shows phase, goats eaten/placed, blocked tigers, action,
 #          plus cumulative reward and outcome (when available).
@@ -64,33 +64,6 @@
 #  3) Load a trained goat model and record + browse an episode:
 #       python gui_tigers_goats.py --env battle --model artifacts/models/train/mppo/GvST/.../your_model.zip
 #       (Then click "Load + Record" or "Record Episode")
-#
-#  4) Open a replay JSON directly:
-#       python gui_tigers_goats.py --replay artifacts/logging/replays/sample.json
-#
-#  Replay File Format (expected)
-#  -----------------------------
-#  The replay loader expects JSON shaped like:
-#    {
-#      "timeline": [
-#        {
-#          "before": {
-#            "board": [...],
-#            "phase": 0 or 1,
-#            "goats_eaten": int,
-#            "goats_placed": int,
-#            "tigers_blocked": int,
-#            "turn": int
-#          },
-#          "action": { "pos": int, "dir": int },
-#          "reward": float,                 # optional but recommended
-#          "info": { "winner": "Goat"/... }  # optional
-#        },
-#        ...
-#      ],
-#      "final": { ... },      # optional final state snapshot
-#      "result": "Goat"/...   # optional; inferred if missing
-#    }
 #
 #  Workflow (recommended usage)
 #  ----------------------------
@@ -285,14 +258,100 @@ class ReplayTimeline:
 
 
 class TigersGoatsGUI:
-    def __init__(self, tiger_ai: str, model_path=None, replay_path=None):
+    def __init__(self, tiger_ai: str, model_path=None):
         self.tiger_ai = tiger_ai
         self.model_path = model_path
-        self.replay_path = replay_path
         self.input_locked = False
 
         self.root = tk.Tk()
         self.root.title("Tigers & Goats GUI")
+
+        self.current_view = None
+        self._game_active = False
+        self.home_frame = None
+        self.game_frame = None
+        self._views = {
+            "home": self._build_home_view,
+            "goat_play": self._build_game_view,
+        }
+
+        self.switch_view("home")
+
+    def switch_view(self, view_name: str):
+        if view_name == self.current_view:
+            return
+
+        if self.current_view == "goat_play":
+            self._deactivate_game_view()
+
+        for child in self.root.winfo_children():
+            child.destroy()
+
+        self.home_frame = None
+        self.game_frame = None
+        self.current_view = view_name
+
+        build_view = self._views.get(view_name)
+        if build_view is None:
+            raise ValueError(f"Unknown view: {view_name}")
+        build_view()
+
+    def _build_home_view(self):
+        self.home_frame = ttk.Frame(self.root)
+        self.home_frame.grid(row=0, column=0, sticky="nsew", padx=20, pady=20)
+        self.root.rowconfigure(0, weight=1)
+        self.root.columnconfigure(0, weight=1)
+
+        title = ttk.Label(self.home_frame, text="Tigers & Goats", font=("Arial", 18, "bold"))
+        title.pack(pady=(10, 10))
+        subtitle = ttk.Label(self.home_frame, text="Choose a mode to begin")
+        subtitle.pack(pady=(0, 20))
+
+        buttons_frame = ttk.Frame(self.home_frame)
+        buttons_frame.pack(pady=(0, 10))
+
+        self.btn_home_goat = ttk.Button(
+            buttons_frame,
+            text="Play as Goat",
+            command=self._start_goat_mode,
+        )
+        self.btn_home_goat.pack(fill="x", pady=6, ipadx=10)
+
+        self.btn_home_tiger = ttk.Button(
+            buttons_frame,
+            text="Play as Tiger (coming soon)",
+            state="disabled",
+        )
+        self.btn_home_tiger.pack(fill="x", pady=6, ipadx=10)
+
+        self.btn_home_cvc = ttk.Button(
+            buttons_frame,
+            text="Computer vs Computer (coming soon)",
+            state="disabled",
+        )
+        self.btn_home_cvc.pack(fill="x", pady=6, ipadx=10)
+
+    def _start_goat_mode(self):
+        self.switch_view("goat_play")
+
+    def _quit_to_home(self):
+        self.switch_view("home")
+
+    def _build_game_view(self):
+        self._game_active = True
+        self.input_locked = False
+
+        self.game_frame = ttk.Frame(self.root)
+        self.game_frame.grid(row=0, column=0, sticky="nsew")
+        self.game_frame.columnconfigure(0, weight=1)
+        self.root.rowconfigure(0, weight=1)
+        self.root.columnconfigure(0, weight=1)
+
+        nav_frame = ttk.Frame(self.game_frame)
+        nav_frame.grid(row=0, column=0, sticky="we", padx=10, pady=(10, 0))
+        nav_frame.columnconfigure(0, weight=1)
+        self.btn_quit_home = ttk.Button(nav_frame, text="Quit to Home", command=self._quit_to_home)
+        self.btn_quit_home.grid(row=0, column=0, sticky="e")
 
         self.status_var = tk.StringVar()
         self.reward_var = tk.StringVar(value="Running reward: 0.000")
@@ -300,8 +359,8 @@ class TigersGoatsGUI:
         self.model_name_var = tk.StringVar(value="Loaded model: (none)")
 
         # Model browse section above game stats
-        model_top_frame = ttk.Frame(self.root)
-        model_top_frame.grid(row=0, column=0, sticky="we", padx=10, pady=5)
+        model_top_frame = ttk.Frame(self.game_frame)
+        model_top_frame.grid(row=1, column=0, sticky="we", padx=10, pady=5)
         for c in range(3):
             model_top_frame.columnconfigure(c, weight=1)
         ttk.Label(model_top_frame, text="Model path:").grid(row=0, column=0, columnspan=3, sticky="w")
@@ -318,16 +377,22 @@ class TigersGoatsGUI:
         self.btn_toggle_tiger.grid(row=3, column=0, sticky="w", pady=(5, 0))
 
         # Game stats just below model browse
-        metrics_frame = ttk.Frame(self.root)
-        metrics_frame.grid(row=1, column=0, columnspan=2, sticky="we", padx=10, pady=5)
+        metrics_frame = ttk.Frame(self.game_frame)
+        metrics_frame.grid(row=2, column=0, columnspan=2, sticky="we", padx=10, pady=5)
         ttk.Label(metrics_frame, textvariable=self.status_var, width=100, anchor="w").pack(anchor="w")
         ttk.Label(metrics_frame, textvariable=self.reward_var, width=100, anchor="w").pack(anchor="w")
         ttk.Label(metrics_frame, textvariable=self.move_var, width=100, anchor="w").pack(anchor="w")
 
         self.canvas_width = 600
         self.canvas_height = 520
-        self.canvas = tk.Canvas(self.root, width=self.canvas_width, height=self.canvas_height, bg="#222222", highlightthickness=0)
-        self.canvas.grid(row=2, column=0, padx=10, pady=(10, 0))
+        self.canvas = tk.Canvas(
+            self.game_frame,
+            width=self.canvas_width,
+            height=self.canvas_height,
+            bg="#222222",
+            highlightthickness=0,
+        )
+        self.canvas.grid(row=3, column=0, padx=10, pady=(10, 0))
         # Canvas overlays: turn indicator, phase text, and on-canvas stats
         self.overlay_items = {}
         self._init_canvas_overlays()
@@ -341,8 +406,8 @@ class TigersGoatsGUI:
         self.model_name_var.trace_add("write", lambda *_: self._update_model_name_on_canvas())
 
         # Controls stacked under the canvas
-        control_frame = ttk.Frame(self.root)
-        control_frame.grid(row=3, column=0, sticky="we", padx=10, pady=(5, 2))
+        control_frame = ttk.Frame(self.game_frame)
+        control_frame.grid(row=4, column=0, sticky="we", padx=10, pady=(5, 2))
         control_frame.columnconfigure(0, weight=1)
         control_frame.columnconfigure(1, weight=1)
         control_frame.columnconfigure(2, weight=1)
@@ -360,24 +425,24 @@ class TigersGoatsGUI:
         self.btn_pause.grid(row=1, column=2, sticky="e", pady=(2, 0))
 
         self.speed_label_var = tk.StringVar(value="Speed (ms): 200")
-        ttk.Label(self.root, textvariable=self.speed_label_var).grid(row=4, column=0, sticky="w", padx=10, pady=2)
+        ttk.Label(self.game_frame, textvariable=self.speed_label_var).grid(row=5, column=0, sticky="w", padx=10, pady=2)
         self.speed_var = tk.IntVar(value=200)
         self.speed_scale = ttk.Scale(
-            self.root,
+            self.game_frame,
             from_=50,
             to=1000,
             orient="horizontal",
             variable=self.speed_var,
             command=self._on_speed_change,
         )
-        self.speed_scale.grid(row=5, column=0, sticky="we", padx=10, pady=(0, 2))
+        self.speed_scale.grid(row=6, column=0, sticky="we", padx=10, pady=(0, 2))
 
         # Timeline slider (replay)
         self.timeline_label_var = tk.StringVar(value="Timeline: 0/0")
-        ttk.Label(self.root, textvariable=self.timeline_label_var).grid(row=6, column=0, sticky="w", padx=10, pady=2)
+        ttk.Label(self.game_frame, textvariable=self.timeline_label_var).grid(row=7, column=0, sticky="w", padx=10, pady=2)
         self.timeline_var = tk.IntVar(value=0)
         self.timeline_scale = ttk.Scale(
-            self.root,
+            self.game_frame,
             from_=0,
             to=0,
             orient="horizontal",
@@ -385,28 +450,9 @@ class TigersGoatsGUI:
             command=self._on_timeline_change,
             state="disabled",
         )
-        self.timeline_scale.grid(row=7, column=0, sticky="we", padx=10, pady=(0, 2))
+        self.timeline_scale.grid(row=8, column=0, sticky="we", padx=10, pady=(0, 2))
 
-        # Runtime state
-        self.node_items = {}
-        self.edge_items = []
-        self.selected_goat = None
-        self.replay = None
-        self.replay_animating = False
-        self._move_map_cache = None
-        self.cumulative_reward = 0.0
-        self.playing = False
-        self.piece_labels_live: dict[int, str] = {}
-        self.next_goat_id = 1
-        self._pending_before = None
-        self._pending_action = None
-        self._pending_phase = None
-
-        # Live env objects
-        self.base_env = None          # TnGEnv (MultiDiscrete)
-        self.env = None               # FlattenTnGActionWrapper (Discrete)
-        self.obs = None               # obs from wrapper.reset()/step()
-        self.model = None
+        self._init_runtime_state()
 
         # Initialize environment/replay and initial draw
         self._init_env_or_replay()
@@ -417,11 +463,51 @@ class TigersGoatsGUI:
 
         self.canvas.bind("<Button-1>", self.on_canvas_click)
 
+    def _init_runtime_state(self):
+        self.node_items = {}
+        self.edge_items = []
+        self.selected_goat = None
+        self.replay = None
+        self.replay_animating = False
+        self._move_map_cache = None
+        self.cumulative_reward = 0.0
+        self.playing = False
+        self.piece_labels_live = {}
+        self.next_goat_id = 1
+        self.last_winner = None
+        self._pending_before = None
+        self._pending_action = None
+        self._pending_phase = None
+        self.base_env = None
+        self.env = None
+        self.obs = None
+        self.model = None
+
+    def _deactivate_game_view(self):
+        if not self._game_active:
+            return
+        self._game_active = False
+        self.playing = False
+        self.replay_animating = False
+        self.input_locked = True
+        self.replay = None
+        self.base_env = None
+        self.env = None
+        self.obs = None
+        self.model = None
+
     def _update_model_name_on_canvas(self):
-        if hasattr(self, "model_name_canvas"):
+        if not self._game_active or not hasattr(self, "model_name_canvas"):
+            return
+        if self.canvas:
             self.canvas.itemconfig(self.model_name_canvas, text=self.model_name_var.get())
 
     def _init_canvas_overlays(self):
+        # Game state (top-left)
+        self.overlay_items["game_state"] = self.canvas.create_text(
+            12, 12, text="IN PLAY", fill="#2ecc71", anchor="nw", font=("Arial", 10, "bold")
+        )
+
         # Stats bottom row
         x_left, x_mid, x_right = 110, self.canvas_width / 2, self.canvas_width - 110
         label_y = self.canvas_height - 50
@@ -464,6 +550,20 @@ class TigersGoatsGUI:
         eaten_txt = f"{min(eaten, EATEN_DISPLAY_CAP)}/{EATEN_DISPLAY_CAP}"
         blocked_txt = f"{blocked}/{TIGER_COUNT}"
         if self.overlay_items:
+            if "game_state" in self.overlay_items:
+                if self.replay:
+                    state_text = "REPLAY"
+                    state_color = "#f4d03f"
+                elif self.last_winner:
+                    state_text = f"GAME OVER: {self.last_winner}"
+                    state_color = "#ff4d4d"
+                else:
+                    state_text = "IN PLAY"
+                    state_color = "#2ecc71"
+                self.canvas.itemconfig(
+                    self.overlay_items["game_state"], text=state_text, fill=state_color
+                )
+
             self.canvas.itemconfig(self.overlay_items["val_blocked"], text=blocked_txt)
             self.canvas.itemconfig(self.overlay_items["val_eaten"], text=eaten_txt)
             self.canvas.itemconfig(self.overlay_items["val_placed"], text=placed_txt)
@@ -478,9 +578,6 @@ class TigersGoatsGUI:
             self.canvas.itemconfig(self.overlay_items["phase_text"], text=f"Phase: {phase_label}")
 
     def _init_env_or_replay(self):
-        if self.replay_path and not self.replay:
-            self.replay = ReplayTimeline(self.replay_path)
-
         if self.replay:
             self.base_env = None
             self.env = None
@@ -497,6 +594,7 @@ class TigersGoatsGUI:
         # Unified env: choose tiger behavior via tiger_ai
         self.base_env = TnGEnv(tiger_ai=self.tiger_ai)
         self.env = FlattenTnGActionWrapper(self.base_env)
+        self.last_winner = None
 
         self.obs, _ = self.env.reset()
         self._init_live_labels()
@@ -541,6 +639,8 @@ class TigersGoatsGUI:
 
 
     def _draw_board(self, board_override=None):
+        if not self._game_active or self.canvas is None:
+            return
         board = board_override if board_override is not None else self._current_board()
         if board is None:
             return
@@ -777,11 +877,11 @@ class TigersGoatsGUI:
     def reset_env(self):
         # Clear replay and re-enter live (human) mode
         self.replay = None
-        self.replay_path = None
         self.replay_animating = False
         self.selected_goat = None
         self.cumulative_reward = 0.0
         self.playing = False
+        self.last_winner = None
         self._init_live_env()
         self._draw_board()
         self._update_timeline_ui()
@@ -936,12 +1036,16 @@ class TigersGoatsGUI:
             self.root.after(self._delay_ms(), self._finish_replay_complete)
 
     def _finish_replay_forward(self):
+        if not self._game_active:
+            return
         # Advance to the board AFTER tiger response (next step's before board)
         self.replay.idx = min(self.replay.idx + 1, self.replay.length)
         self._draw_board()
         self._finish_replay_complete()
 
     def _finish_replay_complete(self):
+        if not self._game_active:
+            return
         self.replay_animating = False
         if self.replay:
             self.btn_prev["state"] = "normal" if self.replay.idx > 0 else "disabled"
@@ -953,6 +1057,8 @@ class TigersGoatsGUI:
         self.btn_toggle_tiger["text"] = label
 
     def _update_timeline_ui(self):
+        if not self._game_active:
+            return
         if self.replay:
             self.timeline_scale.configure(state="normal", to=self.replay.length)
             self.timeline_var.set(self.replay.idx)
@@ -1093,6 +1199,8 @@ class TigersGoatsGUI:
 
 
     def _after_tiger_step(self, reward, terminated, truncated, info):
+        if not self._game_active:
+            return
         self.cumulative_reward += float(reward)
         # update live labels and move description
         if self._pending_before is not None and self._pending_action is not None:
@@ -1113,13 +1221,14 @@ class TigersGoatsGUI:
         # unlock before drawing so turn indicator reflects goat turn
         self.input_locked = False
 
+        if terminated or truncated:
+            winner = info.get("winner", "Done")
+            self.last_winner = winner
+            self.status_var.set(f"Game over: {winner} | reward {reward:.3f}")
+
         # show the real env board now
         self._draw_board()
         self._update_timeline_ui()
-
-        if terminated or truncated:
-            winner = info.get("winner", "Done")
-            self.status_var.set(f"Game over: {winner} | reward {reward:.3f}")
 
 
 
@@ -1241,6 +1350,9 @@ class TigersGoatsGUI:
         self.playing = False
 
     def _play_tick(self):
+        if not self._game_active:
+            self.playing = False
+            return
         if not self.playing:
             return
 
@@ -1282,7 +1394,6 @@ def main():
     parser.add_argument("--env", choices=["normal", "battle"], default="normal",
                         help="Opponent mode: normal=greedy tiger, battle=smart tiger.")
     parser.add_argument("--model", type=str, default=None, help="Optional MaskablePPO goat model path (.zip).")
-    parser.add_argument("--replay", type=str, default=None, help="Path to replay JSON (timeline).")
     args = parser.parse_args()
 
     tiger_ai = TIGER_AI_GREEDY if args.env == "normal" else TIGER_AI_SMART
@@ -1290,7 +1401,6 @@ def main():
     gui = TigersGoatsGUI(
         tiger_ai=tiger_ai,
         model_path=args.model,
-        replay_path=args.replay,
     )
     gui.run()
 
