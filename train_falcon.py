@@ -173,7 +173,7 @@ OPP_GOAT_MODEL   = "goat_model"
 #  USER CONFIG — Opponent & Naming
 # ============================================================
 
-EXPERIMENT_NAME = "baselineGoatCreation1"
+EXPERIMENT_NAME = "baselineGoatCreations"
 LEARNER_ROLE    = GOAT_LEARNER                 # GOAT_LEARNER | TIGER_LEARNER
 # Unified opponent selector (interpreted by learner role; used when MIX_PROB is None):
 #   - GOAT learner  : "tiger_greedy" | "tiger_smart"  (model tiger not yet supported)
@@ -219,9 +219,9 @@ if DEVICE_MODE == "gpu":
     torch.set_num_threads(1)
 elif DEVICE_MODE == "cpu":
     DEVICE     = "cpu"
-    N_STEPS    = 1024
+    N_STEPS    = 512
     BATCH_SIZE = 128
-    N_EPOCHS   = 10
+    N_EPOCHS   = 5
 else:
     raise ValueError("DEVICE_MODE must be 'gpu' or 'cpu'")
 
@@ -230,6 +230,10 @@ else:
 # ============================================================
 
 VARIATIONS = {
+    "test" : {
+        "timesteps": 1_000_000,
+        "opponent_ai": OPP_TIGER_GREEDY,
+    },
     "goat_vs_greedy": {
         "timesteps": 50_000_000,
         "opponent_ai": OPP_TIGER_GREEDY,
@@ -238,6 +242,12 @@ VARIATIONS = {
         "timesteps": 50_000_000,
         "opponent_ai": OPP_TIGER_SMART,
     },
+    "goat_greedy_to_smart_mixed": [
+        {"timesteps": 50_000_000, "opponent_ai": OPP_TIGER_GREEDY},
+        {"timesteps": 30_000_000, "opponent_ai": OPP_TIGER_SMART},
+        {"timesteps": 30_000_000, "opponent_ai": OPP_TIGER_SMART, "mix_prob": 0.3},
+        {"timesteps": 30_000_000, "opponent_ai": OPP_TIGER_SMART, "mix_prob": 0.5},
+    ],
 }
 
 
