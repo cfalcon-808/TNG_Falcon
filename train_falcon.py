@@ -230,10 +230,6 @@ else:
 # ============================================================
 
 VARIATIONS = {
-    "test" : {
-        "timesteps": 1_000_000,
-        "opponent_ai": OPP_TIGER_GREEDY,
-    },
     "goat_vs_greedy": {
         "timesteps": 50_000_000,
         "opponent_ai": OPP_TIGER_GREEDY,
