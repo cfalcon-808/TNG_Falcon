@@ -366,12 +366,53 @@ class TigersGoatsGUI:
         replay_playing = self.replay is not None and (self.playing or self.replay_animating)
         return mid_episode or replay_playing
 
+    def _create_scrollable_frame(self, parent):
+        container = ttk.Frame(parent)
+        container.grid(row=0, column=0, sticky="nsew")
+        container.rowconfigure(0, weight=1)
+        container.columnconfigure(0, weight=1)
+
+        canvas = tk.Canvas(container, highlightthickness=0)
+        canvas.grid(row=0, column=0, sticky="nsew")
+        vscroll = ttk.Scrollbar(container, orient="vertical", command=canvas.yview)
+        vscroll.grid(row=0, column=1, sticky="ns")
+        canvas.configure(yscrollcommand=vscroll.set)
+
+        inner = ttk.Frame(canvas)
+        window_id = canvas.create_window((0, 0), window=inner, anchor="nw")
+
+        def _on_frame_configure(_event):
+            canvas.configure(scrollregion=canvas.bbox("all"))
+
+        def _on_canvas_configure(event):
+            canvas.itemconfigure(window_id, width=event.width)
+
+        inner.bind("<Configure>", _on_frame_configure)
+        canvas.bind("<Configure>", _on_canvas_configure)
+
+        def _on_mousewheel(event):
+            if inner.winfo_height() <= canvas.winfo_height():
+                return
+            canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+
+        def _bind_mousewheel(_event):
+            canvas.bind_all("<MouseWheel>", _on_mousewheel)
+
+        def _unbind_mousewheel(_event):
+            canvas.unbind_all("<MouseWheel>")
+
+        canvas.bind("<Enter>", _bind_mousewheel)
+        canvas.bind("<Leave>", _unbind_mousewheel)
+        inner.bind("<Enter>", _bind_mousewheel)
+        inner.bind("<Leave>", _unbind_mousewheel)
+
+        return container, canvas, inner
+
     def _build_game_view(self):
         self._game_active = True
         self.input_locked = False
 
-        self.game_frame = ttk.Frame(self.root)
-        self.game_frame.grid(row=0, column=0, sticky="nsew")
+        self.game_container, self.game_scroll_canvas, self.game_frame = self._create_scrollable_frame(self.root)
         self.game_frame.columnconfigure(0, weight=1)
         self.root.rowconfigure(0, weight=1)
         self.root.columnconfigure(0, weight=1)
