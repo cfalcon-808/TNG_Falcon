@@ -1,0 +1,16 @@
+VARIATIONS = {
+    "goat_vs_GT": {
+        "timesteps": 100_000_000,
+        "opponent_ai": OPP_TIGER_GREEDY,
+    },
+    "goat_vs_ST": {
+        "timesteps": 50_000_000,
+        "opponent_ai": OPP_TIGER_SMART,
+    },
+    "goat_GT->ST->MT": [
+        {"timesteps": 50_000_000, "opponent_ai": OPP_TIGER_GREEDY},
+        {"timesteps": 30_000_000, "opponent_ai": OPP_TIGER_SMART},
+        {"timesteps": 30_000_000, "opponent_ai": OPP_TIGER_SMART, "mix_prob": 0.3},
+        {"timesteps": 30_000_000, "opponent_ai": OPP_TIGER_SMART, "mix_prob": 0.5},
+    ],
+}

@@ -130,6 +130,7 @@ from env_goat_falcon import (
     TIGER_AI_GREEDY,
     TIGER_AI_SMART,
     TOTAL_GOATS_TO_PLACE,
+    GOATS_EATEN_FOR_TIGER_WIN,
     idx_to_coord,
 )
 
@@ -273,6 +274,8 @@ class TigersGoatsGUI:
         self._views = {
             "home": self._build_home_view,
             "goat_play": self._build_game_view,
+            "pvp": self._build_game_view,
+            "replay": self._build_game_view,
         }
 
         self.switch_view("home")
@@ -281,7 +284,7 @@ class TigersGoatsGUI:
         if view_name == self.current_view:
             return
 
-        if self.current_view == "goat_play":
+        if self.current_view in {"goat_play", "pvp", "replay"}:
             self._deactivate_game_view()
 
         for child in self.root.winfo_children():
@@ -343,19 +346,27 @@ class TigersGoatsGUI:
         )
         self.btn_home_pvp = add_mode_card(
             3,
-            "Player vs Player (coming soon)",
+            "Player vs Player",
             "Two humans play to craft custom replays and scenarios.",
-            enabled=False,
+            command=self._start_pvp_mode,
+            enabled=True,
         )
         self.btn_home_replay = add_mode_card(
             4,
-            "Replay Game (coming soon)",
+            "Replay Game",
             "Load a saved replay and browse the timeline.",
-            enabled=False,
+            command=self._start_replay_mode,
+            enabled=True,
         )
 
     def _start_goat_mode(self):
         self.switch_view("goat_play")
+
+    def _start_pvp_mode(self):
+        self.switch_view("pvp")
+
+    def _start_replay_mode(self):
+        self.switch_view("replay")
 
     def _quit_to_home(self):
         if self._should_confirm_quit():
@@ -423,6 +434,7 @@ class TigersGoatsGUI:
     def _build_game_view(self):
         self._game_active = True
         self.input_locked = False
+        self.game_mode = self.current_view
 
         self.game_container, self.game_scroll_canvas, self.game_frame = self._create_scrollable_frame(self.root)
         self.game_frame.columnconfigure(0, weight=1)
@@ -433,7 +445,13 @@ class TigersGoatsGUI:
         nav_frame.grid(row=0, column=0, sticky="we", padx=10, pady=(10, 0))
         nav_frame.columnconfigure(0, weight=1)
         nav_frame.columnconfigure(1, weight=0)
-        self.mode_label_var = tk.StringVar(value="Mode: Play as Goat")
+        if self.game_mode == "pvp":
+            mode_text = "Mode: Player vs Player"
+        elif self.game_mode == "replay":
+            mode_text = "Mode: Replay Viewer"
+        else:
+            mode_text = "Mode: Play as Goat"
+        self.mode_label_var = tk.StringVar(value=mode_text)
         ttk.Label(nav_frame, textvariable=self.mode_label_var).grid(row=0, column=0, sticky="w")
         self.btn_quit_home = ttk.Button(nav_frame, text="Quit to Home", command=self._quit_to_home)
         self.btn_quit_home.grid(row=0, column=1, sticky="e")
@@ -441,27 +459,47 @@ class TigersGoatsGUI:
         self.status_var = tk.StringVar()
         self.reward_var = tk.StringVar(value="Running reward: 0.000")
         self.move_var = tk.StringVar(value="Last move: -")
-        self.model_name_var = tk.StringVar(value="Loaded model: (none)")
+        if self.game_mode == "replay":
+            model_label = "Replay: (none)"
+        elif self.game_mode == "pvp":
+            model_label = "PVP: Human vs Human"
+        else:
+            model_label = "Loaded model: (none)"
+        self.model_name_var = tk.StringVar(value=model_label)
 
-        # Model browse section above game stats
-        model_top_frame = ttk.Frame(self.game_frame)
-        model_top_frame.grid(row=1, column=0, sticky="we", padx=10, pady=5)
-        for c in range(3):
-            model_top_frame.columnconfigure(c, weight=1)
-        ttk.Label(model_top_frame, text="Model path:").grid(row=0, column=0, columnspan=3, sticky="w")
-        self.model_entry = ttk.Entry(model_top_frame, width=50)
-        self.model_entry.grid(row=1, column=0, columnspan=3, sticky="we", pady=(2, 2))
-        self.btn_browse_model = ttk.Button(model_top_frame, text="Browse", command=self.browse_model)
-        self.btn_browse_model.grid(row=2, column=0, sticky="we")
-        self.btn_record = ttk.Button(model_top_frame, text="Record Episode", command=self.record_episode)
-        self.btn_record.grid(row=2, column=1, sticky="we")
-        self.btn_load_model = ttk.Button(model_top_frame, text="Load Model", command=self.load_model_from_entry)
-        self.btn_load_model.grid(row=2, column=2, sticky="we")
-        # Difficulty selector directly under Load Model
-        self.btn_toggle_tiger = ttk.Button(model_top_frame, text="", command=self.toggle_tiger_ai)
-        self.btn_toggle_tiger.grid(row=3, column=0, sticky="w", pady=(5, 0))
-        self.btn_save_replay = ttk.Button(model_top_frame, text="Save Replay", command=self.save_live_replay)
-        self.btn_save_replay.grid(row=3, column=1, sticky="we", pady=(5, 0))
+        if self.game_mode == "replay":
+            replay_top_frame = ttk.Frame(self.game_frame)
+            replay_top_frame.grid(row=1, column=0, sticky="we", padx=10, pady=5)
+            for c in range(2):
+                replay_top_frame.columnconfigure(c, weight=1)
+            ttk.Label(replay_top_frame, text="Replay file:").grid(row=0, column=0, columnspan=2, sticky="w")
+            self.replay_entry = ttk.Entry(replay_top_frame, width=50)
+            self.replay_entry.grid(row=1, column=0, columnspan=2, sticky="we", pady=(2, 2))
+            self.btn_browse_replay = ttk.Button(replay_top_frame, text="Browse", command=self.browse_replay)
+            self.btn_browse_replay.grid(row=2, column=0, sticky="we")
+            self.btn_load_replay = ttk.Button(replay_top_frame, text="Load Replay", command=self.load_replay_from_entry)
+            self.btn_load_replay.grid(row=2, column=1, sticky="we")
+        else:
+            # Model browse section above game stats
+            model_top_frame = ttk.Frame(self.game_frame)
+            model_top_frame.grid(row=1, column=0, sticky="we", padx=10, pady=5)
+            for c in range(3):
+                model_top_frame.columnconfigure(c, weight=1)
+            label_text = "Model path:" if self.game_mode == "goat_play" else "Model path (disabled in PVP):"
+            ttk.Label(model_top_frame, text=label_text).grid(row=0, column=0, columnspan=3, sticky="w")
+            self.model_entry = ttk.Entry(model_top_frame, width=50)
+            self.model_entry.grid(row=1, column=0, columnspan=3, sticky="we", pady=(2, 2))
+            self.btn_browse_model = ttk.Button(model_top_frame, text="Browse", command=self.browse_model)
+            self.btn_browse_model.grid(row=2, column=0, sticky="we")
+            self.btn_record = ttk.Button(model_top_frame, text="Record Episode", command=self.record_episode)
+            self.btn_record.grid(row=2, column=1, sticky="we")
+            self.btn_load_model = ttk.Button(model_top_frame, text="Load Model", command=self.load_model_from_entry)
+            self.btn_load_model.grid(row=2, column=2, sticky="we")
+            # Difficulty selector directly under Load Model
+            self.btn_toggle_tiger = ttk.Button(model_top_frame, text="", command=self.toggle_tiger_ai)
+            self.btn_toggle_tiger.grid(row=3, column=0, sticky="w", pady=(5, 0))
+            self.btn_save_replay = ttk.Button(model_top_frame, text="Save Replay", command=self.save_live_replay)
+            self.btn_save_replay.grid(row=3, column=1, sticky="we", pady=(5, 0))
 
         # Game stats just below model browse
         metrics_frame = ttk.Frame(self.game_frame)
@@ -543,7 +581,11 @@ class TigersGoatsGUI:
 
         # Initialize environment/replay and initial draw
         self._init_env_or_replay()
-        self._update_tiger_button_text()
+        if self.game_mode == "goat_play" and hasattr(self, "btn_toggle_tiger"):
+            self._update_tiger_button_text()
+        self._configure_mode_controls()
+        if self.game_mode == "pvp" and hasattr(self, "btn_toggle_tiger"):
+            self.btn_toggle_tiger["text"] = "Tiger: Manual (PVP)"
         self._draw_static()
         self._draw_board()
         self._update_timeline_ui()
@@ -554,6 +596,7 @@ class TigersGoatsGUI:
         self.node_items = {}
         self.edge_items = []
         self.selected_goat = None
+        self.selected_tiger = None
         self.replay = None
         self.live_timeline = []
         self.replay_animating = False
@@ -563,6 +606,7 @@ class TigersGoatsGUI:
         self.piece_labels_live = {}
         self.next_goat_id = 1
         self.last_winner = None
+        self.pvp_turn = "goat"
         self._pending_before = None
         self._pending_action = None
         self._pending_phase = None
@@ -580,10 +624,37 @@ class TigersGoatsGUI:
         self.replay_animating = False
         self.input_locked = True
         self.replay = None
+        self.selected_tiger = None
+        self.pvp_turn = "goat"
         self.base_env = None
         self.env = None
         self.obs = None
         self.model = None
+
+    def _configure_mode_controls(self):
+        if self.game_mode == "pvp":
+            for name in ("btn_browse_model", "btn_record", "btn_load_model", "btn_toggle_tiger"):
+                if hasattr(self, name):
+                    getattr(self, name)["state"] = "disabled"
+            if hasattr(self, "model_entry"):
+                self.model_entry.configure(state="disabled")
+            self.btn_model["state"] = "disabled"
+            self.btn_play["state"] = "disabled"
+            self.btn_pause["state"] = "disabled"
+        elif self.game_mode == "replay":
+            for name in ("btn_browse_model", "btn_record", "btn_load_model", "btn_toggle_tiger", "btn_save_replay"):
+                if hasattr(self, name):
+                    getattr(self, name)["state"] = "disabled"
+            self.btn_model["state"] = "disabled"
+            self.btn_reset["state"] = "disabled"
+        else:
+            for name in ("btn_browse_model", "btn_record", "btn_load_model", "btn_toggle_tiger", "btn_save_replay"):
+                if hasattr(self, name):
+                    getattr(self, name)["state"] = "normal"
+            if hasattr(self, "model_entry"):
+                self.model_entry.configure(state="normal")
+            self.btn_play["state"] = "normal"
+            self.btn_pause["state"] = "normal"
 
     def _update_model_name_on_canvas(self):
         if not self._game_active or not hasattr(self, "model_name_canvas"):
@@ -692,6 +763,14 @@ class TigersGoatsGUI:
             self._update_timeline_ui()
             return
 
+        if self.game_mode == "replay":
+            self._init_replay_env()
+            return
+
+        if self.game_mode == "pvp":
+            self._init_pvp_env()
+            return
+
         self._init_live_env()
 
     def _init_live_env(self):
@@ -700,6 +779,8 @@ class TigersGoatsGUI:
         self.env = FlattenTnGActionWrapper(self.base_env)
         self.last_winner = None
         self.live_timeline = []
+        self.pvp_turn = "goat"
+        self.selected_tiger = None
 
         self.obs, _ = self.env.reset()
         self._init_live_labels()
@@ -715,6 +796,47 @@ class TigersGoatsGUI:
         # Optional PPO model (trained on flattened wrapper)
         self._load_model(self.model_path)
         self._update_tiger_button_text()
+
+    def _init_pvp_env(self):
+        # Manual mode: both goat and tiger are controlled by humans
+        self.base_env = TnGEnv(tiger_ai=self.tiger_ai)
+        self.env = None
+        self.last_winner = None
+        self.live_timeline = []
+        self.pvp_turn = "goat"
+        self.selected_goat = None
+        self.selected_tiger = None
+
+        self.obs, _ = self.base_env.reset()
+        self.base_env._update_valid_moves()
+        self._init_live_labels()
+
+        self.btn_prev["state"] = "disabled"
+        self.btn_next["state"] = "disabled"
+        self.btn_model["state"] = "disabled"
+        self.playing = False
+
+        self.status_var.set("PVP mode: Goat turn. Click nodes to play.")
+        self.move_var.set("Last move: -")
+
+    def _init_replay_env(self):
+        # Placeholder board while waiting for a replay file.
+        self.base_env = TnGEnv(tiger_ai=TIGER_AI_GREEDY)
+        self.env = None
+        self.last_winner = None
+        self.live_timeline = []
+        self.pvp_turn = "goat"
+        self.selected_goat = None
+        self.selected_tiger = None
+
+        self.obs, _ = self.base_env.reset()
+        self._init_live_labels()
+        self.btn_prev["state"] = "disabled"
+        self.btn_next["state"] = "disabled"
+        self.btn_model["state"] = "disabled"
+        self.playing = False
+        self.status_var.set("Replay mode: load a replay file to begin.")
+        self.move_var.set("Last move: -")
 
     def _draw_static(self):
         # Graph is independent of tiger mode; pull from a temp env if replay
@@ -788,13 +910,26 @@ class TigersGoatsGUI:
             blocked = self._blocked_tigers_live()
             turns = getattr(self.base_env, "turns", getattr(self.base_env, "turn_count", "?"))
             phase_s = "Place" if phase == 0 else "Move"
-            self.status_var.set(
-                f"Phase: {phase_s} | "
-                f"Goats Placed: {placed}/{TOTAL_GOATS_TO_PLACE} | "
-                f"Goats Eaten: {min(eaten, EATEN_DISPLAY_CAP)}/{EATEN_DISPLAY_CAP} | "
-                f"Tigers Blocked: {blocked}/{TIGER_COUNT} | "
-                f"Turn: {turns}"
-            )
+            if self.game_mode == "replay":
+                self.status_var.set("Replay mode: load a replay file to begin.")
+                self.move_var.set("Last move: -")
+            elif self.game_mode == "pvp":
+                turn_side = "Goat" if self.pvp_turn == "goat" else "Tiger"
+                self.status_var.set(
+                    f"Phase: {phase_s} | "
+                    f"Goats Placed: {placed}/{TOTAL_GOATS_TO_PLACE} | "
+                    f"Goats Eaten: {min(eaten, EATEN_DISPLAY_CAP)}/{EATEN_DISPLAY_CAP} | "
+                    f"Tigers Blocked: {blocked}/{TIGER_COUNT} | "
+                    f"Turn: {turns} ({turn_side})"
+                )
+            else:
+                self.status_var.set(
+                    f"Phase: {phase_s} | "
+                    f"Goats Placed: {placed}/{TOTAL_GOATS_TO_PLACE} | "
+                    f"Goats Eaten: {min(eaten, EATEN_DISPLAY_CAP)}/{EATEN_DISPLAY_CAP} | "
+                    f"Tigers Blocked: {blocked}/{TIGER_COUNT} | "
+                    f"Turn: {turns}"
+                )
 
         # Running reward viewer
         if self.replay:
@@ -821,7 +956,10 @@ class TigersGoatsGUI:
             placed_val = getattr(self.base_env, "goats_placed", 0)
             blocked_val = self._blocked_tigers_live()
             turn_val = getattr(self.base_env, "turns", getattr(self.base_env, "turn_count", 0))
-            actor = "Tiger" if self.input_locked else "Goat"
+            if self.game_mode == "pvp":
+                actor = "Tiger" if self.pvp_turn == "tiger" else "Goat"
+            else:
+                actor = "Tiger" if self.input_locked else "Goat"
         self._update_canvas_overlays(placed_val, eaten_val, blocked_val, turn_val, phase_val, actor=actor)
 
     def _preview_board_after_goat(self, action_flat: int):
@@ -941,18 +1079,19 @@ class TigersGoatsGUI:
                 self.piece_labels_live[idx] = f"T{len(self.piece_labels_live) + 1}"
 
     def _update_live_labels(self, before_board, after_board, action, phase):
-        pos = int(action.get("pos", 0))
-        d = int(action.get("dir", 0))
         move_map = self._get_move_map()
 
         # Goat placement / move
-        if phase == 0:
-            self.piece_labels_live[pos] = f"G{self.next_goat_id}"
-            self.next_goat_id += 1
-        else:
-            dest = move_map.get(pos, {}).get(d, None)
-            if dest is not None and pos in self.piece_labels_live:
-                self.piece_labels_live[dest] = self.piece_labels_live.pop(pos)
+        if action is not None and phase is not None:
+            pos = int(action.get("pos", 0))
+            d = int(action.get("dir", 0))
+            if phase == 0:
+                self.piece_labels_live[pos] = f"G{self.next_goat_id}"
+                self.next_goat_id += 1
+            else:
+                dest = move_map.get(pos, {}).get(d, None)
+                if dest is not None and pos in self.piece_labels_live:
+                    self.piece_labels_live[dest] = self.piece_labels_live.pop(pos)
 
         # Tiger move
         before_t = {i for i, v in enumerate(before_board) if v == 2}
@@ -984,11 +1123,21 @@ class TigersGoatsGUI:
         self.replay = None
         self.replay_animating = False
         self.selected_goat = None
+        self.selected_tiger = None
         self.cumulative_reward = 0.0
         self.playing = False
         self.last_winner = None
         self.live_timeline = []
-        self._init_live_env()
+        self._pending_before = None
+        self._pending_action = None
+        self._pending_phase = None
+        self._pending_snapshot = None
+        if self.game_mode == "pvp":
+            self._init_pvp_env()
+        elif self.game_mode == "replay":
+            self._init_replay_env()
+        else:
+            self._init_live_env()
         self._draw_board()
         self._update_timeline_ui()
 
@@ -1047,6 +1196,8 @@ class TigersGoatsGUI:
         Run a fresh episode (using the same tiger AI and optional goat model),
         store it as an in-memory replay, and switch the UI into replay mode.
         """
+        if self.game_mode != "goat_play":
+            return
         self.cumulative_reward = 0.0
         rec_env_base = TnGEnv(tiger_ai=self.tiger_ai)
         rec_env = FlattenTnGActionWrapper(rec_env_base)
@@ -1130,7 +1281,7 @@ class TigersGoatsGUI:
         if self.replay:
             messagebox.showinfo("Save Replay", "Exit replay mode to save live gameplay.")
             return
-        if not self.live_timeline:
+        if not self.live_timeline and (self._pending_snapshot is None or self._pending_action is None):
             messagebox.showinfo("Save Replay", "No moves recorded yet.")
             return
         final = self._snapshot_live_state()
@@ -1139,8 +1290,17 @@ class TigersGoatsGUI:
             return
         result = self.last_winner or "Undetermined"
         final["winner"] = result
+        timeline = list(self.live_timeline)
+        if self._pending_snapshot is not None and self._pending_action is not None:
+            pending_info = {"winner": self.last_winner} if self.last_winner else {}
+            timeline.append({
+                "before": self._pending_snapshot,
+                "action": dict(self._pending_action),
+                "reward": 0.0,
+                "info": pending_info,
+            })
         replay_data = {
-            "timeline": list(self.live_timeline),
+            "timeline": timeline,
             "final": final,
             "result": result,
         }
@@ -1160,6 +1320,8 @@ class TigersGoatsGUI:
             messagebox.showerror("Save Replay", f"Failed to save replay: {e}")
 
     def model_move(self):
+        if self.game_mode != "goat_play":
+            return
         if not self.model or not self.env:
             return
         mask = self.base_env.get_action_mask()  # flattened mask should match wrapper
@@ -1231,6 +1393,8 @@ class TigersGoatsGUI:
 
     def toggle_tiger_ai(self):
         # Switch tiger AI and reset into live mode (clears replay)
+        if self.game_mode != "goat_play":
+            return
         self.tiger_ai = TIGER_AI_SMART if self.tiger_ai == TIGER_AI_GREEDY else TIGER_AI_GREEDY
         self.reset_env()
 
@@ -1262,6 +1426,8 @@ class TigersGoatsGUI:
 
     def load_model_from_entry(self):
         """Load model from entry text and return to live mode."""
+        if self.game_mode != "goat_play":
+            return
         path = self.model_entry.get().strip()
         # Update model path and reset to live (clears any replay)
         self.model_path = path
@@ -1274,6 +1440,8 @@ class TigersGoatsGUI:
 
     def browse_model(self):
         """Open file picker for a model zip and load it."""
+        if self.game_mode != "goat_play":
+            return
         path = filedialog.askopenfilename(
             title="Select model (.zip)",
             filetypes=[("Model zip", "*.zip"), ("All files", "*.*")],
@@ -1285,14 +1453,66 @@ class TigersGoatsGUI:
         self.model_entry.insert(0, path)
         self.load_model_from_entry()
 
+    def load_replay_from_entry(self):
+        if self.game_mode != "replay":
+            return
+        path = self.replay_entry.get().strip()
+        if not path:
+            return
+        self._load_replay(path)
+
+    def browse_replay(self):
+        if self.game_mode != "replay":
+            return
+        path = filedialog.askopenfilename(
+            title="Select replay (.json)",
+            filetypes=[("Replay JSON", "*.json"), ("All files", "*.*")],
+            initialdir=os.path.join(os.getcwd(), "artifacts"),
+        )
+        if not path:
+            return
+        self.replay_entry.delete(0, tk.END)
+        self.replay_entry.insert(0, path)
+        self.load_replay_from_entry()
+
+    def _load_replay(self, path: str):
+        try:
+            replay = ReplayTimeline(path)
+        except Exception as e:
+            messagebox.showerror("Load Replay", f"Failed to load replay: {e}")
+            return
+        board = replay.current_board()
+        if not isinstance(board, list) or len(board) != len(NODE_LAYOUT):
+            messagebox.showerror(
+                "Load Replay",
+                "Replay is missing a valid board snapshot.",
+            )
+            return
+        replay.idx = 0
+        self.replay = replay
+        self.playing = False
+        self.replay_animating = False
+        self.btn_prev["state"] = "normal" if self.replay.idx > 0 else "disabled"
+        self.btn_next["state"] = "normal" if self.replay.idx < self.replay.length else "disabled"
+        self.status_var.set(f"Loaded replay: {os.path.basename(path)}")
+        self.model_name_var.set(f"Replay: {os.path.basename(path)}")
+        self._draw_board(board_override=board)
+        self._update_timeline_ui()
+
     def on_canvas_click(self, event):
         if self.input_locked:
+            return
+        if self.game_mode == "replay":
             return
         if self.replay or not self.base_env:
             return
 
         idx = self._loc_to_node(event.x, event.y)
         if idx is None:
+            return
+
+        if self.game_mode == "pvp":
+            self._handle_pvp_click(idx)
             return
 
         phase = getattr(self.base_env, "phase", 0)
@@ -1332,7 +1552,55 @@ class TigersGoatsGUI:
                 flat = pack_action_flat(from_idx, dir_code)
                 self._apply_action(flat)
 
+    def _handle_pvp_click(self, idx):
+        if self.last_winner:
+            return
+
+        phase = getattr(self.base_env, "phase", 0)
+        if self.pvp_turn == "goat":
+            valid_moves = getattr(self.base_env, "valid_moves", [])
+            if phase == 0:
+                if [idx, 0] in valid_moves or (idx, 0) in valid_moves:
+                    self._apply_pvp_goat_action(idx, 0)
+                return
+
+            if self.selected_goat is None:
+                if self.base_env.board[idx] == 1:
+                    self.selected_goat = idx
+                    self._highlight_moves(idx)
+                return
+
+            from_idx = self.selected_goat
+            self.selected_goat = None
+            self._draw_board()
+
+            dir_code = None
+            for d, dest in self.base_env.move_map.get(from_idx, {}).items():
+                if dest == idx:
+                    if [from_idx, d] in valid_moves or (from_idx, d) in valid_moves:
+                        dir_code = d
+                        break
+            if dir_code is not None:
+                self._apply_pvp_goat_action(from_idx, dir_code)
+            return
+
+        # Tiger turn
+        if self.selected_tiger is None:
+            if self.base_env.board[idx] == 2:
+                self.selected_tiger = idx
+                self._highlight_tiger_moves(idx)
+            return
+
+        from_idx = self.selected_tiger
+        self.selected_tiger = None
+        self._draw_board()
+        move = self._find_pvp_tiger_move(from_idx, idx)
+        if move is not None:
+            self._apply_pvp_tiger_action(from_idx, idx, move.get("capture", False))
+
     def _apply_action(self, action_flat: int):
+        if self.game_mode != "goat_play":
+            return
         if self.input_locked:
             return
         self.input_locked = True
@@ -1399,6 +1667,136 @@ class TigersGoatsGUI:
         # show the real env board now
         self._draw_board()
         self._update_timeline_ui()
+
+    def _finalize_pvp_step(self):
+        if self._pending_snapshot is None or self._pending_action is None:
+            return
+        info = {"winner": self.last_winner} if self.last_winner else {}
+        self.live_timeline.append({
+            "before": self._pending_snapshot,
+            "action": dict(self._pending_action),
+            "reward": 0.0,
+            "info": info,
+        })
+        self._pending_snapshot = None
+        self._pending_action = None
+        self._pending_phase = None
+
+    def _apply_pvp_goat_action(self, pos: int, dir_code: int):
+        if not self.base_env or self.last_winner:
+            return
+
+        phase = getattr(self.base_env, "phase", 0)
+        if phase == 0:
+            if dir_code != 0 or self.base_env.board[pos] != 0:
+                return
+        else:
+            dest = self.base_env.move_map.get(pos, {}).get(dir_code, None)
+            if dest is None or self.base_env.board[pos] != 1 or self.base_env.board[dest] != 0:
+                return
+
+        before_board = self.base_env.board.copy()
+        self._pending_snapshot = self._snapshot_live_state()
+        self._pending_action = {"pos": int(pos), "dir": int(dir_code)}
+        self._pending_phase = phase
+
+        if phase == 0:
+            self.base_env.board[pos] = 1
+            self.base_env.goats_placed += 1
+            goat_desc = f"Goat placed at {idx_to_coord(pos)}"
+            if self.base_env.goats_placed >= TOTAL_GOATS_TO_PLACE:
+                self.base_env.phase = 1
+        else:
+            dest = self.base_env.move_map.get(pos, {}).get(dir_code, None)
+            self.base_env.board[pos] = 0
+            self.base_env.board[dest] = 1
+            goat_desc = f"Goat {idx_to_coord(pos)} -> {idx_to_coord(dest)}"
+            if hasattr(self.base_env, "move_steps"):
+                self.base_env.move_steps += 1
+
+        self.base_env._update_valid_moves()
+        after_board = self.base_env.board.copy()
+        self._update_live_labels(before_board, after_board, {"pos": int(pos), "dir": int(dir_code)}, phase)
+        self.move_var.set(f"Last move: {goat_desc}")
+
+        tiger_moves = self.base_env._tiger_moves()
+        if not tiger_moves:
+            self.last_winner = "Goat"
+            self._finalize_pvp_step()
+            self.status_var.set("Game over: Goat")
+            self._draw_board()
+            return
+
+        self.pvp_turn = "tiger"
+        self.selected_tiger = None
+        self.status_var.set("PVP mode: Tiger turn. Click a tiger then destination.")
+        self._draw_board()
+
+    def _find_pvp_tiger_move(self, from_idx, to_idx):
+        if not self.base_env:
+            return None
+        for f_pos, dest, is_capture in self.base_env._tiger_moves():
+            if f_pos == from_idx and dest == to_idx:
+                return {"capture": bool(is_capture)}
+        return None
+
+    def _apply_pvp_tiger_action(self, from_idx: int, to_idx: int, took_capture: bool):
+        if not self.base_env or self.last_winner:
+            return
+
+        before_board = self.base_env.board.copy()
+        if took_capture:
+            for d_code, neigh in self.base_env.move_map[from_idx].items():
+                jump = self.base_env.move_map.get(neigh, {}).get(d_code, None)
+                if from_idx == 0:
+                    jump = self.base_env.move_map.get(neigh, {}).get(3, None)
+                if jump == to_idx and self.base_env.board[neigh] == 1:
+                    self.base_env.board[neigh] = 0
+                    self.base_env.eaten += 1
+                    break
+
+        self.base_env.board[to_idx] = 2
+        self.base_env.board[from_idx] = 0
+        self.base_env.turns += 1
+        self.base_env._update_valid_moves()
+
+        after_board = self.base_env.board.copy()
+        self._update_live_labels(before_board, after_board, None, None)
+        desc = f"Tiger {idx_to_coord(from_idx)} -> {idx_to_coord(to_idx)}"
+        if took_capture:
+            desc += " capture"
+        self.move_var.set(f"Last move: {desc}")
+
+        winner = None
+        if self.base_env.eaten >= GOATS_EATEN_FOR_TIGER_WIN:
+            winner = "Tiger"
+        elif self.base_env.turns >= self.base_env._w("MAX_TURNS"):
+            winner = "Tiger"
+
+        if winner:
+            self.last_winner = winner
+
+        self._finalize_pvp_step()
+
+        if winner:
+            self.status_var.set(f"Game over: {winner}")
+            self._draw_board()
+            return
+
+        self.pvp_turn = "goat"
+        self.status_var.set("PVP mode: Goat turn. Click nodes to play.")
+        self._draw_board()
+
+    def _highlight_tiger_moves(self, tiger_idx):
+        self._draw_board()
+        circle, _ = self.node_items[tiger_idx]
+        self.canvas.itemconfig(circle, outline="#ff4d4d", width=3)
+        for f_pos, dest, is_capture in self.base_env._tiger_moves():
+            if f_pos != tiger_idx:
+                continue
+            circle2, _ = self.node_items[dest]
+            color = "#ff4d4d" if is_capture else "#ffb347"
+            self.canvas.itemconfig(circle2, outline=color, width=3)
 
 
 
@@ -1513,6 +1911,8 @@ class TigersGoatsGUI:
             return 200
 
     def play(self):
+        if self.game_mode == "pvp":
+            return
         self.playing = True
         self._play_tick()
 
@@ -1524,6 +1924,9 @@ class TigersGoatsGUI:
             self.playing = False
             return
         if not self.playing:
+            return
+        if self.game_mode == "pvp":
+            self.playing = False
             return
 
         # In replay mode: auto-advance
