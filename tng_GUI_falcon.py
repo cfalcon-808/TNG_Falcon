@@ -63,7 +63,7 @@
 #
 #  3) Load a trained goat model and record + browse an episode:
 #       python gui_tigers_goats.py --env battle --model artifacts/models/train/mppo/GvST/.../your_model.zip
-#       (Then click "Load + Record" or "Record Episode")
+#       (Then click "Load Model" or "Record Episode")
 #
 #  Workflow (recommended usage)
 #  ----------------------------
@@ -341,6 +341,18 @@ class TigersGoatsGUI:
             "Run model vs model matchups for evaluation or demos.",
             enabled=False,
         )
+        self.btn_home_pvp = add_mode_card(
+            3,
+            "Player vs Player (coming soon)",
+            "Two humans play to craft custom replays and scenarios.",
+            enabled=False,
+        )
+        self.btn_home_replay = add_mode_card(
+            4,
+            "Replay Game (coming soon)",
+            "Load a saved replay and browse the timeline.",
+            enabled=False,
+        )
 
     def _start_goat_mode(self):
         self.switch_view("goat_play")
@@ -443,11 +455,13 @@ class TigersGoatsGUI:
         self.btn_browse_model.grid(row=2, column=0, sticky="we")
         self.btn_record = ttk.Button(model_top_frame, text="Record Episode", command=self.record_episode)
         self.btn_record.grid(row=2, column=1, sticky="we")
-        self.btn_load_model = ttk.Button(model_top_frame, text="Load + Record", command=self.load_model_from_entry)
+        self.btn_load_model = ttk.Button(model_top_frame, text="Load Model", command=self.load_model_from_entry)
         self.btn_load_model.grid(row=2, column=2, sticky="we")
-        # Difficulty selector directly under Load + Record
+        # Difficulty selector directly under Load Model
         self.btn_toggle_tiger = ttk.Button(model_top_frame, text="", command=self.toggle_tiger_ai)
         self.btn_toggle_tiger.grid(row=3, column=0, sticky="w", pady=(5, 0))
+        self.btn_save_replay = ttk.Button(model_top_frame, text="Save Replay", command=self.save_live_replay)
+        self.btn_save_replay.grid(row=3, column=1, sticky="we", pady=(5, 0))
 
         # Game stats just below model browse
         metrics_frame = ttk.Frame(self.game_frame)
@@ -541,6 +555,7 @@ class TigersGoatsGUI:
         self.edge_items = []
         self.selected_goat = None
         self.replay = None
+        self.live_timeline = []
         self.replay_animating = False
         self._move_map_cache = None
         self.cumulative_reward = 0.0
@@ -551,6 +566,7 @@ class TigersGoatsGUI:
         self._pending_before = None
         self._pending_action = None
         self._pending_phase = None
+        self._pending_snapshot = None
         self.base_env = None
         self.env = None
         self.obs = None
@@ -644,7 +660,8 @@ class TigersGoatsGUI:
 
     def _current_game_state(self):
         if self.last_winner:
-            return f"GAME OVER: {self.last_winner}", "#ff4d4d"
+            winner_label = self._format_winner_label(self.last_winner)
+            return f"GAME OVER:\nWinner: {winner_label}", "#ff4d4d"
         if self.replay:
             return "REPLAY", "#f4d03f"
         if self.base_env is None:
@@ -653,6 +670,16 @@ class TigersGoatsGUI:
         if turns <= 0 and not self.input_locked and not self.playing:
             return "IDLE", "#f4d03f"
         return "IN PLAY", "#2ecc71"
+
+    def _format_winner_label(self, winner) -> str:
+        if not winner:
+            return "Unknown"
+        text = str(winner)
+        if "Goat" in text:
+            return "Goat"
+        if "Tiger" in text:
+            return "Tiger"
+        return text
 
     def _init_env_or_replay(self):
         if self.replay:
@@ -672,6 +699,7 @@ class TigersGoatsGUI:
         self.base_env = TnGEnv(tiger_ai=self.tiger_ai)
         self.env = FlattenTnGActionWrapper(self.base_env)
         self.last_winner = None
+        self.live_timeline = []
 
         self.obs, _ = self.env.reset()
         self._init_live_labels()
@@ -959,9 +987,32 @@ class TigersGoatsGUI:
         self.cumulative_reward = 0.0
         self.playing = False
         self.last_winner = None
+        self.live_timeline = []
         self._init_live_env()
         self._draw_board()
         self._update_timeline_ui()
+
+    def _snapshot_live_state(self):
+        if not self.base_env:
+            return None
+        tiger_moves = None
+        if hasattr(self.base_env, "_tiger_moves"):
+            tiger_moves = self.base_env._tiger_moves()
+        blocked = self._blocked_from_moves(self.base_env.board, tiger_moves)
+        return {
+            "board": self.base_env.board.tolist(),
+            "phase": int(getattr(self.base_env, "phase", 0)),
+            "goats_eaten": int(getattr(self.base_env, "eaten", 0)),
+            "goats_placed": int(getattr(self.base_env, "goats_placed", 0)),
+            "tigers_blocked": int(blocked),
+            "turn": int(getattr(self.base_env, "turns", 0)),
+        }
+
+    def _clean_info(self, info):
+        return {
+            k: (v.tolist() if hasattr(v, "tolist") else v)
+            for k, v in info.items()
+        }
 
     def _get_move_map(self):
         if self.base_env is not None:
@@ -1075,6 +1126,39 @@ class TigersGoatsGUI:
         self._draw_board()
         self._update_timeline_ui()
 
+    def save_live_replay(self):
+        if self.replay:
+            messagebox.showinfo("Save Replay", "Exit replay mode to save live gameplay.")
+            return
+        if not self.live_timeline:
+            messagebox.showinfo("Save Replay", "No moves recorded yet.")
+            return
+        final = self._snapshot_live_state()
+        if final is None:
+            messagebox.showerror("Save Replay", "No live game data to save.")
+            return
+        result = self.last_winner or "Undetermined"
+        final["winner"] = result
+        replay_data = {
+            "timeline": list(self.live_timeline),
+            "final": final,
+            "result": result,
+        }
+        path = filedialog.asksaveasfilename(
+            title="Save replay JSON",
+            defaultextension=".json",
+            filetypes=[("Replay JSON", "*.json"), ("All files", "*.*")],
+            initialdir=os.path.join(os.getcwd(), "artifacts"),
+        )
+        if not path:
+            return
+        try:
+            with open(path, "w", encoding="utf-8") as f:
+                json.dump(replay_data, f, indent=2)
+            self.status_var.set(f"Saved replay: {os.path.basename(path)}")
+        except Exception as e:
+            messagebox.showerror("Save Replay", f"Failed to save replay: {e}")
+
     def model_move(self):
         if not self.model or not self.env:
             return
@@ -1177,20 +1261,19 @@ class TigersGoatsGUI:
             self.model_name_var.set("Loaded model: (none)")
 
     def load_model_from_entry(self):
-        """Load model from entry text, then record an episode for browsing."""
+        """Load model from entry text and return to live mode."""
         path = self.model_entry.get().strip()
         # Update model path and reset to live (clears any replay)
         self.model_path = path
         self.reset_env()
         # _load_model is called inside _init_live_env during reset
         if self.model:
-            self.status_var.set(f"Loaded model: {os.path.basename(path)}; recording episode...")
-            self.record_episode()
-        else:
+            self.status_var.set(f"Loaded model: {os.path.basename(path)}")
+        elif path:
             self.status_var.set(f"Failed to load model: {path}")
 
     def browse_model(self):
-        """Open file picker for a model zip, load it, and record an episode."""
+        """Open file picker for a model zip and load it."""
         path = filedialog.askopenfilename(
             title="Select model (.zip)",
             filetypes=[("Model zip", "*.zip"), ("All files", "*.*")],
@@ -1261,6 +1344,7 @@ class TigersGoatsGUI:
 
         # store pre-step context for labeling / descriptions
         self._pending_before = self.base_env.board.copy()
+        self._pending_snapshot = self._snapshot_live_state()
         pos, d = unpack_action_flat(action_flat)
         self._pending_action = {"pos": pos, "dir": d}
         self._pending_phase = getattr(self.base_env, "phase", 0)
@@ -1278,6 +1362,14 @@ class TigersGoatsGUI:
     def _after_tiger_step(self, reward, terminated, truncated, info):
         if not self._game_active:
             return
+        if self._pending_snapshot is not None and self._pending_action is not None:
+            clean_info = self._clean_info(info)
+            self.live_timeline.append({
+                "before": self._pending_snapshot,
+                "action": dict(self._pending_action),
+                "reward": float(reward),
+                "info": clean_info,
+            })
         self.cumulative_reward += float(reward)
         # update live labels and move description
         if self._pending_before is not None and self._pending_action is not None:
@@ -1294,6 +1386,7 @@ class TigersGoatsGUI:
         self._pending_before = None
         self._pending_action = None
         self._pending_phase = None
+        self._pending_snapshot = None
 
         # unlock before drawing so turn indicator reflects goat turn
         self.input_locked = False
