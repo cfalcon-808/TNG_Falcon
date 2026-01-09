@@ -1,7 +1,7 @@
 # ============================================================
 #  Project    : Tigers & Goats - Falcon Branch
 #  Module     : Maskable PPO Environment (Full Game, Unified Tigers)
-#  File       : env_goat_falcon.py
+#  File       : env_tng_falcon.py
 #  Version    : env5.0
 #  Last Update: 2026-01-03
 #
@@ -98,7 +98,7 @@ DEFAULT_KNOBS = {
     # Timeout scales
     "MAX_TIMEOUT_SCALE":        1.0,    # scale for turn-limit (max turns) timeout penalty
     "REPEAT_STALL_SCALE":       0.8,    # scale for stall-timeout (repeat-state) penalty
-    "MAX_TURNS":                100,    # max turns before enforcing goat-timeout
+    "MAX_TURNS":                100,    # max turns before enforcing max-timeout
 
     # Move penalty shaping
     "MOVE_STEP_BASE":          -0.01,   # base negative reward for moving-phase steps
@@ -1125,12 +1125,7 @@ class TnGEnv(gym.Env):
             "episode_tiger_ai_id": float(1 if self._episode_tiger_ai == TIGER_AI_SMART else 0)
         }
     #end def step()
-
-    # f   : starting position of the tiger
-        # t   : destination position after the move
-        # cap : True if this move captures a goat
-        # d   : direction code used by the action space
-
+    
 
     def _step_tiger_learner(self, action):
         """

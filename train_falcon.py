@@ -173,7 +173,7 @@ OPP_GOAT_MODEL   = "goat_model"
 #  USER CONFIG — Opponent & Naming
 # ============================================================
 
-EXPERIMENT_NAME = "baselineGoatCreations"
+EXPERIMENT_NAME = "baselineGoatTraining"
 LEARNER_ROLE    = GOAT_LEARNER                 # GOAT_LEARNER | TIGER_LEARNER
 # Unified opponent selector (interpreted by learner role; used when MIX_PROB is None):
 #   - GOAT learner  : "tiger_greedy" | "tiger_smart"  (model tiger not yet supported)
@@ -230,20 +230,10 @@ else:
 # ============================================================
 
 VARIATIONS = {
-    "goat_vs_greedy": {
-        "timesteps": 50_000_000,
+    "goat_vs_GT": {
+        "timesteps": 100_000_000,
         "opponent_ai": OPP_TIGER_GREEDY,
     },
-    "goat_vs_smart": {
-        "timesteps": 50_000_000,
-        "opponent_ai": OPP_TIGER_SMART,
-    },
-    "goat_greedy_to_smart_mixed": [
-        {"timesteps": 50_000_000, "opponent_ai": OPP_TIGER_GREEDY},
-        {"timesteps": 30_000_000, "opponent_ai": OPP_TIGER_SMART},
-        {"timesteps": 30_000_000, "opponent_ai": OPP_TIGER_SMART, "mix_prob": 0.3},
-        {"timesteps": 30_000_000, "opponent_ai": OPP_TIGER_SMART, "mix_prob": 0.5},
-    ],
 }
 
 
@@ -547,7 +537,11 @@ class TigerMixWrapper(Monitor):
 
     def reset(self, *, seed=None, options=None):
         # Make sure we are modifying the underlying env that actually owns tiger_ai
-        self.tiger_ai = self._sample_ai_fn()
+        ai = self._sample_ai_fn()
+        try:
+            self.env.tiger_ai = ai
+        except Exception:
+            pass
         return super().reset(seed=seed, options=options)
 
 
