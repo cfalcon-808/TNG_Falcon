@@ -1374,6 +1374,8 @@ class TigersGoatsGUI:
             self.btn_prev["state"] = "normal" if self.replay.idx > 0 else "disabled"
             self.btn_next["state"] = "normal" if self.replay.idx < self.replay.length else "disabled"
             self._update_timeline_ui()
+            if self.playing and self.replay.idx < self.replay.length:
+                self.root.after(self._delay_ms(), self._play_tick)
 
     def _update_tiger_button_text(self):
         label = "Tiger: SMART (click -> NORMAL)" if self.tiger_ai == TIGER_AI_SMART else "Tiger: NORMAL (click -> SMART)"
@@ -1936,6 +1938,7 @@ class TigersGoatsGUI:
                 return
             if not self.replay_animating:
                 self.jump_replay(1)
+            return
         else:
             # Live mode: auto-step using model or random legal move
             if self.base_env is None:
