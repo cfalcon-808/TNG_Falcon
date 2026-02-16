@@ -47,7 +47,7 @@
 #
 #    • Action masking (MaskablePPO requirement):
 #         Each worker env is wrapped:
-#           BaseEnv -> (Monitor or TigerMixWrapper) -> FlattenWrapper -> ActionMasker
+#           BaseEnv -> (Monitor or TigerMixWrapper) -> ActionMasker
 #         so MaskablePPO only samples legal actions.
 #
 #  Outputs (where stuff goes):
@@ -152,17 +152,16 @@ from stable_baselines3.common.logger import configure
 from sb3_contrib import MaskablePPO
 from sb3_contrib.common.wrappers import ActionMasker
 
-from env_tng_falcon import (
+from env_tng_abc import (
     TnGEnv as BaseEnv,
-    FlattenTnGActionWrapper as FlattenWrapper,
     TIGER_AI_GREEDY,
     TIGER_AI_SMART,
     GOAT_AI_RANDOM,
     GOAT_AI_MODEL,
 )
 
-GOAT_LEARNER  = "goat"
-TIGER_LEARNER = "tiger"
+GOAT_LEARNER     = "goat"
+TIGER_LEARNER    = "tiger"
 OPP_TIGER_GREEDY = "tiger_greedy"
 OPP_TIGER_SMART  = "tiger_smart"
 OPP_TIGER_MODEL  = "tiger_model"   # reserved; env_tng_falcon does not yet support model tigers
@@ -197,7 +196,7 @@ USE_MIX_TAG     = MIX_PROB is not None  # adds "Mix" to CORE tag (tag only)
 #  USER CONFIG — Scale / Hardware
 # ============================================================
 
-DEVICE_MODE = "gpu"
+DEVICE_MODE = "cpu"
 DEBUG_MODE  = False                  # True or False
 TIMESTEPS   = 2_000_000 if DEBUG_MODE else 60_000_000
 NUM_CPU     = 16
@@ -608,7 +607,6 @@ def make_env(
         else:
             env = Monitor(base_env)
 
-        env = FlattenWrapper(env)
         env = ActionMasker(env, mask_fn)
         env.reset(seed=seed + rank)
         return env

@@ -79,7 +79,7 @@
 #     - Use "Model Move" to step the model once at a time.
 #     - If it makes illegal moves, your masking pipeline is broken:
 #         • check env.get_action_mask()
-#         • check Flatten action packing/unpacking vs wrapper assumptions
+#         • check action encoding/decoding and mask alignment
 #
 #  3) Generate a replay quickly:
 #     - Click "Record Episode"
@@ -99,7 +99,7 @@
 #
 #  Notes / Practical Tips
 #  ----------------------
-#  • The GUI uses FlattenTnGActionWrapper and pack/unpack helpers so that:
+#  • The GUI uses native flat Discrete actions and pack/unpack helpers so that:
 #       action_flat = pos * N_DIR_CODES + dir
 #    matches the Discrete action space used by training.
 #  • Forward replay shows a goat-only preview first, then updates to the
@@ -123,9 +123,8 @@ try:
 except Exception:  # allow GUI without SB3 installed
     MaskablePPO = None
 
-from env_goat_falcon import (
+from env_tng_abc import (
     TnGEnv,
-    FlattenTnGActionWrapper,
     DIR_CODES as N_DIR_CODES,
     TIGER_AI_GREEDY,
     TIGER_AI_SMART,
@@ -162,7 +161,7 @@ def build_edges(move_map):
 
 
 def pack_action_flat(pos: int, dir_code: int) -> int:
-    """Flatten (pos, dir) into the Discrete action index used by FlattenTnGActionWrapper."""
+    """Flatten (pos, dir) into the Discrete action index used by the env."""
     return int(pos) * int(N_DIR_CODES) + int(dir_code)
 
 
@@ -776,7 +775,7 @@ class TigersGoatsGUI:
     def _init_live_env(self):
         # Unified env: choose tiger behavior via tiger_ai
         self.base_env = TnGEnv(tiger_ai=self.tiger_ai)
-        self.env = FlattenTnGActionWrapper(self.base_env)
+        self.env = self.base_env
         self.last_winner = None
         self.live_timeline = []
         self.pvp_turn = "goat"
@@ -793,7 +792,7 @@ class TigersGoatsGUI:
         self.status_var.set(f"Live mode ({mode_label} tiger): click a node to place/move goats.")
         self.move_var.set("Last move: -")
 
-        # Optional PPO model (trained on flattened wrapper)
+        # Optional PPO model
         self._load_model(self.model_path)
         self._update_tiger_button_text()
 
@@ -1200,7 +1199,7 @@ class TigersGoatsGUI:
             return
         self.cumulative_reward = 0.0
         rec_env_base = TnGEnv(tiger_ai=self.tiger_ai)
-        rec_env = FlattenTnGActionWrapper(rec_env_base)
+        rec_env = rec_env_base
         obs, _ = rec_env.reset()
 
         timeline = []
@@ -1324,7 +1323,7 @@ class TigersGoatsGUI:
             return
         if not self.model or not self.env:
             return
-        mask = self.base_env.get_action_mask()  # flattened mask should match wrapper
+        mask = self.base_env.get_action_mask()
         action, _ = self.model.predict(self.obs, deterministic=True, action_masks=mask)
         self._apply_action(int(action))
 
@@ -1501,6 +1500,16 @@ class TigersGoatsGUI:
         self._draw_board(board_override=board)
         self._update_timeline_ui()
 
+    def _is_flat_goat_action_valid(self, action_flat: int) -> bool:
+        if self.base_env is None:
+            return False
+        mask = self.base_env.get_action_mask()
+        if mask is None:
+            return False
+        mask = np.asarray(mask, dtype=bool)
+        a = int(action_flat)
+        return 0 <= a < mask.size and bool(mask[a])
+
     def on_canvas_click(self, event):
         if self.input_locked:
             return
@@ -1518,16 +1527,14 @@ class TigersGoatsGUI:
             return
 
         phase = getattr(self.base_env, "phase", 0)
-        valid_moves = getattr(self.base_env, "valid_moves", [])
 
         # ------------------------------------------------------------
         # Placing phase: click destination node to place a goat
         # In your env this is represented as (pos=idx, dir=0) style
         # ------------------------------------------------------------
         if phase == 0:
-            # find a valid place action (idx, 0)
-            if [idx, 0] in valid_moves or (idx, 0) in valid_moves:
-                flat = pack_action_flat(idx, 0)
+            flat = pack_action_flat(idx, 0)
+            if self._is_flat_goat_action_valid(flat):
                 self._apply_action(flat)
             return
 
@@ -1546,7 +1553,7 @@ class TigersGoatsGUI:
             dir_code = None
             for d, dest in self.base_env.move_map.get(from_idx, {}).items():
                 if dest == idx:
-                    if [from_idx, d] in valid_moves or (from_idx, d) in valid_moves:
+                    if self._is_flat_goat_action_valid(pack_action_flat(from_idx, d)):
                         dir_code = d
                         break
 
@@ -1560,9 +1567,8 @@ class TigersGoatsGUI:
 
         phase = getattr(self.base_env, "phase", 0)
         if self.pvp_turn == "goat":
-            valid_moves = getattr(self.base_env, "valid_moves", [])
             if phase == 0:
-                if [idx, 0] in valid_moves or (idx, 0) in valid_moves:
+                if self._is_flat_goat_action_valid(pack_action_flat(idx, 0)):
                     self._apply_pvp_goat_action(idx, 0)
                 return
 
@@ -1579,7 +1585,7 @@ class TigersGoatsGUI:
             dir_code = None
             for d, dest in self.base_env.move_map.get(from_idx, {}).items():
                 if dest == idx:
-                    if [from_idx, d] in valid_moves or (from_idx, d) in valid_moves:
+                    if self._is_flat_goat_action_valid(pack_action_flat(from_idx, d)):
                         dir_code = d
                         break
             if dir_code is not None:
@@ -1808,9 +1814,8 @@ class TigersGoatsGUI:
         circle, _ = self.node_items[goat_idx]
         self.canvas.itemconfig(circle, outline="#ffff00", width=3)
 
-        valid_moves = getattr(self.base_env, "valid_moves", [])
         for d, dest in self.base_env.move_map.get(goat_idx, {}).items():
-            if [goat_idx, d] in valid_moves or (goat_idx, d) in valid_moves:
+            if self._is_flat_goat_action_valid(pack_action_flat(goat_idx, d)):
                 circle2, _ = self.node_items[dest]
                 self.canvas.itemconfig(circle2, outline="#ffd700", width=3)
 
