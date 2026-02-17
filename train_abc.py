@@ -172,7 +172,7 @@ OPP_GOAT_MODEL   = "goat_model"
 #  USER CONFIG — Opponent & Naming
 # ============================================================
 
-EXPERIMENT_NAME = "baselineGoatTraining"
+EXPERIMENT_NAME = "BenchmarkGoatTraining"
 LEARNER_ROLE    = GOAT_LEARNER                 # GOAT_LEARNER | TIGER_LEARNER
 # Unified opponent selector (interpreted by learner role; used when MIX_PROB is None):
 #   - GOAT learner  : "tiger_greedy" | "tiger_smart"  (model tiger not yet supported)
@@ -196,7 +196,7 @@ USE_MIX_TAG     = MIX_PROB is not None  # adds "Mix" to CORE tag (tag only)
 #  USER CONFIG — Scale / Hardware
 # ============================================================
 
-DEVICE_MODE = "cpu"
+DEVICE_MODE = "gpu"
 DEBUG_MODE  = False                  # True or False
 TIMESTEPS   = 2_000_000 if DEBUG_MODE else 60_000_000
 NUM_CPU     = 16
@@ -229,10 +229,11 @@ else:
 # ============================================================
 
 VARIATIONS = {
-    "goat_vs_GT": {
-        "timesteps": 100_000_000,
-        "opponent_ai": OPP_TIGER_GREEDY,
-    },
+    "goat_GT_to_ST_to_mix": [
+        {"timesteps": 50_000_000, "opponent_ai": OPP_TIGER_GREEDY},
+        {"timesteps": 30_000_000, "opponent_ai": OPP_TIGER_SMART},
+        {"timesteps": 30_000_000, "opponent_ai": OPP_TIGER_SMART, "mix_prob": 0.5},
+    ]
 }
 
 
@@ -248,7 +249,7 @@ def core_tag(
 ) -> str:
     """
     Build a matchup tag:
-      - GOAT learner: opponent_ai refers to tiger mode (greedy/smart), mix adds a prefix.
+      - GOAT learner: opponent_ai refers to tiger mode (greedy/smart), mix uses generic MixT.
       - TIGER learner: opponent_ai/goat_opponent_ai refers to goat type (random/model),
         mix marks a mixed-goat opponent.
     """
@@ -261,7 +262,7 @@ def core_tag(
             opp = "MG" if goat_ai == GOAT_AI_MODEL else "RG"
     else:
         base_opp = "NT" if opponent_ai == TIGER_AI_GREEDY else "ST"
-        opp = f"Mix{base_opp}" if mix else base_opp
+        opp = "MixT" if mix else base_opp
     return f"{learner}v{opp}"
 
 
@@ -326,11 +327,33 @@ def normalize_phases(reward_weights) -> list[dict]:
 
 
 def resolve_variation_core(phases: list[dict]) -> str:
-    first = phases[0] if phases else {}
-    first_opponent = first.get("opponent_ai", first.get("tiger_ai", OPPONENT_AI))
-    tiger_ai, goat_opp = resolve_opponent_or_exit(LEARNER_ROLE, first_opponent)
-    is_mixed = any(phase.get("mix_prob", MIX_PROB) is not None for phase in phases)
-    return core_tag(LEARNER_ROLE, tiger_ai, mix=is_mixed, goat_opponent_ai=goat_opp)
+    phase_list = phases if phases else [{"opponent_ai": OPPONENT_AI, "mix_prob": MIX_PROB}]
+    is_mixed = any(phase.get("mix_prob", MIX_PROB) is not None for phase in phase_list)
+
+    tiger_modes = set()
+    goat_modes = set()
+    for phase in phase_list:
+        phase_opponent = phase.get("opponent_ai", phase.get("tiger_ai", OPPONENT_AI))
+        tiger_ai, goat_opp = resolve_opponent_or_exit(LEARNER_ROLE, phase_opponent)
+        tiger_modes.add(tiger_ai)
+        goat_modes.add(goat_opp)
+
+    if LEARNER_ROLE == GOAT_LEARNER:
+        if is_mixed:
+            sample_tiger = next(iter(tiger_modes), TIGER_AI_GREEDY)
+            return core_tag(LEARNER_ROLE, sample_tiger, mix=True, goat_opponent_ai=GOAT_AI_RANDOM)
+        if len(tiger_modes) == 1:
+            only_tiger = next(iter(tiger_modes))
+            return core_tag(LEARNER_ROLE, only_tiger, mix=False, goat_opponent_ai=GOAT_AI_RANDOM)
+        return "GvNTST"
+
+    if is_mixed:
+        sample_goat = next(iter(goat_modes), GOAT_AI_RANDOM)
+        return core_tag(LEARNER_ROLE, TIGER_AI_SMART, mix=True, goat_opponent_ai=sample_goat)
+    if len(goat_modes) == 1:
+        only_goat = next(iter(goat_modes))
+        return core_tag(LEARNER_ROLE, TIGER_AI_SMART, mix=False, goat_opponent_ai=only_goat)
+    return "TvRGMG"
 
 
 def make_goat_model_predict_fn(model_path: str | None):
@@ -691,6 +714,7 @@ def run_single_variation(variation_name: str, reward_weights):
     resumed = bool(resume_path)
 
     model = None
+    model_identity = None
 
     total_goat = total_tiger = total_to = total_st = 0
     total_eps = 0
@@ -773,7 +797,17 @@ def run_single_variation(variation_name: str, reward_weights):
                 )
                 # KEY FIX: configure logger immediately
                 model.set_logger(configure(log_path, ["tensorboard", "stdout"]))
+            model_identity = id(model)
+            print(f"[{variation_name}] Phase {phase_idx}: initialized model (id={model_identity})")
         else:
+            if model_identity is None:
+                model_identity = id(model)
+            elif id(model) != model_identity:
+                raise RuntimeError(
+                    f"[{variation_name}] Model instance changed across phases "
+                    f"(expected id={model_identity}, got id={id(model)})."
+                )
+            print(f"[{variation_name}] Phase {phase_idx}: continuing same model (id={model_identity})")
             model.set_env(vec_env)
             model.set_logger(configure(log_path, ["tensorboard", "stdout"]))
 

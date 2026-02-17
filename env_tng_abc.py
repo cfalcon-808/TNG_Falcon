@@ -56,7 +56,7 @@ DIR_CODES                 = 5           # direction codes (0–4)
 TOTAL_GOATS_TO_PLACE      = 15          # goats placed before moving phase begins
 GOATS_EATEN_FOR_TIGER_WIN = 6           # tiger wins after this many goats eaten
 TIGER_START_POSITIONS     = [0, 3, 4]   # starting indices for tigers
-KEY_CENTERS               = [9, 10, 15, 16] # spots that should be controlled
+KEY_CENTERS               = [0, 9, 10, 15, 16] # top hub + center spots to control
 
 # Debug flag to avoid slow prints in training
 DEBUG_INVALID = False
