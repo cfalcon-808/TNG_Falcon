@@ -187,7 +187,7 @@ ALGO_TAG        = "mppo"
 ENV_VER         = "env_5.0"
 MODEL_VER       = "mppo_train3.0"
 CHECKPOINTS_PER_RUN = 10
-RESUME_MODEL_PATH = None
+RESUME_MODEL_PATH = r"artifacts\models\train\mppo\GvMixT\BenchmarkGoatTraining\mppo_GvMixT_goat_GT_to_ST_to_mix_p2.zip"
 GOAT_MODEL_PATH  = None  # path to a saved goat model (used when opponent is goat_model)
 
 USE_MIX_TAG     = MIX_PROB is not None  # adds "Mix" to CORE tag (tag only)
@@ -198,7 +198,7 @@ USE_MIX_TAG     = MIX_PROB is not None  # adds "Mix" to CORE tag (tag only)
 
 DEVICE_MODE = "gpu"
 DEBUG_MODE  = False                  # True or False
-TIMESTEPS   = 2_000_000 if DEBUG_MODE else 60_000_000
+TIMESTEPS   = 2_000_000 if DEBUG_MODE else 100_000_000
 NUM_CPU     = 16
 SEED        = 42
 
@@ -229,10 +229,8 @@ else:
 # ============================================================
 
 VARIATIONS = {
-    "goat_GT_to_ST_to_mix": [
-        {"timesteps": 50_000_000, "opponent_ai": OPP_TIGER_GREEDY},
-        {"timesteps": 30_000_000, "opponent_ai": OPP_TIGER_SMART},
-        {"timesteps": 30_000_000, "opponent_ai": OPP_TIGER_SMART, "mix_prob": 0.5},
+    "goat_resume_mix50_100M": [
+        {"timesteps": 100_000_000, "opponent_ai": OPP_TIGER_SMART, "mix_prob": 0.5},
     ]
 }
 

@@ -900,7 +900,8 @@ class TigersGoatsGUI:
                     curr_board = self.replay.final.get("board", prev_board)
                 action = self.replay.timeline[self.replay.idx - 1]["action"]
                 phase = self.replay.timeline[self.replay.idx - 1]["before"].get("phase", 0)
-                desc = self._describe_transition(prev_board, curr_board, action, phase)
+                step_info = self.replay.timeline[self.replay.idx - 1].get("info", {})
+                desc = self._describe_transition(prev_board, curr_board, action, phase, step_info=step_info)
                 self.move_var.set(f"Last move: {desc}")
         else:
             phase = getattr(self.base_env, "phase", 0)
@@ -1278,31 +1279,35 @@ class TigersGoatsGUI:
 
     def save_live_replay(self):
         if self.replay:
-            messagebox.showinfo("Save Replay", "Exit replay mode to save live gameplay.")
-            return
-        if not self.live_timeline and (self._pending_snapshot is None or self._pending_action is None):
-            messagebox.showinfo("Save Replay", "No moves recorded yet.")
-            return
-        final = self._snapshot_live_state()
-        if final is None:
-            messagebox.showerror("Save Replay", "No live game data to save.")
-            return
-        result = self.last_winner or "Undetermined"
-        final["winner"] = result
-        timeline = list(self.live_timeline)
-        if self._pending_snapshot is not None and self._pending_action is not None:
-            pending_info = {"winner": self.last_winner} if self.last_winner else {}
-            timeline.append({
-                "before": self._pending_snapshot,
-                "action": dict(self._pending_action),
-                "reward": 0.0,
-                "info": pending_info,
-            })
-        replay_data = {
-            "timeline": timeline,
-            "final": final,
-            "result": result,
-        }
+            replay_data = {
+                "timeline": list(self.replay.timeline),
+                "final": self.replay.final,
+                "result": self.replay.result,
+            }
+        else:
+            if not self.live_timeline and (self._pending_snapshot is None or self._pending_action is None):
+                messagebox.showinfo("Save Replay", "No moves recorded yet.")
+                return
+            final = self._snapshot_live_state()
+            if final is None:
+                messagebox.showerror("Save Replay", "No live game data to save.")
+                return
+            result = self.last_winner or "Undetermined"
+            final["winner"] = result
+            timeline = list(self.live_timeline)
+            if self._pending_snapshot is not None and self._pending_action is not None:
+                pending_info = {"winner": self.last_winner} if self.last_winner else {}
+                timeline.append({
+                    "before": self._pending_snapshot,
+                    "action": dict(self._pending_action),
+                    "reward": 0.0,
+                    "info": pending_info,
+                })
+            replay_data = {
+                "timeline": timeline,
+                "final": final,
+                "result": result,
+            }
         path = filedialog.asksaveasfilename(
             title="Save replay JSON",
             defaultextension=".json",
@@ -1651,8 +1656,12 @@ class TigersGoatsGUI:
         if self._pending_before is not None and self._pending_action is not None:
             after_board = self.base_env.board.copy()
             self._update_live_labels(self._pending_before, after_board, self._pending_action, self._pending_phase or 0)
-            desc = getattr(self.base_env, "last_move_desc", "") or self._describe_transition(
-                self._pending_before, after_board, self._pending_action, self._pending_phase or 0
+            desc = self._describe_transition(
+                self._pending_before,
+                after_board,
+                self._pending_action,
+                self._pending_phase or 0,
+                step_info=info,
             )
             self.move_var.set(f"Last move: {desc}")
         else:
@@ -1853,7 +1862,7 @@ class TigersGoatsGUI:
         self._draw_board()
         self._update_timeline_ui()
 
-    def _describe_transition(self, before_board, after_board, action, phase):
+    def _describe_transition(self, before_board, after_board, action, phase, step_info=None):
         pos = int(action.get("pos", 0))
         d = int(action.get("dir", 0))
         pos_c = idx_to_coord(pos)
@@ -1880,14 +1889,29 @@ class TigersGoatsGUI:
         before_goats = {i for i, v in enumerate(before_board) if v == 1}
         after_goats = {i for i, v in enumerate(after_board) if v == 1}
         captured = before_goats - after_goats
-        captured_flag = False
-        if captured and (len(after_goats) < len(before_goats)):
-            captured_flag = True
+        captured_flag = bool(captured and (len(after_goats) < len(before_goats)))
+        if isinstance(step_info, dict):
+            eaten_this_turn = int(step_info.get("goats_eaten_this_turn", 0) or 0)
+            tiger_move = step_info.get("tiger_move")
+            tiger_capture = bool(
+                isinstance(tiger_move, (list, tuple))
+                and len(tiger_move) >= 3
+                and tiger_move[2]
+            )
+            if eaten_this_turn > 0 or tiger_capture:
+                captured_flag = True
+
+        if captured_flag and captured:
             cap_txt = ", ".join(idx_to_coord(c) for c in captured)
             if tiger_part:
-                tiger_part += f" \nand captured goat at {cap_txt}"
+                tiger_part += f" and captured goat at {cap_txt}"
             else:
-                tiger_part = f"\nTiger captured goat at {cap_txt}"
+                tiger_part = f"Tiger captured goat at {cap_txt}"
+        elif captured_flag:
+            if tiger_part:
+                tiger_part += " and captured goat"
+            else:
+                tiger_part = "Tiger captured goat"
 
         parts = [goat_part]
         if tiger_part:
