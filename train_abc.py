@@ -172,12 +172,12 @@ OPP_GOAT_MODEL   = "goat_model"
 #  USER CONFIG — Opponent & Naming
 # ============================================================
 
-EXPERIMENT_NAME = "BenchmarkGoatTraining"
-LEARNER_ROLE    = GOAT_LEARNER                 # GOAT_LEARNER | TIGER_LEARNER
+EXPERIMENT_NAME = "BenchmarkTigerTraining"
+LEARNER_ROLE    = TIGER_LEARNER                # GOAT_LEARNER | TIGER_LEARNER
 # Unified opponent selector (interpreted by learner role; used when MIX_PROB is None):
 #   - GOAT learner  : "tiger_greedy" | "tiger_smart"  (model tiger not yet supported)
 #   - TIGER learner : "goat_random"  | "goat_model"
-OPPONENT_AI     = OPP_TIGER_GREEDY
+OPPONENT_AI     = OPP_GOAT_RANDOM
 # Mixing control (set to None for fixed opponent):
 #   - GOAT learner  : P(smart tiger), else greedy
 #   - TIGER learner : P(model goat),  else random
@@ -187,7 +187,7 @@ ALGO_TAG        = "mppo"
 ENV_VER         = "env_5.0"
 MODEL_VER       = "mppo_train3.0"
 CHECKPOINTS_PER_RUN = 10
-RESUME_MODEL_PATH = r"artifacts\models\train\mppo\GvMixT\BenchmarkGoatTraining\mppo_GvMixT_goat_GT_to_ST_to_mix_p2.zip"
+RESUME_MODEL_PATH = None
 GOAT_MODEL_PATH  = None  # path to a saved goat model (used when opponent is goat_model)
 
 USE_MIX_TAG     = MIX_PROB is not None  # adds "Mix" to CORE tag (tag only)
@@ -196,7 +196,7 @@ USE_MIX_TAG     = MIX_PROB is not None  # adds "Mix" to CORE tag (tag only)
 #  USER CONFIG — Scale / Hardware
 # ============================================================
 
-DEVICE_MODE = "gpu"
+DEVICE_MODE = "cpu"
 DEBUG_MODE  = False                  # True or False
 TIMESTEPS   = 2_000_000 if DEBUG_MODE else 100_000_000
 NUM_CPU     = 16
@@ -229,8 +229,8 @@ else:
 # ============================================================
 
 VARIATIONS = {
-    "goat_resume_mix50_100M": [
-        {"timesteps": 100_000_000, "opponent_ai": OPP_TIGER_SMART, "mix_prob": 0.5},
+    "tiger_vs_random_goat_100M": [
+        {"timesteps": 10_000_000, "opponent_ai": OPP_GOAT_RANDOM, "mix_prob": None},
     ]
 }
 
