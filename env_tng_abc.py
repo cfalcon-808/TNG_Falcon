@@ -26,7 +26,7 @@
 #    4) Compare robustness across tiger styles during evaluation
 #
 #  Quick Use:
-#    env = TnGEnv()                                      # goat learner vs greedy tiger
+#    env = TnGEnv()                                     # goat learner vs greedy tiger
 #    env = TnGEnv(tiger_ai=TIGER_AI_SMART)              # goat learner vs smart tiger
 #    env = TnGEnv(learner_role=TIGER_LEARNER)           # tiger learner mode
 #    env = TnGEnv(max_turns=150)                        # explicit turn truncation limit
@@ -132,7 +132,7 @@ DEFAULT_KNOBS = {
 # ============================================================
 
 COORD_LABELS = [
-    "b0",        # 0
+    "b0",                                    # 0
     "a1", "b1", "c1", "d1", "e1", "f1",      # 1-6
     "a2", "b2", "c2", "d2", "e2", "f2",      # 7-12
     "a3", "b3", "c3", "d3", "e3", "f3",      # 13-18
@@ -323,6 +323,8 @@ class TnGEnv(gym.Env):
             f"Valid knob keys: {list(self.knobs.keys())}."
         )
 
+
+
     # ============================================================
     #  Group: Public Gym API
     #  Entry points expected by Gymnasium and training loops.
@@ -482,6 +484,8 @@ class TnGEnv(gym.Env):
 
         return mask
 
+
+
     # ============================================================
     #  Group: Action Encoding and Validation
     #  Converts between flat actions and structured moves.
@@ -557,6 +561,8 @@ class TnGEnv(gym.Env):
         info.update(extra)
         return info
 
+
+
     # ============================================================
     #  Group: Step Info and Reward Pipeline
     #  Builds standardized info payloads and computes shaped rewards.
@@ -591,15 +597,41 @@ class TnGEnv(gym.Env):
         return obs, float(final_reward), bool(terminated), bool(truncated), info
 
     def sparse_reward(self, prev_obs, action, obs, terminated, truncated, info):
-        """Dispatch reward shaping to the active learner role."""
+        """
+        Role-aware sparse reward entry point.
+
+        Purpose:
+        - The environment supports two training modes (goat learner, tiger learner).
+        - Both modes share transition machinery but use different reward objectives.
+        - This function routes to the correct reward builder using the role recorded
+          in `info` (preferred) with `self.learner_role` as fallback.
+        """
         role = info.get("learner_role", self.learner_role)
         if role == TIGER_LEARNER:
             return self._sparse_reward_tiger(prev_obs, action, obs, terminated, truncated, info)
         return self._sparse_reward_goat(prev_obs, action, obs, terminated, truncated, info)
 
     def _sparse_reward_goat(self, prev_obs, action, obs, terminated, truncated, info):
-        """Compute goat-learner shaped reward from transition summary in info."""
+        """
+        Goat-learner reward from transition summary in `info`.
+
+        High-level composition:
+        1) Early-return terminal/invalid cases from `reason`
+        2) Per-step shaping and tactical shaping
+        3) Material and position shaping
+        4) Outcome penalties (tiger win / timeout) or repeat-state penalty
+
+        Important `info` fields consumed here:
+        - reason, step_penalty, near_lock, late
+        - delta_moves, delta_bubble, delta_spread, center_score
+        - goats_eaten_this_turn, repeat_prev_count
+        """
         reason = info.get("reason")
+
+        # --------------------------------------------------------
+        # 1) Immediate terminal/invalid outcomes
+        # --------------------------------------------------------
+        # These bypass incremental shaping to keep terminal semantics explicit.
         if reason == "already_terminated":
             return 0.0
         if reason == "invalid_soft":
@@ -607,16 +639,29 @@ class TnGEnv(gym.Env):
         if reason == "invalid_hard":
             return self._w("REWARD_INVALID_HARD")
         if reason == "goat_win_no_tiger_moves":
+            # Goat terminal win bonus, with optional late-turn decay.
             return (
                 self._w("REWARD_GOAT_WIN")
                 - self._w("GOAT_WIN_TURN_DECAY") * self.turns
             )
 
+        # --------------------------------------------------------
+        # 2) Base step + tactical shaping
+        # --------------------------------------------------------
+        # Step penalty comes from transition code (placing/moving can differ).
         shaped_reward = float(info.get("step_penalty", self._w("REWARD_STEP")))
+
+        # Near-lock bonus when tigers have very low mobility.
         if bool(info.get("near_lock", False)):
             shaped_reward += self._w("NEAR_LOCK_BONUS")
 
+        # `late` is a [0,1] progress factor used to up-weight selected
+        # containment signals in later game stages.
         late = float(info.get("late", 0.0))
+
+        # Mobility delta is defined from goat perspective:
+        #   delta_moves > 0 means goats reduced tiger options (good for goats).
+        #   delta_moves < 0 means goats increased tiger options (bad backslide).
         delta_moves = int(info.get("delta_moves", 0))
         if delta_moves > 0:
             shaped_reward += (
@@ -631,6 +676,7 @@ class TnGEnv(gym.Env):
                 * delta_moves
             )
 
+        # Bubble delta > 0 means more tiger-unreachable safe space for goats.
         delta_bubble = int(info.get("delta_bubble", 0))
         if delta_bubble > 0:
             shaped_reward += (
@@ -639,6 +685,7 @@ class TnGEnv(gym.Env):
                 * (1.0 + late)
             )
 
+        # Spread delta > 0 means tigers became more clustered (good for goats).
         delta_spread = float(info.get("delta_spread", 0.0))
         if delta_spread > 0:
             shaped_reward += (
@@ -647,8 +694,11 @@ class TnGEnv(gym.Env):
                 * (1.0 + late)
             )
 
+        # Center score is precomputed in transition logic.
+        # Sign already encodes good/bad for goat learner.
         shaped_reward += float(info.get("center_score", 0.0))
 
+        # Material loss: each goat eaten applies a penalty term.
         goats_eaten_this_turn = int(info.get("goats_eaten_this_turn", 0))
         if goats_eaten_this_turn > 0:
             shaped_reward += (
@@ -656,6 +706,10 @@ class TnGEnv(gym.Env):
                 * goats_eaten_this_turn
             )
 
+        # --------------------------------------------------------
+        # 3) Outcome penalties or repeat penalty
+        # --------------------------------------------------------
+        # Tiger win/timeout reasons map to negative goat outcomes.
         if reason == "tiger_win_capture_threshold":
             shaped_reward += self._w("REWARD_TIGER_WIN")
         elif reason == "max_timeout":
@@ -669,6 +723,8 @@ class TnGEnv(gym.Env):
                 * self._w("REPEAT_STALL_SCALE")
             )
         else:
+            # Non-terminal repeat discouragement:
+            # quadratic in prior repeat count to ramp anti-cycling pressure.
             prev_count = int(info.get("repeat_prev_count", 0))
             if prev_count > 0:
                 repeat_pen = self._w("REWARD_REPEAT_STATE") * (prev_count ** 2)
@@ -681,12 +737,16 @@ class TnGEnv(gym.Env):
         """
         Compute the tiger-learner reward based on the transition summary stored in `info`.
 
-        The reward is composed of:
+        High-level composition:
         1. Base step penalty (discourages stalling)
         2. Capture rewards (positive reward for eating goats)
-        3. Mobility shaping (reward for increasing tiger mobility)
-        4. Positional shaping (reward for controlling key center nodes)
+        3. Mobility shaping (reward when tiger move options increase)
+        4. Positional shaping (center control during placing phase)
         5. Terminal rewards/penalties (win, loss, timeout)
+
+        Important `info` fields consumed here:
+        - reason, step_penalty, goats_eaten_this_turn
+        - delta_moves, phase, center_score
         """
 
         # --------------------------------------------------------
@@ -775,16 +835,31 @@ class TnGEnv(gym.Env):
 
         return shaped_reward
 
+
+
     # ============================================================
     #  Group: Transition Engines
     #  Executes full goat-learner and tiger-learner turn transitions.
     #  Applies legality checks, terminal rules, and transition summaries.
     # ============================================================
     def _step_goat_transition(self, action):
-        """Single full turn when goats are the learner (goat act, then tiger response)."""
+        """
+        Run one full goat-learner turn:
+          1) Validate and apply goat action
+          2) Recompute shaping metrics
+          3) Let scripted tiger respond
+          4) Finalize terminal checks and build info payload
+
+        Notes:
+        - This function returns base reward=0.0; shaping is applied later by
+          `_apply_reward_fn(...)` using the `info` summary produced here.
+        - `info["reason"]` is the canonical outcome marker used by reward code.
+        """
+        # Guard against stepping an already-terminal episode.
         if self.terminate:
             return self.get_state(), 0.0, True, False, self._build_step_info(reason="already_terminated")
 
+        # Turn bookkeeping + action normalization for logging/debug.
         self.turns += 1
         flat_action = self._action_to_flat(action)
         decoded = self._safe_decode_action(action)
@@ -797,6 +872,7 @@ class TnGEnv(gym.Env):
             self.terminate = True
             return self.get_state(), 0.0, False, True, info
 
+        # Parse validated action tuple.
         pos, dir_code = decoded
         goats_eaten_before = int(self.eaten)
 
@@ -808,10 +884,14 @@ class TnGEnv(gym.Env):
             self.terminate = True
             return self.get_state(), 0.0, False, True, info
 
+        # Snapshot shaping baselines before applying goat action.
         tiger_moves_before = int(self.prev_tiger_moves)
         bubble_before = int(self.prev_unreachable)
         spread_before = float(self.prev_tiger_spread)
 
+        # Step penalty schedule:
+        # - placing phase uses fixed REWARD_STEP
+        # - moving phase ramps via MOVE_STEP_* knobs
         if self.phase == 0:
             step_penalty = self._w("REWARD_STEP")
         else:
@@ -822,6 +902,8 @@ class TnGEnv(gym.Env):
 
         did_goat_move = False
         if self.phase == 0:
+            # Placing-phase legality:
+            # dir_code must be 0 and destination must be empty.
             if dir_code != 0 or self.board[pos] != 0:
                 if DEBUG_INVALID:
                     print("how did you manage this error?", action)
@@ -833,8 +915,11 @@ class TnGEnv(gym.Env):
             self.goats_placed += 1
             goat_desc = f"Goat placed at {idx_to_coord(pos)}"
             if self.goats_placed >= TOTAL_GOATS_TO_PLACE:
+                # Transition from placing -> moving once all goats are placed.
                 self.phase = 1
         else:
+            # Moving-phase legality:
+            # source must contain goat, destination must exist and be empty.
             dest = self.move_map.get(pos, {}).get(dir_code, None)
             if dest is None or self.board[pos] != 1 or self.board[dest] != 0:
                 if DEBUG_INVALID:
@@ -856,10 +941,13 @@ class TnGEnv(gym.Env):
         if did_goat_move:
             self.move_steps += 1
 
+        # Recompute tiger options immediately after goat move.
         tiger_options = self._tiger_moves(include_dir=False)
         tiger_moves_after = len(tiger_options)
         self.prev_tiger_moves = tiger_moves_after
 
+        # Derived shaping signals consumed by goat reward:
+        # near_lock, late-game factor, mobility delta, bubble delta, spread delta.
         near_lock = (0 < tiger_moves_after <= 2)
         late = min(
             max(self.turns - self._w("LATE_GAME_START_TURN"), 0)
@@ -876,6 +964,7 @@ class TnGEnv(gym.Env):
         self.prev_tiger_spread = spread_after
         delta_spread = spread_before - spread_after
 
+        # Center control score (sign/magnitude baked into knob constants).
         center_score = 0.0
         for idx in KEY_CENTERS:
             if self.board[idx] == 1:
@@ -895,12 +984,14 @@ class TnGEnv(gym.Env):
             repeat_prev_count=0,
         )
 
+        # Immediate goat terminal win: tiger has no legal reply.
         if tiger_moves_after == 0:
             self.terminate = True
             self.last_move_desc = goat_desc or "Goat moved, then tigers had no moves"
             info = self._build_step_info(reason="goat_win_no_tiger_moves", winner="Goat", **base_info, **common)
             return self.get_state(), 0.0, True, False, info
 
+        # Scripted tiger response.
         chosen = self._select_tiger_move(tiger_options)
         if chosen is None:
             raise RuntimeError(
@@ -915,6 +1006,7 @@ class TnGEnv(gym.Env):
                 self.board[jumped_goat_pos] = 0
                 self.eaten += 1
 
+        # Apply tiger board move.
         self.board[t_to] = 2
         self.board[t_from] = 0
 
@@ -928,6 +1020,7 @@ class TnGEnv(gym.Env):
         common["goats_eaten_this_turn"] = goats_eaten_this_turn
         common["tiger_move"] = (int(t_from), int(t_to), bool(took_capture))
 
+        # Human-readable move summary used by render().
         if goat_desc and tiger_desc:
             self.last_move_desc = f"{goat_desc} | {tiger_desc}"
         elif goat_desc:
@@ -937,37 +1030,55 @@ class TnGEnv(gym.Env):
         else:
             self.last_move_desc = ""
 
+        # Terminal checks after tiger response.
         if self.eaten >= GOATS_EATEN_FOR_TIGER_WIN:
             self.terminate = True
             info = self._build_step_info(reason="tiger_win_capture_threshold", winner="Tiger", **base_info, **common)
             return self.get_state(), 0.0, True, False, info
 
+        # Global episode timeout.
         if self.turns >= self.max_turns:
             self.terminate = True
             info = self._build_step_info(reason="max_timeout", winner="MaxTimeout", **base_info, **common)
             return self.get_state(), 0.0, False, True, info
 
+        # Repeat-state tracking for anti-cycling timeout logic.
         board_hash = (self.board.tobytes(), self.eaten, self.phase)
         prev_count = int(self.state_history.get(board_hash, 0))
         new_count = prev_count + 1
         self.state_history[board_hash] = new_count
 
+        # Stall timeout if state repeats too often.
         if new_count >= self._w("MAX_REPEATS"):
             self.terminate = True
             common["repeat_prev_count"] = prev_count
             info = self._build_step_info(reason="repeat_timeout", winner="RepeatTimeout", **base_info, **common)
             return self.get_state(), 0.0, False, True, info
 
+        # Non-terminal path: refresh goat legal moves and return transition summary.
         common["repeat_prev_count"] = prev_count
         self._update_valid_moves()
         info = self._build_step_info(**base_info, **common)
         return self.get_state(), 0.0, False, False, info
 
     def _step_tiger_transition(self, action):
-        """Single full turn when tigers are the learner (tiger act, then goat response)."""
+        """
+        Run one full tiger-learner turn:
+          1) Validate and apply tiger action
+          2) Compute tiger-facing shaping features
+          3) Let goat opponent respond (model or random)
+          4) Apply terminal checks and return transition summary
+
+        Notes:
+        - Like goat transition, this returns base reward=0.0 and relies on
+          `_apply_reward_fn(...)` + `info` for final reward shaping.
+        - Goat response policy is selected by `self.goat_opponent_ai`.
+        """
+        # Guard against stepping an already-terminal episode.
         if self.terminate:
             return self.get_state(), 0.0, True, False, self._build_step_info(reason="already_terminated")
 
+        # Turn bookkeeping + action normalization for logging/debug.
         self.turns += 1
         flat_action = self._action_to_flat(action)
         decoded = self._safe_decode_action(action)
@@ -980,6 +1091,7 @@ class TnGEnv(gym.Env):
             self.terminate = True
             return self.get_state(), 0.0, False, True, info
 
+        # Parse validated action tuple.
         pos, dir_code = decoded
         goats_eaten_before = int(self.eaten)
 
@@ -988,6 +1100,8 @@ class TnGEnv(gym.Env):
             self.terminate = True
             return self.get_state(), 0.0, False, True, info
 
+        # Build legal tiger action table keyed by (from_pos, dir_code).
+        # This ensures action IDs map deterministically to legal transitions.
         legal = {}
         for f, t, cap, d in self._tiger_moves(include_dir=True):
             key = (f, d)
@@ -1005,6 +1119,7 @@ class TnGEnv(gym.Env):
             )
             return self.get_state(), 0.0, False, True, info
 
+        # Apply validated tiger move.
         dest, took_capture = legal[(pos, dir_code)]
         step_penalty = self._w("REWARD_STEP")
 
@@ -1017,6 +1132,8 @@ class TnGEnv(gym.Env):
                 self.board[jumped_goat_pos] = 0
                 self.eaten += 1
 
+        # Tiger-facing shaping features:
+        # capture count, mobility delta, and center score.
         goats_eaten_this_turn = int(self.eaten - goats_eaten_before)
 
         tiger_before = int(self.prev_tiger_moves)
@@ -1039,13 +1156,19 @@ class TnGEnv(gym.Env):
             tiger_move=(int(pos), int(dest), bool(took_capture)),
         )
 
+        # Immediate tiger terminal win by capture threshold.
         if self.eaten >= GOATS_EATEN_FOR_TIGER_WIN:
             self.terminate = True
             info = self._build_step_info(reason="tiger_win_capture_threshold", winner="Tiger", **base_info, **common)
             return self.get_state(), 0.0, True, False, info
 
+        # Refresh goat legal moves before opponent response.
         self._update_valid_moves()
 
+        # Goat-opponent helper stack:
+        # - goat_mask: legal action mask for current board
+        # - goat_random_action: uniform legal sample
+        # - goat_model_action: model prediction with legality validation
         def goat_mask():
             """Build a legal-action mask for the scripted/model goat opponent."""
             mask = np.zeros(BOARD_SIZE * DIR_CODES, dtype=bool)
@@ -1081,6 +1204,8 @@ class TnGEnv(gym.Env):
                 return None
             return None
 
+        # Prefer model goat when configured; fallback to random if unavailable
+        # or if model proposes an invalid action.
         goat_choice = None
         # Model goat is optional; invalid/missing model prediction falls back to random goat.
         if self.goat_opponent_ai == GOAT_AI_MODEL:
@@ -1088,11 +1213,13 @@ class TnGEnv(gym.Env):
         if goat_choice is None:
             goat_choice = goat_random_action()
 
+        # No legal goat action -> tiger terminal win.
         if goat_choice is None:
             self.terminate = True
             info = self._build_step_info(reason="tiger_win_no_goat_moves", winner="Tiger", **base_info, **common)
             return self.get_state(), 0.0, True, False, info
 
+        # Apply goat response using phase-appropriate legality.
         g_pos, g_dir = goat_choice
         if self.phase == 0:
             if self.board[g_pos] == 0 and g_dir == 0:
@@ -1107,16 +1234,19 @@ class TnGEnv(gym.Env):
                 self.board[g_dest] = 1
                 self.move_steps += 1
 
+        # Post-response terminal checks.
         if len(self._tiger_moves()) == 0:
             self.terminate = True
             info = self._build_step_info(reason="goat_win_no_tiger_moves", winner="Goat", **base_info, **common)
             return self.get_state(), 0.0, True, False, info
 
+        # Global episode timeout.
         if self.turns >= self.max_turns:
             self.terminate = True
             info = self._build_step_info(reason="max_timeout", winner="MaxTimeout", **base_info, **common)
             return self.get_state(), 0.0, False, True, info
 
+        # Non-terminal path: refresh masks and return transition summary.
         self._update_valid_moves()
         info = self._build_step_info(**base_info, **common)
         return self.get_state(), 0.0, False, False, info
@@ -1146,6 +1276,9 @@ class TnGEnv(gym.Env):
             if jump == t_to:
                 return neigh
         return None
+    
+
+
     # ============================================================
     #  Group: Tiger Policy Selection
     #  Selects tiger responses for goat-learner turns.
@@ -1442,6 +1575,9 @@ class TnGEnv(gym.Env):
             return random.choice(tiger_options)
 
         return None
+    
+
+
     # ============================================================
     #  Group: Move Generation and Mask Sources
     #  Enumerates legal moves used by masking, transitions, and opponents.
@@ -1518,6 +1654,9 @@ class TnGEnv(gym.Env):
                             new_moves.append(self.encode_action(i, dir_code))
 
         self.valid_moves = new_moves
+
+
+
     # ============================================================
     #  Group: Board Metrics and Graph Utilities
     #  Computes reachability and geometry features for shaping signals.
