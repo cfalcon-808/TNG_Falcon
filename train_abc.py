@@ -9,7 +9,7 @@
 #    Runs an *experiment suite* made of multiple *variations*, where each
 #    variation can be either:
 #      (A) A single baseline run (reward_weights=None)
-#      (B) A single-phase override dict (weights/knobs + optional phase settings)
+#      (B) A single-phase override dict (reward-knob overrides + optional phase settings)
 #      (C) A multi-phase curriculum (list of phases) that continues training
 #          the *same* model across phases (new TB subdir per phase).
 #
@@ -33,7 +33,7 @@
 #               → env defaults
 #           (B) dict
 #               → one phase; supports optional inline keys:
-#                   {"timesteps", "tiger_ai", "mix_prob", "checkpoints_per_run", ...weights...}
+#                   {"timesteps", "tiger_ai", "mix_prob", "checkpoints_per_run", ...reward_knobs...}
 #           (C) list[dict]
 #               → multi-phase curriculum:
 #                   [{"timesteps": ..., "tiger_ai": ..., "mix_prob": ..., "reward_weights": ...}, ...]
@@ -99,8 +99,8 @@
 #    3) Define variations:
 #         VARIATIONS = {
 #             "defaultSettings": None,
-#             "no_bubble": {"bubble": 0.0},
-#             "no_block": {"block_tiger": 0.0},
+#             "no_bubble": {"REWARD_BUBBLE_SPACE": 0.0},
+#             "no_block": {"REWARD_BLOCK_TIGER": 0.0},
 #             "weaker_capture_bias": {"BASE_TIGER_CAPTURE_BIAS": 0.8},
 #         }
 #
@@ -122,9 +122,9 @@
 #
 #  Workflow (recommended for ablation studies):
 #    1) Establish baseline (single variation, defaults).
-#    2) One-at-a-time ablations (set one weight to 0.0).
+#    2) One-at-a-time ablations (set one reward knob to 0.0).
 #    3) Group ablations (remove shaping families).
-#    4) Magnitude sweeps (0.0, 0.25, 0.5, 1.0, 2.0).
+#    4) Magnitude sweeps on selected reward knobs (0.0, 0.25, 0.5, 1.0, 2.0).
 #    5) Curriculum runs (greedy -> smart, optional mixing for robustness).
 #    6) Evaluate winners with eval_falcon.py across fixed episode counts.
 #

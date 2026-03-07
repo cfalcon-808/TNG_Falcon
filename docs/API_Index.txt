@@ -10,11 +10,9 @@ CONSTANTS / ENUMS
 
 DICTS (TUNING)
     DEFAULT_KNOBS
-        Base magnitudes/constants (terminal rewards, step costs, limits, bias knobs).
-    DEFAULT_WEIGHTS
-        Shaping multipliers (enable/ablate/scale shaping terms).
+        Base magnitudes/constants (terminal rewards, step costs, shaping terms, limits, bias knobs).
     NOTE:
-        reward_weights passed to TnGEnv can override ANY key in either dict
+        reward_weights passed to TnGEnv can override keys in DEFAULT_KNOBS
         via env._w(key) resolution.
 
 TOP-LEVEL HELPERS
@@ -28,7 +26,7 @@ CLASS TnGEnv
         - placing phase + moving phase
         - action masking (MaskablePPO-friendly)
         - repetition / stall detection
-        - reward shaping with ablation/tuning via DEFAULT_KNOBS + DEFAULT_WEIGHTS
+        - reward shaping/tuning via DEFAULT_KNOBS
         - unified tiger opponent selection (greedy or smart) via tiger_ai
 
     METHOD __init__(reward_weights=None, tiger_ai=TIGER_AI_GREEDY, ...)
@@ -78,9 +76,8 @@ CLASS TnGEnv
         Pairwise tiger spread metric.
 
     METHOD _w(key)
-        Resolve per-term knob/weight value:
-            - checks reward_weights override first
-            - then DEFAULT_WEIGHTS
+        Resolve knob value:
+            - checks reward_weights/knob override first
             - then DEFAULT_KNOBS
 
 

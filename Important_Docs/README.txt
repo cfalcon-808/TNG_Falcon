@@ -134,8 +134,8 @@ Example VARIATIONS block:
 -------------------------
 VARIATIONS = {
     "defaultSettings": None,
-    "no_bubble": {"bubble": 0.0},
-    "no_block": {"block_tiger": 0.0},
+    "no_bubble": {"REWARD_BUBBLE_SPACE": 0.0},
+    "no_block": {"REWARD_BLOCK_TIGER": 0.0},
     "greedy_to_smart_mix": [
         {"timesteps": 10_000_000, "tiger_ai": TIGER_AI_GREEDY, "reward_weights": None},
         {"timesteps": 10_000_000, "tiger_ai": TIGER_AI_SMART,  "reward_weights": None},

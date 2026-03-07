@@ -30,7 +30,7 @@
 #    env = TnGEnv(tiger_ai=TIGER_AI_SMART)              # goat learner vs smart tiger
 #    env = TnGEnv(learner_role=TIGER_LEARNER)           # tiger learner mode
 #    env = TnGEnv(max_turns=150)                        # explicit turn truncation limit
-#    env = TnGEnv(reward_weights={"bubble": 0.0})       # ablate shaping term
+#    env = TnGEnv(reward_weights={"REWARD_BUBBLE_SPACE": 0.0})  # ablate bubble shaping
 #
 #  Compatibility:
 #    - Designed for MaskablePPO training loops
@@ -48,11 +48,11 @@ from collections import deque
 
 
 # ============================================================
-#  GLOBAL CONSTANTS – Game Rules
+#  GLOBAL CONSTANTS - Game Rules
 # ============================================================
 
-BOARD_SIZE                = 23          # board positions (0–22)
-DIR_CODES                 = 5           # direction codes (0–4)
+BOARD_SIZE                = 23          # board positions (0-22)
+DIR_CODES                 = 5           # direction codes (0-4)
 TOTAL_GOATS_TO_PLACE      = 15          # goats placed before moving phase begins
 GOATS_EATEN_FOR_TIGER_WIN = 6           # tiger wins after this many goats eaten
 TIGER_START_POSITIONS     = [0, 3, 4]   # starting indices for tigers
@@ -72,8 +72,8 @@ GOAT_AI_MODEL = "model"
 
 # ============================================================
 #  GLOBAL TUNING KNOBS
-#  All numeric values (constants + shaping magnitudes + scales)
-#  ***Note: these can be changed in the training file***
+#  All numeric values (constants + shaping magnitudes + scales).
+#  These can be overridden in the training file.
 # ============================================================
 
 DEFAULT_KNOBS = {
@@ -106,7 +106,7 @@ DEFAULT_KNOBS = {
 
     # Shaping magnitudes  
     "REWARD_BLOCK_TIGER":       0.08,   # reward for reducing tiger mobility
-    "REWARD_BUBBLE_SPACE":      0.02,   # reward for increasing goat “bubble” territory
+    "REWARD_BUBBLE_SPACE":      0.02,   # reward for increasing goat "bubble" territory
     "REWARD_CLUSTER_TIGERS":    0.02,   # reward for spreading tigers apart
     "REWARD_CENTER_GOAT":       0.05,   # reward for goats occupying strong center nodes
     "REWARD_CENTER_TIGER":     -0.03,   # penalty for tigers holding center nodes
@@ -128,53 +128,15 @@ DEFAULT_KNOBS = {
 
 
 # ============================================================
-#  REWARD Scaling – Term Weights
-#     1.0 = keep as-is
-#     0.0 = ablate (remove)
-#     >1  = up-weight, <1 = down-weight
-# ============================================================
-
-DEFAULT_WEIGHTS = {
-    # Per-step costs
-    "step":          1.0,   # REWARD_STEP + move-phase step cost
-
-    # Terminal outcomes
-    "goat_win":      1.0,   # REWARD_GOAT_WIN (+ decay)
-    "tiger_win":     1.0,   # REWARD_TIGER_WIN
-    "max_timeout":   1.0,   # MAX_TIMEOUT_SCALE * REWARD_TIGER_WIN
-    "repeat_stall":  1.0,   # REPEAT_STALL_SCALE * REWARD_TIGER_WIN
-
-    # Tiger-learner rewards
-    "tiger_capture": 1.0,   # REWARD_TIGER_CAPTURE
-    "tiger_win_bonus": 1.0, # REWARD_TIGER_WIN_BONUS
-    "tiger_loss":    1.0,   # REWARD_TIGER_LOSS_PENALTY
-
-    # Shaping / intermediate signals
-    "goat_eaten":    1.0,   # REWARD_GOAT_EATEN
-    "block_tiger":   1.0,   # REWARD_BLOCK_TIGER (+ backslide)
-    "near_lock":     1.0,   # NEAR_LOCK_BONUS
-    "bubble":        1.0,   # REWARD_BUBBLE_SPACE
-    "cluster":       1.0,   # REWARD_CLUSTER_TIGERS
-    "center":        1.0,   # REWARD_CENTER_GOAT / REWARD_CENTER_TIGER
-
-    # Penalties
-    "repeat_state":  1.0,   # REWARD_REPEAT_STATE
-    "invalid_soft":  1.0,   # REWARD_INVALID_SOFT
-    "invalid_hard":  1.0,   # REWARD_INVALID_HARD
-
-}
-
-
-# ============================================================
-#  BOARD COORDINATES – Human-Readable Labels
+#  BOARD COORDINATES - Human-Readable Labels
 # ============================================================
 
 COORD_LABELS = [
     "b0",        # 0
-    "a1", "b1", "c1", "d1", "e1", "f1",      # 1–6
-    "a2", "b2", "c2", "d2", "e2", "f2",      # 7–12
-    "a3", "b3", "c3", "d3", "e3", "f3",      # 13–18
-    "b4", "c4", "d4", "e4",                  # 19–22
+    "a1", "b1", "c1", "d1", "e1", "f1",      # 1-6
+    "a2", "b2", "c2", "d2", "e2", "f2",      # 7-12
+    "a3", "b3", "c3", "d3", "e3", "f3",      # 13-18
+    "b4", "c4", "d4", "e4",                  # 19-22
 ]
 
 # Special hub capture jumps from node 0 (b0)
@@ -469,24 +431,19 @@ class TnGEnv(gym.Env):
         """Initialize environment state, tuning knobs, spaces, and board topology."""
         super(TnGEnv, self).__init__()
 
-        # Knob weights
+        # Numeric tuning knobs (constants + shaping magnitudes + scales)
         self.knobs = dict(DEFAULT_KNOBS)
-        # Reward weights
-        self.reward_weights = dict(DEFAULT_WEIGHTS)
 
         self.learner_role = (learner_role or GOAT_LEARNER).lower()
         self.goat_opponent_ai = (goat_opponent_ai or GOAT_AI_RANDOM).lower()
         self._goat_model_predict_fn = goat_model_predict_fn  # callable(obs, mask)->flat action
         self.reward_fn = reward_fn or self.sparse_reward
 
-        # Load any tuning values passed to this function into
-        # their respective dictionaries.
+        # Load any tuning values passed to this function.
         if reward_weights is not None:
             for key, val in reward_weights.items():
                 if key in self.knobs:
                     self.knobs[key] = val
-                elif key in self.reward_weights:
-                    self.reward_weights[key] = val
                 else:
                     print(f"[warning] Unknown tuning key: {key}")
 
@@ -589,23 +546,19 @@ class TnGEnv(gym.Env):
     # end def __init__()
 
     # --------------------------------------------------------
-    #  Weight/knob dictionary helper
+    #  Knob dictionary helper
     # --------------------------------------------------------
     def _w(self, key) -> float:
         """
-        Unified accessor:
-            -If key is a reward-term weight -> return weight
-            -If key is a constant knob -> return constant
-            -If unknown -> throw an error
+        Knob accessor:
+            - If key is a known tuning knob -> return value
+            - If unknown -> throw an error
         """
-        if key in self.reward_weights:
-            return self.reward_weights[key]
         if key in self.knobs:
             return self.knobs[key]
         
         raise KeyError(
             f"[TnGEnv] Unknown tuning key '{key}'. "
-            f"Valid weight keys: {list(self.reward_weights.keys())}. "
             f"Valid knob keys: {list(self.knobs.keys())}."
         )
 
@@ -844,30 +797,30 @@ class TnGEnv(gym.Env):
         if reason == "already_terminated":
             return 0.0
         if reason == "invalid_soft":
-            return self._w("invalid_soft") * self._w("REWARD_INVALID_SOFT")
+            return self._w("REWARD_INVALID_SOFT")
         if reason == "invalid_hard":
-            return self._w("invalid_hard") * self._w("REWARD_INVALID_HARD")
+            return self._w("REWARD_INVALID_HARD")
         if reason == "goat_win_no_tiger_moves":
             return (
-                self._w("goat_win") * self._w("REWARD_GOAT_WIN")
+                self._w("REWARD_GOAT_WIN")
                 - self._w("GOAT_WIN_TURN_DECAY") * self.turns
             )
 
-        shaped_reward = self._w("step") * float(info.get("step_penalty", self._w("REWARD_STEP")))
+        shaped_reward = float(info.get("step_penalty", self._w("REWARD_STEP")))
         if bool(info.get("near_lock", False)):
-            shaped_reward += self._w("near_lock") * self._w("NEAR_LOCK_BONUS")
+            shaped_reward += self._w("NEAR_LOCK_BONUS")
 
         late = float(info.get("late", 0.0))
         delta_moves = int(info.get("delta_moves", 0))
         if delta_moves > 0:
             shaped_reward += (
-                abs(self._w("block_tiger") * self._w("REWARD_BLOCK_TIGER"))
+                abs(self._w("REWARD_BLOCK_TIGER"))
                 * delta_moves
                 * (1.0 + late)
             )
         elif delta_moves < 0:
             shaped_reward += (
-                abs(self._w("block_tiger") * self._w("REWARD_BLOCK_TIGER"))
+                abs(self._w("REWARD_BLOCK_TIGER"))
                 * self._w("MOBILITY_BACKSLIDE_SCALE")
                 * delta_moves
             )
@@ -875,8 +828,7 @@ class TnGEnv(gym.Env):
         delta_bubble = int(info.get("delta_bubble", 0))
         if delta_bubble > 0:
             shaped_reward += (
-                self._w("bubble")
-                * self._w("REWARD_BUBBLE_SPACE")
+                self._w("REWARD_BUBBLE_SPACE")
                 * delta_bubble
                 * (1.0 + late)
             )
@@ -884,41 +836,37 @@ class TnGEnv(gym.Env):
         delta_spread = float(info.get("delta_spread", 0.0))
         if delta_spread > 0:
             shaped_reward += (
-                self._w("cluster")
-                * self._w("REWARD_CLUSTER_TIGERS")
+                self._w("REWARD_CLUSTER_TIGERS")
                 * delta_spread
                 * (1.0 + late)
             )
 
-        shaped_reward += self._w("center") * float(info.get("center_score", 0.0))
+        shaped_reward += float(info.get("center_score", 0.0))
 
         goats_eaten_this_turn = int(info.get("goats_eaten_this_turn", 0))
         if goats_eaten_this_turn > 0:
             shaped_reward += (
-                self._w("goat_eaten")
-                * self._w("REWARD_GOAT_EATEN")
+                self._w("REWARD_GOAT_EATEN")
                 * goats_eaten_this_turn
             )
 
         if reason == "tiger_win_capture_threshold":
-            shaped_reward += self._w("tiger_win") * self._w("REWARD_TIGER_WIN")
+            shaped_reward += self._w("REWARD_TIGER_WIN")
         elif reason == "max_timeout":
             shaped_reward += (
-                self._w("max_timeout")
-                * self._w("REWARD_TIGER_WIN")
+                self._w("REWARD_TIGER_WIN")
                 * self._w("MAX_TIMEOUT_SCALE")
             )
         elif reason == "repeat_timeout":
             shaped_reward += (
-                self._w("repeat_stall")
-                * self._w("REWARD_TIGER_WIN")
+                self._w("REWARD_TIGER_WIN")
                 * self._w("REPEAT_STALL_SCALE")
             )
         else:
             prev_count = int(info.get("repeat_prev_count", 0))
             if prev_count > 0:
                 repeat_pen = self._w("REWARD_REPEAT_STATE") * (prev_count ** 2)
-                shaped_reward += self._w("repeat_state") * repeat_pen
+                shaped_reward += repeat_pen
 
         return shaped_reward
 
@@ -947,18 +895,18 @@ class TnGEnv(gym.Env):
 
         if reason == "invalid_soft":
             # Small penalty for illegal-but-non-fatal action
-            return self._w("invalid_soft") * self._w("REWARD_INVALID_SOFT")
+            return self._w("REWARD_INVALID_SOFT")
 
         if reason == "invalid_hard":
             # Large penalty for a serious invalid action that terminates the episode
-            return self._w("invalid_hard") * abs(self._w("REWARD_INVALID_HARD"))
+            return abs(self._w("REWARD_INVALID_HARD"))
 
         # --------------------------------------------------------
         # 2. Base step penalty
         # --------------------------------------------------------
         # Small negative reward each turn to encourage faster wins
         # and discourage infinite wandering.
-        shaped_reward = self._w("step") * float(
+        shaped_reward = float(
             info.get("step_penalty", self._w("REWARD_STEP"))
         )
 
@@ -970,8 +918,7 @@ class TnGEnv(gym.Env):
 
         if goats_eaten_this_turn > 0:
             shaped_reward += (
-                self._w("tiger_capture")
-                * self._w("REWARD_TIGER_CAPTURE")
+                self._w("REWARD_TIGER_CAPTURE")
                 * goats_eaten_this_turn
             )
 
@@ -984,7 +931,7 @@ class TnGEnv(gym.Env):
 
         if delta_moves != 0:
             shaped_reward += (
-                abs(self._w("block_tiger") * self._w("REWARD_BLOCK_TIGER"))
+                abs(self._w("REWARD_BLOCK_TIGER"))
                 * delta_moves
             )
 
@@ -996,7 +943,7 @@ class TnGEnv(gym.Env):
         # agent doesnt prioritize center control over eating goats.  
         phase = int(info.get("phase", self.phase))
         if phase == 0:
-            shaped_reward += self._w("center") * float(info.get("center_score", 0.0))
+            shaped_reward += float(info.get("center_score", 0.0))
 
         # --------------------------------------------------------
         # 6. Terminal outcome rewards / penalties
@@ -1004,22 +951,19 @@ class TnGEnv(gym.Env):
         # Large reward when tigers win the game.
         if reason in {"tiger_win_capture_threshold", "tiger_win_no_goat_moves"}:
             shaped_reward += (
-                self._w("tiger_win_bonus")
-                * self._w("REWARD_TIGER_WIN_BONUS")
+                self._w("REWARD_TIGER_WIN_BONUS")
             )
 
         # Penalty when goats successfully immobilize the tigers.
         elif reason == "goat_win_no_tiger_moves":
             shaped_reward -= (
-                self._w("tiger_loss")
-                * self._w("REWARD_TIGER_LOSS_PENALTY")
+                self._w("REWARD_TIGER_LOSS_PENALTY")
             )
 
         # Timeout penalty (scaled loss)
         elif reason == "max_timeout":
             shaped_reward -= (
-                self._w("tiger_loss")
-                * self._w("REWARD_TIGER_LOSS_PENALTY")
+                self._w("REWARD_TIGER_LOSS_PENALTY")
                 * self._w("MAX_TIMEOUT_SCALE")
             )
 

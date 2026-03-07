@@ -172,14 +172,14 @@ VARIATIONS = {
         "opponent_ai": OPP_TIGER_SMART,
         "mix_prob": None,
         "checkpoints_per_run": 12,
-        "bubble": 0.0,
+        "REWARD_BUBBLE_SPACE": 0.0,
     }
 }
 
 Meaning:
 - One phase only
 - Special control keys are parsed directly
-- Remaining keys are treated as reward overrides (reward_weights)
+- Remaining keys are treated as reward knob overrides (reward_weights)
 
 Format C: Multi-phase curriculum (list of dicts)
 Example:
@@ -218,28 +218,7 @@ If you use multi-phase list format:
 ------------------------------------------------------------
 7.3 Reward override keys you can use
 ------------------------------------------------------------
-These map to env_tng_abc.py knobs and weights.
-
-Weight keys (DEFAULT_WEIGHTS):
-- step
-- goat_win
-- tiger_win
-- max_timeout
-- repeat_stall
-- tiger_capture
-- tiger_win_bonus
-- tiger_loss
-- goat_eaten
-- block_tiger
-- near_lock
-- bubble
-- cluster
-- center
-- repeat_state
-- invalid_soft
-- invalid_hard
-
-Knob keys (DEFAULT_KNOBS):
+These map to env_tng_abc.py knob keys (DEFAULT_KNOBS):
 - REWARD_GOAT_WIN
 - REWARD_TIGER_WIN
 - REWARD_TIGER_CAPTURE
@@ -277,17 +256,17 @@ Unknown keys are warned by env constructor and ignored.
 Pattern 1: Baseline + single ablations
 VARIATIONS = {
     "baseline": None,
-    "no_bubble": {"bubble": 0.0},
-    "no_block": {"block_tiger": 0.0},
-    "no_center": {"center": 0.0},
+    "no_bubble": {"REWARD_BUBBLE_SPACE": 0.0},
+    "no_block": {"REWARD_BLOCK_TIGER": 0.0},
+    "no_center": {"REWARD_CENTER_GOAT": 0.0, "REWARD_CENTER_TIGER": 0.0},
 }
 
 Pattern 2: Magnitude sweep
 VARIATIONS = {
-    "bubble_025": {"bubble": 0.25},
-    "bubble_050": {"bubble": 0.50},
-    "bubble_100": {"bubble": 1.00},
-    "bubble_200": {"bubble": 2.00},
+    "bubble_025": {"REWARD_BUBBLE_SPACE": 0.25},
+    "bubble_050": {"REWARD_BUBBLE_SPACE": 0.50},
+    "bubble_100": {"REWARD_BUBBLE_SPACE": 1.00},
+    "bubble_200": {"REWARD_BUBBLE_SPACE": 2.00},
 }
 
 Pattern 3: Robustness curriculum (goat learner)
@@ -321,7 +300,7 @@ Checklist:
 2. Decide single-phase vs multi-phase
 3. Set timesteps per phase
 4. Set opponent_ai and optional mix_prob
-5. Add only valid reward/knob keys
+5. Add only valid reward knob keys
 6. Keep checkpoints_per_run high enough for recovery (for long runs)
 7. Run one short debug trial first (small timesteps)
 
@@ -363,7 +342,7 @@ Example A: single baseline run
 Example B: two-variation ablation run
 VARIATIONS = {
     "baseline": None,
-    "ablate_repeat_penalty": {"repeat_state": 0.0},
+    "ablate_repeat_penalty": {"REWARD_REPEAT_STATE": 0.0},
 }
 
 Example C: curriculum run
