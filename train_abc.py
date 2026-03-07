@@ -47,7 +47,7 @@
 #
 #    • Action masking (MaskablePPO requirement):
 #         Each worker env is wrapped:
-#           BaseEnv -> (Monitor or TigerMixWrapper) -> FlattenWrapper -> ActionMasker
+#           BaseEnv -> (Monitor or TigerMixWrapper) -> ActionMasker
 #         so MaskablePPO only samples legal actions.
 #
 #  Outputs (where stuff goes):
@@ -152,17 +152,16 @@ from stable_baselines3.common.logger import configure
 from sb3_contrib import MaskablePPO
 from sb3_contrib.common.wrappers import ActionMasker
 
-from env_tng_falcon import (
+from env_tng_abc import (
     TnGEnv as BaseEnv,
-    FlattenTnGActionWrapper as FlattenWrapper,
     TIGER_AI_GREEDY,
     TIGER_AI_SMART,
     GOAT_AI_RANDOM,
     GOAT_AI_MODEL,
 )
 
-GOAT_LEARNER  = "goat"
-TIGER_LEARNER = "tiger"
+GOAT_LEARNER     = "goat"
+TIGER_LEARNER    = "tiger"
 OPP_TIGER_GREEDY = "tiger_greedy"
 OPP_TIGER_SMART  = "tiger_smart"
 OPP_TIGER_MODEL  = "tiger_model"   # reserved; env_tng_falcon does not yet support model tigers
@@ -173,12 +172,12 @@ OPP_GOAT_MODEL   = "goat_model"
 #  USER CONFIG — Opponent & Naming
 # ============================================================
 
-EXPERIMENT_NAME = "baselineGoatTraining"
-LEARNER_ROLE    = GOAT_LEARNER                 # GOAT_LEARNER | TIGER_LEARNER
+EXPERIMENT_NAME = "baselineTigerTraining"
+LEARNER_ROLE    = TIGER_LEARNER                # GOAT_LEARNER | TIGER_LEARNER
 # Unified opponent selector (interpreted by learner role; used when MIX_PROB is None):
 #   - GOAT learner  : "tiger_greedy" | "tiger_smart"  (model tiger not yet supported)
 #   - TIGER learner : "goat_random"  | "goat_model"
-OPPONENT_AI     = OPP_TIGER_GREEDY
+OPPONENT_AI     = OPP_GOAT_MODEL
 # Mixing control (set to None for fixed opponent):
 #   - GOAT learner  : P(smart tiger), else greedy
 #   - TIGER learner : P(model goat),  else random
@@ -189,17 +188,15 @@ ENV_VER         = "env_5.0"
 MODEL_VER       = "mppo_train3.0"
 CHECKPOINTS_PER_RUN = 10
 RESUME_MODEL_PATH = None
-GOAT_MODEL_PATH  = None  # path to a saved goat model (used when opponent is goat_model)
-
-USE_MIX_TAG     = MIX_PROB is not None  # adds "Mix" to CORE tag (tag only)
+GOAT_MODEL_PATH  = "artifacts/models/train/mppo/GvNT/baselineGoatTraining/mppo_GvNT_goat_vs_GT_p0.zip"  # path to a saved goat model (used when opponent is goat_model)
 
 # ============================================================
 #  USER CONFIG — Scale / Hardware
 # ============================================================
 
-DEVICE_MODE = "gpu"
+DEVICE_MODE = "cpu"
 DEBUG_MODE  = False                  # True or False
-TIMESTEPS   = 2_000_000 if DEBUG_MODE else 60_000_000
+TIMESTEPS   = 2_000_000 if DEBUG_MODE else 20_000_000
 NUM_CPU     = 16
 SEED        = 42
 
@@ -230,10 +227,14 @@ else:
 # ============================================================
 
 VARIATIONS = {
-    "goat_vs_GT": {
-        "timesteps": 100_000_000,
-        "opponent_ai": OPP_TIGER_GREEDY,
-    },
+    "tiger_vs_baselineNormalGoat20M": [
+        {
+            "timesteps": 20_000_000,
+            "opponent_ai": OPP_GOAT_MODEL,
+            "goat_model_path": GOAT_MODEL_PATH,
+            "mix_prob": None,
+        },
+    ]
 }
 
 
@@ -249,7 +250,7 @@ def core_tag(
 ) -> str:
     """
     Build a matchup tag:
-      - GOAT learner: opponent_ai refers to tiger mode (greedy/smart), mix adds a prefix.
+      - GOAT learner: opponent_ai refers to tiger mode (greedy/smart), mix uses generic MixT.
       - TIGER learner: opponent_ai/goat_opponent_ai refers to goat type (random/model),
         mix marks a mixed-goat opponent.
     """
@@ -262,7 +263,7 @@ def core_tag(
             opp = "MG" if goat_ai == GOAT_AI_MODEL else "RG"
     else:
         base_opp = "NT" if opponent_ai == TIGER_AI_GREEDY else "ST"
-        opp = f"Mix{base_opp}" if mix else base_opp
+        opp = "MixT" if mix else base_opp
     return f"{learner}v{opp}"
 
 
@@ -327,11 +328,33 @@ def normalize_phases(reward_weights) -> list[dict]:
 
 
 def resolve_variation_core(phases: list[dict]) -> str:
-    first = phases[0] if phases else {}
-    first_opponent = first.get("opponent_ai", first.get("tiger_ai", OPPONENT_AI))
-    tiger_ai, goat_opp = resolve_opponent_or_exit(LEARNER_ROLE, first_opponent)
-    is_mixed = any(phase.get("mix_prob", MIX_PROB) is not None for phase in phases)
-    return core_tag(LEARNER_ROLE, tiger_ai, mix=is_mixed, goat_opponent_ai=goat_opp)
+    phase_list = phases if phases else [{"opponent_ai": OPPONENT_AI, "mix_prob": MIX_PROB}]
+    is_mixed = any(phase.get("mix_prob", MIX_PROB) is not None for phase in phase_list)
+
+    tiger_modes = set()
+    goat_modes = set()
+    for phase in phase_list:
+        phase_opponent = phase.get("opponent_ai", phase.get("tiger_ai", OPPONENT_AI))
+        tiger_ai, goat_opp = resolve_opponent_or_exit(LEARNER_ROLE, phase_opponent)
+        tiger_modes.add(tiger_ai)
+        goat_modes.add(goat_opp)
+
+    if LEARNER_ROLE == GOAT_LEARNER:
+        if is_mixed:
+            sample_tiger = next(iter(tiger_modes), TIGER_AI_GREEDY)
+            return core_tag(LEARNER_ROLE, sample_tiger, mix=True, goat_opponent_ai=GOAT_AI_RANDOM)
+        if len(tiger_modes) == 1:
+            only_tiger = next(iter(tiger_modes))
+            return core_tag(LEARNER_ROLE, only_tiger, mix=False, goat_opponent_ai=GOAT_AI_RANDOM)
+        return "GvNTST"
+
+    if is_mixed:
+        sample_goat = next(iter(goat_modes), GOAT_AI_RANDOM)
+        return core_tag(LEARNER_ROLE, TIGER_AI_SMART, mix=True, goat_opponent_ai=sample_goat)
+    if len(goat_modes) == 1:
+        only_goat = next(iter(goat_modes))
+        return core_tag(LEARNER_ROLE, TIGER_AI_SMART, mix=False, goat_opponent_ai=only_goat)
+    return "TvRGMG"
 
 
 def make_goat_model_predict_fn(model_path: str | None):
@@ -368,56 +391,16 @@ def warn_if_missing_goat_model_path(goat_opponent_ai: str, model_path: str | Non
 def mask_fn(env):
     return env.unwrapped.get_action_mask()
 
-def tiger_code(tiger_ai: str) -> int:
-    return 1 if tiger_ai == TIGER_AI_SMART else 0
-
-def tb_add_text(model_obj, tag: str, text: str, step: int):
-    """
-    Optional: add Text to TensorBoard if a TB writer exists.
-    Safe no-op if not.
-    """
-    try:
-        for fmt in model_obj.logger.output_formats:
-            w = getattr(fmt, "writer", None)
-            if w is not None:
-                w.add_text(tag, text, step)
-                break
-    except Exception:
-        pass
-
 # ============================================================
 # Derived config (auto from user settings)
 # ============================================================
 
-# Resolve default opponent for suite tag/logging
+# Resolve default opponent for env fallbacks
 TIGER_AI_MODE, GOAT_OPPONENT_AI = resolve_opponent_or_exit(LEARNER_ROLE, OPPONENT_AI)
-CORE      = core_tag(LEARNER_ROLE, TIGER_AI_MODE, mix=USE_MIX_TAG, goat_opponent_ai=GOAT_OPPONENT_AI)
-SUITE_TAG = EXPERIMENT_NAME
-
-LOG_DIR   = f"artifacts/logging/train/{ALGO_TAG}/{CORE}/{SUITE_TAG}"
-MODEL_DIR = f"artifacts/models/train/{ALGO_TAG}/{CORE}/{SUITE_TAG}"
-
-CHECKPOINT_INTERNAL_STEPS = TIMESTEPS // CHECKPOINTS_PER_RUN
-SAVE_FREQ = max(CHECKPOINT_INTERNAL_STEPS // NUM_CPU, 1)
-
-os.makedirs(LOG_DIR, exist_ok=True)
-os.makedirs(MODEL_DIR, exist_ok=True)
 
 # ============================================================
 # Callbacks
 # ============================================================
-
-class EpisodeCounterCallback(BaseCallback):
-    def __init__(self):
-        super().__init__()
-        self.episode_count = 0
-
-    def _on_step(self):
-        dones = self.locals.get("dones", None)
-        if dones is not None:
-            self.episode_count += int(np.sum(dones))
-        self.logger.record("1.episode_stats/2.episodes_total_done", float(self.episode_count))
-        return True
 
 class WinStatsCallback(BaseCallback):
     """
@@ -435,6 +418,7 @@ class WinStatsCallback(BaseCallback):
         self.tiger_wins = 0
         self.max_timeouts = 0
         self.repeat_timeouts = 0
+        self.window_snapshots = [] # This will stor the most recent 10 snapshots of the windowed stats
 
         # rolling window of winners
         self.window = deque(maxlen=window_episodes)
@@ -472,18 +456,17 @@ class WinStatsCallback(BaseCallback):
                 self.window_goat_ai.append(info.get("goat_opponent_ai", info.get("goat_ai", None)))
 
         # always keep current episode index in logs
-        self.logger.record("1.episode_stats/1.episode_index", float(self.episodes))
+        self.logger.record("1.episode_stats (total episodes)/1.episode_index", float(self.episodes))
 
         if (self.episodes - self.last_logged_episodes) >= self.log_every_episodes and self.episodes > 0:
             total = float(self.episodes)
 
             self.last_logged_episodes = self.episodes
             # Order of logs (to control TB display grouping)
-            self.logger.record("1.episode_stats/3.episodes_total_winstats", total)
-            self.logger.record("1.episode_stats/4.goat_win_rate", self.goat_wins / total)
-            self.logger.record("1.episode_stats/5.tiger_win_rate", self.tiger_wins / total)
-            self.logger.record("1.episode_stats/6.max_timeout_rate", self.max_timeouts / total)
-            self.logger.record("1.episode_stats/7.repeat_timeout_rate", self.repeat_timeouts / total)
+            self.logger.record("1.episode_stats (total episodes)/2.goat_win_rate", self.goat_wins / total)
+            self.logger.record("1.episode_stats (total episodes)/3.tiger_win_rate", self.tiger_wins / total)
+            self.logger.record("1.episode_stats (total episodes)/4.max_timeout_rate", self.max_timeouts / total)
+            self.logger.record("1.episode_stats (total episodes)/5.repeat_timeout_rate", self.repeat_timeouts / total)
 
             w = len(self.window)
             if w > 0:
@@ -492,11 +475,11 @@ class WinStatsCallback(BaseCallback):
                 to = sum(1 for x in self.window if x == "MaxTimeout") / w
                 st = sum(1 for x in self.window if x == "RepeatTimeout") / w
 
-                self.logger.record("2.window_stats/1.episodes_tracked", float(w))
-                self.logger.record("2.window_stats/2.goat_win_rate", goat)
-                self.logger.record("2.window_stats/3.tiger_win_rate", tiger)
-                self.logger.record("2.window_stats/4.max_timeout_rate", to)
-                self.logger.record("2.window_stats/5.repeat_timeout_rate", st)
+                self.logger.record("2.window_stats (per 1000 eps)/1.episodes_tracked", float(w))
+                self.logger.record("2.window_stats (per 1000 eps)/2.goat_win_rate", goat)
+                self.logger.record("2.window_stats (per 1000 eps)/3.tiger_win_rate", tiger)
+                self.logger.record("2.window_stats (per 1000 eps)/4.max_timeout_rate", to)
+                self.logger.record("2.window_stats (per 1000 eps)/5.repeat_timeout_rate", st)
 
                 # optional realized opponent distribution in the last-N window
                 smart = 0
@@ -508,8 +491,8 @@ class WinStatsCallback(BaseCallback):
                         greedy += 1
                 denom = smart + greedy
                 if denom > 0:
-                    self.logger.record("2.window_stats/6.realized_greedy_tiger_frac", greedy / denom)
-                    self.logger.record("2.window_stats/7.realized_smart_tiger_frac", smart / denom)
+                    self.logger.record("2.window_stats (per 1000 eps)/6.realized_greedy_tiger_frac", greedy / denom)
+                    self.logger.record("2.window_stats (per 1000 eps)/7.realized_smart_tiger_frac", smart / denom)
 
                 model = 0
                 random_goat = 0
@@ -520,8 +503,8 @@ class WinStatsCallback(BaseCallback):
                         random_goat += 1
                 denom = model + random_goat
                 if denom > 0:
-                    self.logger.record("2.window_stats/8.realized_random_goat_frac", random_goat / denom)
-                    self.logger.record("2.window_stats/9.realized_model_goat_frac", model / denom)
+                    self.logger.record("2.window_stats (per 1000 eps)/8.realized_random_goat_frac", random_goat / denom)
+                    self.logger.record("2.window_stats (per 1000 eps)/9.realized_model_goat_frac", model / denom)
 
         return True
     
@@ -608,7 +591,6 @@ def make_env(
         else:
             env = Monitor(base_env)
 
-        env = FlattenWrapper(env)
         env = ActionMasker(env, mask_fn)
         env.reset(seed=seed + rank)
         return env
@@ -671,8 +653,8 @@ def run_single_variation(variation_name: str, reward_weights):
     phases = normalize_phases(reward_weights)
 
     variation_core = resolve_variation_core(phases)
-    variation_log_dir = f"artifacts/logging/train/{ALGO_TAG}/{variation_core}/{SUITE_TAG}"
-    variation_model_dir = f"artifacts/models/train/{ALGO_TAG}/{variation_core}/{SUITE_TAG}"
+    variation_log_dir = f"artifacts/logging/train/{ALGO_TAG}/{variation_core}/{EXPERIMENT_NAME}"
+    variation_model_dir = f"artifacts/models/train/{ALGO_TAG}/{variation_core}/{EXPERIMENT_NAME}"
     os.makedirs(variation_log_dir, exist_ok=True)
     os.makedirs(variation_model_dir, exist_ok=True)
 
@@ -693,6 +675,7 @@ def run_single_variation(variation_name: str, reward_weights):
     resumed = bool(resume_path)
 
     model = None
+    model_identity = None
 
     total_goat = total_tiger = total_to = total_st = 0
     total_eps = 0
@@ -731,7 +714,6 @@ def run_single_variation(variation_name: str, reward_weights):
         vec_env = SubprocVecEnv(env_fns)
 
         win_stats_callback = WinStatsCallback()
-        ep_callback = EpisodeCounterCallback()
 
         chk_callback = CheckpointCallback(
             save_freq=phase_save_freq,
@@ -742,8 +724,7 @@ def run_single_variation(variation_name: str, reward_weights):
         )
 
         callback = CallbackList([
-            chk_callback, 
-            ep_callback, 
+            chk_callback,  
             win_stats_callback
             ]
         )
@@ -775,7 +756,17 @@ def run_single_variation(variation_name: str, reward_weights):
                 )
                 # KEY FIX: configure logger immediately
                 model.set_logger(configure(log_path, ["tensorboard", "stdout"]))
+            model_identity = id(model)
+            print(f"[{variation_name}] Phase {phase_idx}: initialized model (id={model_identity})")
         else:
+            if model_identity is None:
+                model_identity = id(model)
+            elif id(model) != model_identity:
+                raise RuntimeError(
+                    f"[{variation_name}] Model instance changed across phases "
+                    f"(expected id={model_identity}, got id={id(model)})."
+                )
+            print(f"[{variation_name}] Phase {phase_idx}: continuing same model (id={model_identity})")
             model.set_env(vec_env)
             model.set_logger(configure(log_path, ["tensorboard", "stdout"]))
 

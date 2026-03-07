@@ -1,0 +1,146 @@
+Project: Tigers and Goats - Strategy Observation and Analysis Suggestions
+Date: 2026-02-26
+
+This document explains five high-value ways to observe what your ML agent is
+"thinking" during gameplay. The goal is to make model behavior inspectable,
+debuggable, and comparable across training runs.
+
+----------------------------------------------------------------------
+1) Policy Trace Per Move (No New Framework Required)
+----------------------------------------------------------------------
+What it is:
+- Record why the model chose an action at each step.
+
+What to capture per move:
+- Chosen action index and decoded move (pos, dir)
+- Action probability of chosen move
+- Top-k legal actions with probabilities (for example top 3 or top 5)
+- Value estimate V(s) for current board state
+- Policy entropy (high entropy = uncertain policy)
+- Action mask summary (how many legal actions existed)
+
+Why it helps:
+- Shows confidence vs uncertainty.
+- Reveals whether mistakes came from bad confidence or close alternatives.
+- Makes replay files much more informative.
+
+How to integrate in your codebase:
+- Extend replay step records in tng_GUI_abc.py where timeline entries are built.
+- Attach a "policy_trace" field to each timeline step.
+- Surface trace info in GUI step text and replay JSON.
+
+----------------------------------------------------------------------
+2) Counterfactual Move Analysis
+----------------------------------------------------------------------
+What it is:
+- Compare the chosen move against a few plausible alternatives.
+
+Method:
+- Take top-k legal actions from current policy.
+- For each candidate, run a short rollout in a cloned/shadow environment.
+- Compare short-horizon outcomes:
+  - cumulative reward over N steps
+  - goats eaten
+  - tigers blocked
+  - terminal status if reached
+
+Why it helps:
+- Explains strategy, not only action selection.
+- Distinguishes "best available move" from "clear tactical blunder."
+- Useful for diagnosing reward shaping side effects.
+
+Implementation notes:
+- Keep horizon short first (for example 3-8 plies) for speed.
+- Cache features or sampled outcomes if you want real-time GUI support.
+- Store results in replay as "counterfactuals".
+
+----------------------------------------------------------------------
+3) Board Heatmaps with Captum (Attribution Methods)
+----------------------------------------------------------------------
+What it is:
+- Attribute model output to board positions/features using interpretability tools.
+
+Recommended library:
+- Captum (PyTorch interpretability toolkit)
+
+Useful methods:
+- Integrated Gradients
+- Occlusion
+- Saliency (quick baseline)
+
+Why it helps:
+- Shows what board regions influenced the chosen move.
+- Detects shortcuts (model focusing on wrong patterns).
+- Gives visual evidence for tactical focus (trap zones, threatened goats, etc.).
+
+Integration concept:
+- Compute attributions for chosen action logit.
+- Map attribution values to your 23 board nodes.
+- Render node intensity/outline in GUI or export heatmap snapshots.
+
+----------------------------------------------------------------------
+4) Strategy Clustering Across Games
+----------------------------------------------------------------------
+What it is:
+- Group states or trajectories to identify recurring play styles.
+
+Recommended tools:
+- UMAP (umap-learn) for dimensionality reduction
+- TSNE (scikit-learn) as an alternative
+- Plotly for interactive visualization
+
+Data to cluster:
+- Policy logits/probabilities
+- Value estimates
+- Engineered tactical features (blocked tigers, captures, mobility, phase)
+
+Why it helps:
+- Reveals distinct strategic regimes.
+- Shows which clusters correlate with wins/losses.
+- Helps compare models beyond raw win rate.
+
+Output ideas:
+- 2D scatter colored by winner, tiger mode, or reward percentile
+- Cluster transition plots over episode time
+
+----------------------------------------------------------------------
+5) Experiment Tracking Dashboard
+----------------------------------------------------------------------
+What it is:
+- Centralized tracking for training/eval metrics and artifacts.
+
+Current fit:
+- You already use TensorBoard logging in training code.
+
+Optional upgrade:
+- Weights and Biases (wandb) for richer run comparison and artifact tracking.
+
+Why it helps:
+- Compare model versions and reward settings faster.
+- Link scalar metrics to replay files and notable failure cases.
+- Improve reproducibility and retrospective analysis.
+
+Practical metrics to track:
+- Win rates by opponent type
+- Entropy trends
+- Mean top-1 action probability
+- Value prediction drift
+- Capture-related event frequencies
+
+----------------------------------------------------------------------
+Recommended Implementation Order
+----------------------------------------------------------------------
+1. Policy trace per move (fastest, immediate insight)
+2. Counterfactual top-k analysis (strong explanation value)
+3. Captum heatmaps (visual interpretability)
+4. Strategy clustering (cross-game pattern mining)
+5. Expanded experiment dashboard (team/process scale)
+
+----------------------------------------------------------------------
+Minimal Starter Scope
+----------------------------------------------------------------------
+If you want a first milestone with low complexity and high impact:
+- Add top-3 action probabilities + value estimate + entropy to every replay step.
+- Show these fields in GUI step details.
+- Export them in saved replay JSON.
+

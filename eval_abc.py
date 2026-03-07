@@ -60,7 +60,7 @@
 #    - stable-baselines3 + sb3-contrib:
 #        • MaskablePPO
 #        • ActionMasker + get_action_masks
-#    - Uses FlattenTnGActionWrapper for Discrete action space
+#    - Uses native Discrete action env + masking (no flatten wrapper)
 #    - Designed to pair with:
 #        • env_tng_falcon.py     (unified greedy/smart tiger env)
 #        • experiment_sweep.py   (Reward variation sweeps that produce models to eval)
@@ -79,9 +79,8 @@ from sb3_contrib.common.wrappers import ActionMasker
 from sb3_contrib.common.maskable.utils import get_action_masks
 from sb3_contrib import MaskablePPO
 
-from env_goat_falcon import (
+from env_tng_abc import (
     TnGEnv as BaseEnv,
-    FlattenTnGActionWrapper as FlattenWrapper,
     DIR_CODES,
     TIGER_AI_GREEDY,
     TIGER_AI_SMART,
@@ -298,10 +297,9 @@ def make_debug_env(seed: Optional[int] = SEED):
     """
     Build the debug environment:
 
-      TnGEnv(tiger_ai=...) -> FlattenTnGActionWrapper -> Monitor -> ActionMasker
+      TnGEnv(tiger_ai=...) -> Monitor -> ActionMasker
     """
     env = BaseEnv(tiger_ai=TIGER_AI_MODE)
-    env = FlattenWrapper(env)  # Externally: Discrete(BOARD_SIZE * DIR_CODES)
     env = Monitor(env)
     env = ActionMasker(env, _mask_fn)
 
@@ -317,10 +315,9 @@ def make_eval_env():
     """
     Build the evaluation environment:
 
-      TnGEnv(tiger_ai=...) -> FlattenTnGActionWrapper -> ActionMasker
+      TnGEnv(tiger_ai=...) -> ActionMasker
     """
     env = BaseEnv(tiger_ai=TIGER_AI_MODE)
-    env = FlattenWrapper(env)
     env = ActionMasker(env, _mask_fn)
     return env
 
