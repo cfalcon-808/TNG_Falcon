@@ -51,14 +51,14 @@
 #         so MaskablePPO only samples legal actions.
 #
 #  Outputs (where stuff goes):
-#    • TensorBoard logs (one subdir per variation phase):
-#         artifacts/logging/train/{ALGO_TAG}/{CORE}/{SUITE_TAG}/
-#           └── {ALGO_TAG}_{CORE}_{variation_name}_p{phase_idx}/
-#
-#    • Models + checkpoints:
-#         artifacts/models/train/{ALGO_TAG}/{CORE}/{SUITE_TAG}/
-#           ├── cp_{ALGO_TAG}_{CORE}_{variation_name}_...  (checkpoints)
-#           └── {ALGO_TAG}_{CORE}_{variation_name}_p{last_phase}.zip (final model)
+#    • Run artifacts (experiment-first):
+#         artifacts/{EXPERIMENT_NAME}/
+#           ├── meta/         (config_<variation>_<runstamp>.json, git_commit_<variation>_<runstamp>.txt, notes_<variation>_<runstamp>.txt)
+#           ├── tb/           (TensorBoard logs by phase)
+#           ├── checkpoints/  (phase subfolders with periodic checkpoints)
+#           ├── models/       (final_<variation>_<runstamp>_phase_XX.zip + best_<variation>_<runstamp>.zip)
+#           ├── eval/
+#           └── logs/
 #
 #    • Resume support:
 #         RESUME_MODEL_PATH can be a .zip file OR a directory.
@@ -118,7 +118,7 @@
 #         python train_falcon.py
 #
 #    5) Watch training:
-#         tensorboard --logdir artifacts/logging/train --port 6006
+#         tensorboard --logdir artifacts --port 6006
 #
 #  Workflow (recommended for ablation studies):
 #    1) Establish baseline (single variation, defaults).
@@ -136,9 +136,14 @@ import os
 import numpy as np
 import torch
 import glob
+import json
+import shutil
+import re
+import subprocess
 from collections import deque
 import random
 import sys
+from datetime import datetime
 
 from stable_baselines3.common.vec_env import SubprocVecEnv
 from stable_baselines3.common.utils import set_random_seed
@@ -227,11 +232,17 @@ else:
 # ============================================================
 
 VARIATIONS = {
-    "tiger_vs_baselineNormalGoat20M": [
+    "tiger_vs_normal_then_smart_goat_2x10M": [
         {
-            "timesteps": 20_000_000,
+            "timesteps": 10_000_000,
             "opponent_ai": OPP_GOAT_MODEL,
-            "goat_model_path": GOAT_MODEL_PATH,
+            "goat_model_path": r"stable_models\models\Goats\mppo_GvNT_goat_greedy_tiger_p0.zip",
+            "mix_prob": None,
+        },
+        {
+            "timesteps": 10_000_000,
+            "opponent_ai": OPP_GOAT_MODEL,
+            "goat_model_path": r"stable_models\models\Goats\mppo_GvST_goat_smart_tiger_p0.zip",
             "mix_prob": None,
         },
     ]
@@ -623,6 +634,87 @@ def unique_filename(directory: str, base_name: str, ext: str = ".zip") -> str:
             return candidate
         counter += 1
 
+
+def _slugify(text: str) -> str:
+    """Filesystem-safe slug for artifact names."""
+    cleaned = re.sub(r"[^A-Za-z0-9._-]+", "_", (text or "").strip())
+    cleaned = re.sub(r"_+", "_", cleaned).strip("._-")
+    return cleaned or "run"
+
+
+def build_run_layout(experiment_name: str, artifacts_root: str = "artifacts") -> dict:
+    """
+    Build and create experiment-first directory layout:
+      artifacts/<experiment>/{meta,tb,checkpoints,models,eval,logs}
+    """
+    exp_dir = os.path.join(artifacts_root, _slugify(experiment_name))
+    os.makedirs(exp_dir, exist_ok=True)
+
+    layout = {
+        "experiment_dir": exp_dir,
+        "meta_dir": os.path.join(exp_dir, "meta"),
+        "tb_dir": os.path.join(exp_dir, "tb"),
+        "checkpoints_dir": os.path.join(exp_dir, "checkpoints"),
+        "models_dir": os.path.join(exp_dir, "models"),
+        "eval_dir": os.path.join(exp_dir, "eval"),
+        "logs_dir": os.path.join(exp_dir, "logs"),
+    }
+
+    for key in ("experiment_dir", "meta_dir", "tb_dir", "checkpoints_dir", "models_dir", "eval_dir", "logs_dir"):
+        os.makedirs(layout[key], exist_ok=True)
+    return layout
+
+
+def _git_commit_or_unknown() -> str:
+    """Best-effort git commit hash for reproducibility metadata."""
+    try:
+        out = subprocess.check_output(["git", "rev-parse", "HEAD"], stderr=subprocess.DEVNULL, text=True).strip()
+        return out or "unknown"
+    except Exception:
+        return "unknown"
+
+
+def write_run_metadata(
+    layout: dict,
+    variation_name: str,
+    variation_core: str,
+    phases: list[dict],
+    run_stamp: str,
+) -> None:
+    """Write variation-specific metadata files under meta/."""
+    variation_slug = _slugify(variation_name)
+    config_payload = {
+        "timestamp": datetime.now().isoformat(timespec="seconds"),
+        "run_stamp": run_stamp,
+        "experiment_name": EXPERIMENT_NAME,
+        "variation_name": variation_name,
+        "variation_slug": variation_slug,
+        "variation_core": variation_core,
+        "algo_tag": ALGO_TAG,
+        "env_ver": ENV_VER,
+        "model_ver": MODEL_VER,
+        "learner_role": LEARNER_ROLE,
+        "num_cpu": NUM_CPU,
+        "device_mode": DEVICE_MODE,
+        "device": DEVICE,
+        "seed": SEED,
+        "phases": phases,
+        "layout": layout,
+    }
+
+    config_path = os.path.join(layout["meta_dir"], f"config_{variation_slug}_{run_stamp}.json")
+    with open(config_path, "w", encoding="utf-8") as f:
+        json.dump(config_payload, f, indent=2)
+
+    commit_path = os.path.join(layout["meta_dir"], f"git_commit_{variation_slug}_{run_stamp}.txt")
+    with open(commit_path, "w", encoding="utf-8") as f:
+        f.write(_git_commit_or_unknown() + "\n")
+
+    notes_path = os.path.join(layout["meta_dir"], f"notes_{variation_slug}_{run_stamp}.txt")
+    if not os.path.exists(notes_path):
+        with open(notes_path, "w", encoding="utf-8") as f:
+            f.write("")
+
 # ============================================================
 # Matchup info logger (scalar)
 # ============================================================
@@ -651,21 +743,24 @@ def run_single_variation(variation_name: str, reward_weights):
     set_random_seed(SEED)
 
     phases = normalize_phases(reward_weights)
+    variation_slug = _slugify(variation_name)
+    run_stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
     variation_core = resolve_variation_core(phases)
-    variation_log_dir = f"artifacts/logging/train/{ALGO_TAG}/{variation_core}/{EXPERIMENT_NAME}"
-    variation_model_dir = f"artifacts/models/train/{ALGO_TAG}/{variation_core}/{EXPERIMENT_NAME}"
-    os.makedirs(variation_log_dir, exist_ok=True)
-    os.makedirs(variation_model_dir, exist_ok=True)
+    layout = build_run_layout(EXPERIMENT_NAME, artifacts_root="artifacts")
+    write_run_metadata(layout, variation_name, variation_core, phases, run_stamp)
+
+    tb_root = layout["tb_dir"]
+    checkpoints_root = layout["checkpoints_dir"]
+    models_root = layout["models_dir"]
 
     print(f"Starting {NUM_CPU} env workers ({variation_core})...")
     print(f"ENV_VER={ENV_VER}, MODEL_VER={MODEL_VER}, TIMESTEPS={TIMESTEPS}")
     print(f"DEVICE_MODE={DEVICE_MODE}, DEVICE={DEVICE}")
+    print(f"Artifact root: {layout['experiment_dir']}")
     print("=" * 70)
     print(f"Starting variation: {variation_name}")
     print("=" * 70)
-
-    tb_subdir = f"{ALGO_TAG}_{variation_core}_{variation_name}"
 
     policy_kwargs = dict(net_arch=[256, 256, 256])
 
@@ -676,6 +771,9 @@ def run_single_variation(variation_name: str, reward_weights):
 
     model = None
     model_identity = None
+    best_phase_score = float("-inf")
+    best_phase_path = None
+    final_path = None
 
     total_goat = total_tiger = total_to = total_st = 0
     total_eps = 0
@@ -688,6 +786,11 @@ def run_single_variation(variation_name: str, reward_weights):
         phase_goat_model = phase.get("goat_model_path", GOAT_MODEL_PATH)
         phase_cpr = phase.get("checkpoints_per_run", CHECKPOINTS_PER_RUN)
         phase_save_freq = max((phase_steps // max(phase_cpr, 1)) // NUM_CPU, 1)
+        phase_tag = f"{variation_slug}_{run_stamp}_phase_{phase_idx + 1:02d}"
+        phase_ckpt_dir = os.path.join(checkpoints_root, phase_tag)
+        phase_tb_dir = os.path.join(tb_root, phase_tag)
+        os.makedirs(phase_ckpt_dir, exist_ok=True)
+        os.makedirs(phase_tb_dir, exist_ok=True)
 
         phase_tiger_ai, phase_goat_opp = resolve_opponent_or_exit(LEARNER_ROLE, phase_opponent)
         phase_mix_env = phase_mix
@@ -717,8 +820,8 @@ def run_single_variation(variation_name: str, reward_weights):
 
         chk_callback = CheckpointCallback(
             save_freq=phase_save_freq,
-            save_path=variation_model_dir,
-            name_prefix=f"cp_{ALGO_TAG}_{variation_core}_{variation_name}",
+            save_path=phase_ckpt_dir,
+            name_prefix=f"cp_{ALGO_TAG}_{variation_core}_{variation_slug}_{run_stamp}",
             save_replay_buffer=True,
             save_vecnormalize=True,
         )
@@ -729,8 +832,7 @@ def run_single_variation(variation_name: str, reward_weights):
             ]
         )
 
-        phase_tb = f"{tb_subdir}_p{phase_idx}"
-        log_path = os.path.join(variation_log_dir, phase_tb)
+        log_path = phase_tb_dir
 
         if model is None:
             if resume_path:
@@ -789,6 +891,22 @@ def run_single_variation(variation_name: str, reward_weights):
         total_to += win_stats_callback.max_timeouts
         total_st += win_stats_callback.repeat_timeouts
 
+        phase_model_name = f"final_{variation_slug}_{run_stamp}_phase_{phase_idx + 1:02d}"
+        phase_model_path = unique_filename(models_root, phase_model_name)
+        model.save(phase_model_path)
+        final_path = phase_model_path
+
+        if win_stats_callback.episodes > 0:
+            phase_goat_rate = win_stats_callback.goat_wins / float(win_stats_callback.episodes)
+            phase_tiger_rate = win_stats_callback.tiger_wins / float(win_stats_callback.episodes)
+        else:
+            phase_goat_rate = 0.0
+            phase_tiger_rate = 0.0
+        phase_score = phase_tiger_rate if LEARNER_ROLE == TIGER_LEARNER else phase_goat_rate
+        if phase_score > best_phase_score:
+            best_phase_score = phase_score
+            best_phase_path = phase_model_path
+
         vec_env.close()
 
     if total_eps > 0:
@@ -802,12 +920,12 @@ def run_single_variation(variation_name: str, reward_weights):
     print(f"[{variation_name}] Summary:")
     print(f"  Goat {goat:.3f} | Tiger {tiger:.3f} | MaxTO {mto:.3f} | RepeatTO {rto:.3f}")
 
-    # Save final model with phase suffix similar to TB naming
-    final_name = f"{ALGO_TAG}_{variation_core}_{variation_name}_p{len(phases)-1}"
-    final_path = unique_filename(variation_model_dir, final_name)
-
-    model.save(final_path)
-    print(f"Saved final model: {final_path}")
+    if best_phase_path and os.path.exists(best_phase_path):
+        best_zip_path = unique_filename(models_root, f"best_{variation_slug}_{run_stamp}")
+        shutil.copy2(best_phase_path, best_zip_path)
+        print(f"Saved best model: {best_zip_path} (source={os.path.basename(best_phase_path)})")
+    if final_path:
+        print(f"Saved final model: {final_path}")
 
     return {
         "variation": variation_name,
