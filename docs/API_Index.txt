@@ -16,8 +16,6 @@ DICTS (TUNING)
         via env._w(key) resolution.
 
 TOP-LEVEL HELPERS
-    smart_tiger(...)
-        Heuristic tiger policy (anchors, roaming, capture priority).
     idx_to_coord(idx)
         Map board index to human-readable coord label.
 
@@ -52,7 +50,10 @@ CLASS TnGEnv
         info includes info["winner"] on terminal outcomes, action_mask, tiger_ai tags.
 
     METHOD _select_tiger_move(...)
-        Dispatch to smart_tiger or _greedy_tiger_move.
+        Dispatch to _smart_tiger_move or _greedy_tiger_move.
+
+    METHOD _smart_tiger_move(...)
+        Heuristic smart tiger policy (anchors, roaming, capture priority).
 
     METHOD _greedy_tiger_move(...)
         Capture-biased random tiger policy with BASE_TIGER_CAPTURE_BIAS.

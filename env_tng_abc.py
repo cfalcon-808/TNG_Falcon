@@ -160,216 +160,6 @@ def idx_to_coord(idx: int) -> str:
 
 
 # ============================================================
-#  TIGER AI smart_tiger (shared across modes)
-# ============================================================
-
-def smart_tiger(board, tiger_moves, move_map, debug: bool = False):
-    """
-    Selects a tiger move based on:
-      1) Capture logic
-      2) Anchors: 0 and {9 or 10} as 2 conceptual anchors
-      3) Roaming (high-value squares)
-      4) Fallback random
-
-    tiger_moves: list of (from_pos, to_pos, is_capture)
-    """
-
-    POS_VALS = {
-        0: 8, 1: 4, 2: 6, 3: 7, 4: 7, 5: 6, 6: 4, 7: 4, 8: 7, 9: 8, 10: 8,
-        11: 7, 12: 4, 13: 4, 14: 6, 15: 7, 16: 7, 17: 6, 18: 4, 19: 4,
-        20: 5, 21: 5, 22: 4
-    }
-
-    def debug_print(*args):
-        """Print tiger AI diagnostics only when debug mode is enabled."""
-        if debug:
-            print("[TIGER DEBUG]", *args)
-
-    def bfs_find_next_step(start_pos, target_positions):
-        """
-        Find the first move on a shortest path from start_pos to any target.
-        Returns (first_step, distance). Returns (None, None) if unreachable.
-        """
-
-        # Start already on a target
-        if start_pos in target_positions:
-            return (None, 0)
-
-        queue = []
-        visited = {start_pos}
-
-        # Explore immediate neighbors first
-        for _, neighbor in move_map[start_pos].items():
-            if neighbor is None:
-                continue
-
-            # Walkable if empty or is a target
-            is_walkable = (board[neighbor] == 0) or (neighbor in target_positions)
-
-            if is_walkable:
-                # Direct hit: one-step path
-                if neighbor in target_positions:
-                    return (neighbor, 1)
-
-                # Store (current, first_step, distance)
-                queue.append((neighbor, neighbor, 1))
-                visited.add(neighbor)
-
-        # BFS for multi-step paths
-        while queue:
-            curr, first_step, dist = queue.pop(0)
-
-            # Found a target
-            if curr in target_positions:
-                return (first_step, dist)
-
-            # Explore neighbors of current position
-            for _, neighbor in move_map[curr].items():
-                if neighbor is None or neighbor in visited:
-                    continue
-
-                is_walkable = (board[neighbor] == 0) or (neighbor in target_positions)
-
-                if is_walkable:
-                    visited.add(neighbor)
-                    queue.append((neighbor, first_step, dist + 1))
-
-        # No path to any target
-        return (None, None)
-
-    # ====== MAIN LOGIC ======
-    if not tiger_moves:
-        debug_print("No legal tiger moves.")
-        return None
-
-    debug_print("Board:", board)
-    debug_print("Legal tiger moves:", tiger_moves)
-
-    # --- 1. CAPTURE LOGIC ---
-    captures = [m for m in tiger_moves if m[2]]
-    if captures:
-        random.shuffle(captures)
-        best_capture = max(captures, key=lambda x: POS_VALS[x[1]])
-        debug_print(
-            "Capture phase:",
-            "candidate captures =", captures,
-            "chosen =", best_capture,
-            "dest_pos_val =", POS_VALS[best_capture[1]]
-        )
-        return best_capture
-
-    # --- 2. ANCHOR LOGIC (0 and {9,10}) ---
-    current_tiger_positions = [i for i in range(23) if board[i] == 2]
-
-    anchor_0_occupied = (board[0] == 2)
-    anchor_primary_occupied = (board[9] == 2 or board[10] == 2)
-
-    need_anchor0 = not anchor_0_occupied
-    need_primary = not anchor_primary_occupied
-
-    debug_print(
-        "Anchor status:",
-        f"anchor_0_occupied={anchor_0_occupied}, "
-        f"anchor_primary_occupied={anchor_primary_occupied}, "
-        f"need_anchor0={need_anchor0}, need_primary={need_primary}"
-    )
-
-    if need_anchor0 or need_primary:
-        anchor_groups = []
-
-        if need_anchor0:
-            anchor_groups.append(("secondary", [0]))
-
-        if need_primary:
-            primary_targets = [p for p in (9, 10) if board[p] == 0]
-            if not primary_targets:
-                primary_targets = [9, 10]
-            anchor_groups.append(("primary", primary_targets))
-
-        debug_print("Anchor groups:", anchor_groups)
-        best = None  # (dist, from_pos, first_step, group_name, targets)
-
-        for t_pos in current_tiger_positions:
-            if anchor_0_occupied and t_pos == 0:
-                debug_print("Skipping tiger at 0 (already satisfying anchor 0).")
-                continue
-            if anchor_primary_occupied and t_pos in (9, 10):
-                debug_print(f"Skipping tiger at {t_pos} (already satisfying primary anchor).")
-                continue
-
-            for group_name, targets in anchor_groups:
-                step, dist = bfs_find_next_step(t_pos, targets)
-                if step is None:
-                    continue
-
-                debug_print(
-                    f"Anchor candidate: tiger at {t_pos} -> step {step} "
-                    f"(group {group_name}, targets {targets}, dist {dist})"
-                )
-
-                if (best is None) or (dist < best[0]):
-                    best = (dist, t_pos, step, group_name, targets)
-
-        if best is not None:
-            dist, from_pos, step, group_name, targets = best
-            chosen_move = None
-            for move in tiger_moves:
-                if move[0] == from_pos and move[1] == step:
-                    chosen_move = move
-                    break
-
-            if chosen_move is not None:
-                debug_print(
-                    "Anchor choice:",
-                    f"group={group_name}, targets={targets}, dist={dist},",
-                    f"from={from_pos}, to={step}, move={chosen_move}"
-                )
-                return chosen_move
-
-            debug_print(
-                "Anchor choice failed: BFS suggested step not in tiger_moves.",
-                f"group={group_name}, targets={targets}, dist={dist},",
-                f"from={from_pos}, to={step}"
-            )
-        else:
-            debug_print("Anchor logic: no reachable anchor path found, falling through.")
-
-    # --- 3. ROAMING LOGIC ---
-    high_value_moves = []
-    for move in tiger_moves:
-        t_from, t_to, _ = move
-
-        if t_from == 0:
-            continue
-
-        if (t_from == 9 or t_from == 10) and anchor_primary_occupied:
-            if board[9] == 2 and board[10] != 2 and t_from == 9:
-                continue
-            if board[10] == 2 and board[9] != 2 and t_from == 10:
-                continue
-
-        if POS_VALS[t_to] >= 5:
-            high_value_moves.append(move)
-
-    if high_value_moves:
-        chosen = random.choice(high_value_moves)
-        debug_print(
-            "Roaming phase:",
-            "high_value_moves =", high_value_moves,
-            "chosen =", chosen,
-            "dest_pos_val =", POS_VALS[chosen[1]]
-        )
-        return chosen
-
-    # --- 4. FALLBACK ---
-    fallback = random.choice(tiger_moves)
-    debug_print(
-        "Fallback phase: no captures, no anchor moves, no high-value roam.",
-        "Fallback chosen move =", fallback
-    )
-    return fallback
-
-# ============================================================
 #  BASE ENVIRONMENT
 # ============================================================
 
@@ -387,37 +177,11 @@ class TnGEnv(gym.Env):
       - decode rule: pos = action // DIR_CODES, dir_code = action % DIR_CODES
     """
 
-    def get_action_mask(self):
-        """
-        Returns a Boolean mask of shape (BOARD_SIZE * DIR_CODES,),
-        where each index corresponds to (pos, dir_code) = (i // DIR_CODES, i % DIR_CODES).
-
-        - Goat learner: uses self.valid_moves in transition-safe form:
-            - pair: [pos, dir_code] or (pos, dir_code)
-            - flat: int action id
-        - Tiger learner: uses _tiger_moves(include_dir=True) to mark legal tiger actions.
-        """
-        mask = np.zeros(BOARD_SIZE * DIR_CODES, dtype=bool)
-
-        if getattr(self, "learner_role", GOAT_LEARNER) == TIGER_LEARNER:
-            for from_pos, _to_pos, _cap, dir_code in self._tiger_moves(include_dir=True):
-                flat = from_pos * DIR_CODES + dir_code
-                if 0 <= flat < mask.size:
-                    mask[flat] = True
-            return mask
-
-        for mv in self.valid_moves:
-            if np.isscalar(mv):
-                flat = int(mv)
-            else:
-                pos, dir_code = mv
-                flat = self.encode_action(pos, dir_code)
-            if 0 <= flat < mask.size:
-                mask[flat] = True
-
-        return mask
-
-
+    # ============================================================
+    #  Group: Core Setup and Configuration
+    #  Initializes persistent env state and shared tuning knobs.
+    #  These members are prerequisites for all runtime behavior.
+    # ============================================================
     def __init__(
             self, 
             reward_weights=None, 
@@ -545,9 +309,6 @@ class TnGEnv(gym.Env):
         self._update_valid_moves()
     # end def __init__()
 
-    # --------------------------------------------------------
-    #  Knob dictionary helper
-    # --------------------------------------------------------
     def _w(self, key) -> float:
         """
         Knob accessor:
@@ -562,9 +323,11 @@ class TnGEnv(gym.Env):
             f"Valid knob keys: {list(self.knobs.keys())}."
         )
 
-    # --------------------------------------------------------
-    #  Gym API: reset
-    # --------------------------------------------------------
+    # ============================================================
+    #  Group: Public Gym API
+    #  Entry points expected by Gymnasium and training loops.
+    #  Keeps reset/step/state/render/mask behavior in one place.
+    # ============================================================
     def reset(self, seed=None, options=None):
         """Reset board, game state, and valid moves."""
         super().reset(seed=seed)
@@ -611,9 +374,15 @@ class TnGEnv(gym.Env):
             }
         return obs, info
 
-    # --------------------------------------------------------
-    #  State + Rendering helpers
-    # --------------------------------------------------------
+    def step(self, action):
+        """Gym step: execute learner-role transition, then shape reward from step info."""
+        prev_obs = self.get_state().copy()
+        if self.learner_role == TIGER_LEARNER:
+            result = self._step_tiger_transition(action)
+        else:
+            result = self._step_goat_transition(action)
+        return self._apply_reward_fn(prev_obs, action, result)
+
     def get_state(self):
         """
         Flattened state: [board(23), eaten(1), phase(1)] as int8.
@@ -683,6 +452,41 @@ class TnGEnv(gym.Env):
         )
     # end def render()
 
+    def get_action_mask(self):
+        """
+        Returns a Boolean mask of shape (BOARD_SIZE * DIR_CODES,),
+        where each index corresponds to (pos, dir_code) = (i // DIR_CODES, i % DIR_CODES).
+
+        - Goat learner: uses self.valid_moves in transition-safe form:
+            - pair: [pos, dir_code] or (pos, dir_code)
+            - flat: int action id
+        - Tiger learner: uses _tiger_moves(include_dir=True) to mark legal tiger actions.
+        """
+        mask = np.zeros(BOARD_SIZE * DIR_CODES, dtype=bool)
+
+        if getattr(self, "learner_role", GOAT_LEARNER) == TIGER_LEARNER:
+            for from_pos, _to_pos, _cap, dir_code in self._tiger_moves(include_dir=True):
+                flat = from_pos * DIR_CODES + dir_code
+                if 0 <= flat < mask.size:
+                    mask[flat] = True
+            return mask
+
+        for mv in self.valid_moves:
+            if np.isscalar(mv):
+                flat = int(mv)
+            else:
+                pos, dir_code = mv
+                flat = self.encode_action(pos, dir_code)
+            if 0 <= flat < mask.size:
+                mask[flat] = True
+
+        return mask
+
+    # ============================================================
+    #  Group: Action Encoding and Validation
+    #  Converts between flat actions and structured moves.
+    #  Centralizes defensive parsing/normalization for transitions.
+    # ============================================================
     def encode_action(self, pos: int, dir_code: int) -> int:
         """Map (board position, direction code) -> flat Discrete action id."""
         return int(pos) * DIR_CODES + int(dir_code)
@@ -706,37 +510,6 @@ class TnGEnv(gym.Env):
 
         raise ValueError(f"Unrecognized action format: {action} (type {type(action)})")
 
-    def _apply_reward_fn(self, prev_obs, action, result):
-        """Run the configured reward function while preserving legacy callback signatures."""
-        obs, reward, terminated, truncated, info = result
-        try:
-            final_reward = self.reward_fn(
-                prev_obs,
-                action,
-                obs,
-                bool(terminated),
-                bool(truncated),
-                info,
-            )
-        except TypeError as first_err:
-            # Backward compatibility: older callbacks may still expect base_reward.
-            try:
-                final_reward = self.reward_fn(
-                    prev_obs,
-                    action,
-                    obs,
-                    float(reward),
-                    bool(terminated),
-                    bool(truncated),
-                    info,
-                )
-            except TypeError:
-                raise first_err
-        return obs, float(final_reward), bool(terminated), bool(truncated), info
-
-    # --------------------------------------------------------
-    #  Action decoding helper
-    # --------------------------------------------------------
     def _decode_action(self, action):
         """Internal alias for action decoding."""
         return self.decode_action(action)
@@ -783,6 +556,39 @@ class TnGEnv(gym.Env):
         }
         info.update(extra)
         return info
+
+    # ============================================================
+    #  Group: Step Info and Reward Pipeline
+    #  Builds standardized info payloads and computes shaped rewards.
+    #  Keeps reward flow consistent across goat/tiger learner modes.
+    # ============================================================
+    def _apply_reward_fn(self, prev_obs, action, result):
+        """Run the configured reward function while preserving legacy callback signatures."""
+        obs, reward, terminated, truncated, info = result
+        try:
+            final_reward = self.reward_fn(
+                prev_obs,
+                action,
+                obs,
+                bool(terminated),
+                bool(truncated),
+                info,
+            )
+        except TypeError as first_err:
+            # Backward compatibility: older callbacks may still expect base_reward.
+            try:
+                final_reward = self.reward_fn(
+                    prev_obs,
+                    action,
+                    obs,
+                    float(reward),
+                    bool(terminated),
+                    bool(truncated),
+                    info,
+                )
+            except TypeError:
+                raise first_err
+        return obs, float(final_reward), bool(terminated), bool(truncated), info
 
     def sparse_reward(self, prev_obs, action, obs, terminated, truncated, info):
         """Dispatch reward shaping to the active learner role."""
@@ -969,21 +775,11 @@ class TnGEnv(gym.Env):
 
         return shaped_reward
 
-
-    
-    # --------------------------------------------------------
-    #  Gym API: step
-    # --------------------------------------------------------
-    def step(self, action):
-        """Gym step: execute learner-role transition, then shape reward from step info."""
-        prev_obs = self.get_state().copy()
-        if self.learner_role == TIGER_LEARNER:
-            result = self._step_tiger_transition(action)
-        else:
-            result = self._step_goat_transition(action)
-        return self._apply_reward_fn(prev_obs, action, result)
-
-
+    # ============================================================
+    #  Group: Transition Engines
+    #  Executes full goat-learner and tiger-learner turn transitions.
+    #  Applies legality checks, terminal rules, and transition summaries.
+    # ============================================================
     def _step_goat_transition(self, action):
         """Single full turn when goats are the learner (goat act, then tiger response)."""
         if self.terminate:
@@ -1350,12 +1146,11 @@ class TnGEnv(gym.Env):
             if jump == t_to:
                 return neigh
         return None
-
-
-
-    # --------------------------------------------------------
-    #  Tiger AI selection helpers
-    # --------------------------------------------------------
+    # ============================================================
+    #  Group: Tiger Policy Selection
+    #  Selects tiger responses for goat-learner turns.
+    #  Contains smart heuristic and greedy capture-biased policies.
+    # ============================================================
     def _select_tiger_move(self, tiger_options):
         """Select tiger move using configured tiger policy (smart or greedy)."""
         if self.learner_role == GOAT_LEARNER:
@@ -1364,8 +1159,276 @@ class TnGEnv(gym.Env):
                 raise ValueError("Goat-learner tiger_options must be (from,to,cap) 3-tuples")
         
         if self.tiger_ai == TIGER_AI_SMART:
-            return smart_tiger(self.board, tiger_options, self.move_map, debug=False)
+            return self._smart_tiger_move(tiger_options)
         return self._greedy_tiger_move(tiger_options)
+
+    def _smart_tiger_move(self, tiger_options, debug: bool = False):
+        """
+        Pick a heuristic smart tiger move from legal options.
+          1) Take captures first
+          2) Try to occupy anchor positions: 0 and one of {9, 10}
+          3) Otherwise roam toward stronger board squares
+          4) Fallback to any legal move
+        """
+        board = self.board
+        move_map = self.move_map
+        tiger_moves = tiger_options
+
+        POS_VALS = {
+            0: 8, 1: 4, 2: 6, 3: 7, 4: 7, 5: 6, 6: 4, 7: 4, 8: 7, 9: 8, 10: 8,
+            11: 7, 12: 4, 13: 4, 14: 6, 15: 7, 16: 7, 17: 6, 18: 4, 19: 4,
+            20: 5, 21: 5, 22: 4,
+        }
+
+        def debug_print(*args):
+            """Only print diagnostics when debug mode is on."""
+            if debug:
+                print("[TIGER DEBUG]", *args)
+
+        def is_high_value(pos):
+            """Return True if a square is considered worth roaming toward."""
+            return POS_VALS[pos] >= 5
+
+        def occupied_by_tiger(pos):
+            """Small helper for tiger occupancy checks."""
+            return board[pos] == 2
+
+        def bfs_find_next_step(start_pos, target_positions):
+            """
+            Return the first step on a shortest path from start_pos to any target.
+            Returns (first_step, distance), or (None, None) if unreachable.
+            """
+            if start_pos in target_positions:
+                return (None, 0)
+
+            queue = []
+            visited = {start_pos}
+
+            # Seed BFS with immediate legal walkable neighbors
+            for _, neighbor in move_map[start_pos].items():
+                if neighbor is None:
+                    continue
+
+                is_walkable = (board[neighbor] == 0) or (neighbor in target_positions)
+                if not is_walkable:
+                    continue
+
+                if neighbor in target_positions:
+                    return (neighbor, 1)
+
+                queue.append((neighbor, neighbor, 1))  # (current, first_step, distance)
+                visited.add(neighbor)
+
+            # Expand outward until a target is found
+            while queue:
+                curr, first_step, dist = queue.pop(0)
+
+                if curr in target_positions:
+                    return (first_step, dist)
+
+                for _, neighbor in move_map[curr].items():
+                    if neighbor is None or neighbor in visited:
+                        continue
+
+                    is_walkable = (board[neighbor] == 0) or (neighbor in target_positions)
+                    if not is_walkable:
+                        continue
+
+                    visited.add(neighbor)
+                    queue.append((neighbor, first_step, dist + 1))
+
+            return (None, None)
+
+        # ====== MAIN LOGIC ======
+        if not tiger_moves:
+            debug_print("No legal tiger moves.")
+            return None
+
+        debug_print("Board:", board)
+        debug_print("Legal tiger moves:", tiger_moves)
+
+        # --- 1) CAPTURE LOGIC ---
+        captures = [move for move in tiger_moves if move[2]]
+        has_capture = len(captures) > 0
+
+        if has_capture:
+            random.shuffle(captures)  # break ties a little before max()
+            best_capture = max(captures, key=lambda move: POS_VALS[move[1]])
+
+            debug_print(
+                "Capture phase:",
+                "candidate captures =", captures,
+                "chosen =", best_capture,
+                "dest_pos_val =", POS_VALS[best_capture[1]],
+            )
+            return best_capture
+
+        # --- 2) ANCHOR LOGIC ---
+        # The tiger strategy prefers to control two important board regions:
+        #   * Anchor 0 (top of the board)
+        #   * One of the central anchors {9, 10}
+        #
+        # These positions tend to give the tigers better mobility and capture lanes.
+        # If either anchor is not currently occupied by a tiger, we attempt to move
+        # the closest tiger toward that anchor using BFS pathfinding.
+
+        current_tiger_positions = [i for i in range(23) if occupied_by_tiger(i)]
+
+        anchor_0_occupied = occupied_by_tiger(0)
+        anchor_primary_occupied = occupied_by_tiger(9) or occupied_by_tiger(10)
+
+        # Determine which anchors we still need to claim
+        need_anchor0 = not anchor_0_occupied
+        need_primary = not anchor_primary_occupied
+
+        debug_print(
+            "Anchor status:",
+            f"anchor_0_occupied={anchor_0_occupied}, "
+            f"anchor_primary_occupied={anchor_primary_occupied}, "
+            f"need_anchor0={need_anchor0}, need_primary={need_primary}",
+        )
+
+        if need_anchor0 or need_primary:
+
+            # Build a list of anchor targets that we want to move toward
+            # Each entry is (group_name, list_of_target_positions)
+            anchor_groups = []
+
+            if need_anchor0:
+                anchor_groups.append(("secondary", [0]))
+
+            if need_primary:
+                # Prefer moving to an empty primary anchor
+                primary_targets = [p for p in (9, 10) if board[p] == 0]
+
+                # If both are occupied (rare but possible during transitions),
+                # we still treat them as targets so BFS can plan toward them.
+                if not primary_targets:
+                    primary_targets = [9, 10]
+
+                anchor_groups.append(("primary", primary_targets))
+
+            debug_print("Anchor groups:", anchor_groups)
+
+            # Track the best candidate anchor move
+            # Structure: (distance, tiger_start_pos, first_step, group_name, targets)
+            best = None
+
+            for t_pos in current_tiger_positions:
+
+                # If anchor 0 is already held, we avoid moving that tiger away
+                if anchor_0_occupied and t_pos == 0:
+                    debug_print("Skipping tiger at 0 (already satisfying anchor 0).")
+                    continue
+
+                # Same idea for the primary anchors
+                if anchor_primary_occupied and t_pos in (9, 10):
+                    debug_print(f"Skipping tiger at {t_pos} (already satisfying primary anchor).")
+                    continue
+
+                # Try finding a path from this tiger to each anchor group
+                for group_name, targets in anchor_groups:
+
+                    step, dist = bfs_find_next_step(t_pos, targets)
+
+                    # If BFS can't reach the anchor through empty spaces, skip
+                    if step is None:
+                        continue
+
+                    debug_print(
+                        f"Anchor candidate: tiger at {t_pos} -> step {step} "
+                        f"(group {group_name}, targets {targets}, dist {dist})"
+                    )
+
+                    # Choose the tiger that can reach an anchor in the fewest steps
+                    if (best is None) or (dist < best[0]):
+                        best = (dist, t_pos, step, group_name, targets)
+
+            # Convert the BFS suggestion into a legal tiger move
+            if best is not None:
+                dist, from_pos, step, group_name, targets = best
+                chosen_move = None
+                for move in tiger_moves:
+                    if move[0] == from_pos and move[1] == step:
+                        chosen_move = move
+                        break
+
+                if chosen_move is not None:
+                    debug_print(
+                        "Anchor choice:",
+                        f"group={group_name}, targets={targets}, dist={dist},",
+                        f"from={from_pos}, to={step}, move={chosen_move}",
+                    )
+                    return chosen_move
+
+                debug_print(
+                    "Anchor choice failed: BFS suggested step not in tiger_moves.",
+                    f"group={group_name}, targets={targets}, dist={dist},",
+                    f"from={from_pos}, to={step}",
+                )
+            else:
+                debug_print("Anchor logic: no reachable anchor path found, falling through.")
+
+        # --- 3) ROAMING LOGIC ---
+        # If no captures or anchor moves are available, the tiger enters a
+        # "roaming" mode. The goal here is simple positional improvement:
+        #
+        #   * Move toward high-value board squares (POS_VALS >= 5)
+        #   * Avoid abandoning important anchor positions
+        #
+        # This encourages the tiger to drift toward strong control squares
+        # instead of wandering randomly.
+
+        high_value_moves = []
+
+        for move in tiger_moves:
+            t_from, t_to, _ = move
+
+            # Never abandon anchor 0 once we control it
+            # This keeps one tiger guarding the top anchor
+            if t_from == 0:
+                continue
+
+            # Prevent leaving the only occupied primary anchor (9 or 10)
+            # If exactly one tiger is holding the central anchor region,
+            # we keep it there to maintain positional control.
+            leaving_only_primary_anchor = (
+                anchor_primary_occupied
+                and (
+                    (t_from == 9 and board[9] == 2 and board[10] != 2)
+                    or (t_from == 10 and board[10] == 2 and board[9] != 2)
+                )
+            )
+
+            if leaving_only_primary_anchor:
+                continue
+
+            # If the destination square has strong positional value,
+            # consider it as a roaming candidate
+            if is_high_value(t_to):
+                high_value_moves.append(move)
+
+        # Choose randomly among strong roaming options
+        # (adds slight unpredictability)
+        if high_value_moves:
+            chosen = random.choice(high_value_moves)
+
+            debug_print(
+                "Roaming phase:",
+                "high_value_moves =", high_value_moves,
+                "chosen =", chosen,
+                "dest_pos_val =", POS_VALS[chosen[1]],
+            )
+
+            return chosen
+
+        # --- 4) FALLBACK ---
+        fallback = random.choice(tiger_moves)
+        debug_print(
+            "Fallback phase: no captures, no anchor moves, no high-value roam.",
+            "Fallback chosen move =", fallback,
+        )
+        return fallback
 
     def _greedy_tiger_move(self, tiger_options):
         """Pick a capture-biased random tiger move from legal options."""
@@ -1379,11 +1442,11 @@ class TnGEnv(gym.Env):
             return random.choice(tiger_options)
 
         return None
-
-
-    # --------------------------------------------------------
-    #  Tiger move generation
-    # --------------------------------------------------------
+    # ============================================================
+    #  Group: Move Generation and Mask Sources
+    #  Enumerates legal moves used by masking, transitions, and opponents.
+    #  Serves as the source of truth for move legality.
+    # ============================================================
     def _tiger_moves(self, include_dir: bool = False):
         """
         Compute all legal tiger moves.
@@ -1432,14 +1495,6 @@ class TnGEnv(gym.Env):
                 moves.append((i, jump, True, dir_code) if include_dir else (i, jump, True))
 
         return moves
-
-
-
-
-
-    # --------------------------------------------------------
-    #  Goat move generation (valid_moves for masking)
-    # --------------------------------------------------------
     def _update_valid_moves(self):
         """
         Recompute all legal goat actions and store in self.valid_moves.
@@ -1463,11 +1518,11 @@ class TnGEnv(gym.Env):
                             new_moves.append(self.encode_action(i, dir_code))
 
         self.valid_moves = new_moves
-
-
-    # ========================================================
-    # Reward Shaping Helper Definitions
-    # ========================================================
+    # ============================================================
+    #  Group: Board Metrics and Graph Utilities
+    #  Computes reachability and geometry features for shaping signals.
+    #  Includes shortest-path helpers on the static board graph.
+    # ============================================================
 
     def _compute_unreachable_safe_cells(self) -> int:
         """
