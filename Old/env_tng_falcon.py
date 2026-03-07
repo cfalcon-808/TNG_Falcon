@@ -1,9 +1,9 @@
 # ============================================================
 #  Project    : Tigers & Goats - Falcon Branch
 #  Module     : Maskable PPO Environment (Full Game, Unified Tigers)
-#  File       : env_goat_falcon.py
-#  Version    : env4.0
-#  Last Update: 2025-12-27
+#  File       : env_tng_falcon.py
+#  Version    : env5.0
+#  Last Update: 2026-01-03
 #
 #  Purpose / Goal:
 #    Provide a single stable Gymnasium environment for training goat agents
@@ -68,6 +68,10 @@ DEBUG_INVALID = False
 TIGER_AI_GREEDY = "greedy"
 TIGER_AI_SMART = "smart"
 VALID_TIGER_AI = {TIGER_AI_GREEDY, TIGER_AI_SMART}
+GOAT_LEARNER = "goat"
+TIGER_LEARNER = "tiger"
+GOAT_AI_RANDOM = "random"
+GOAT_AI_MODEL = "model"
 
 
 # ============================================================
@@ -78,18 +82,23 @@ VALID_TIGER_AI = {TIGER_AI_GREEDY, TIGER_AI_SMART}
 
 DEFAULT_KNOBS = {
 
-    # Core terminal rewards
+    # Goat-learner terminal rewards
     "REWARD_GOAT_WIN":          3.2,    # reward when goats immobilize all tigers
     "REWARD_TIGER_WIN":        -3.2,    # penalty when tigers win by eating goats
 
-    # Step & goat-eaten shaping
+    # Tiger-learner rewards (positive magnitudes)
+    "REWARD_TIGER_CAPTURE":     0.35,   # reward per goat captured (tiger learner)
+    "REWARD_TIGER_WIN_BONUS":   3.2,    # reward for tiger win (tiger learner)
+    "REWARD_TIGER_LOSS_PENALTY": 3.2,   # penalty when tiger loses or times out (tiger learner)
+
+    # Goat-learner step & capture shaping
     "REWARD_STEP":             -0.001,  # per-step penalty to discourage stalling
     "REWARD_GOAT_EATEN":       -0.35,   # penalty for each goat captured by tigers
 
     # Timeout scales
-    "GOAT_TIMEOUT_SCALE":       1.0,    # scale for turn-limit (max turns) timeout penalty
-    "GOAT_STALL_SCALE":         0.8,    # scale for stall-timeout (repeat-state) penalty
-    "MAX_TURNS":                100,    # max turns before enforcing goat-timeout
+    "MAX_TIMEOUT_SCALE":        1.0,    # scale for turn-limit (max turns) timeout penalty
+    "REPEAT_STALL_SCALE":       0.8,    # scale for stall-timeout (repeat-state) penalty
+    "MAX_TURNS":                100,    # max turns before enforcing max-timeout
 
     # Move penalty shaping
     "MOVE_STEP_BASE":          -0.01,   # base negative reward for moving-phase steps
@@ -136,8 +145,13 @@ DEFAULT_WEIGHTS = {
     # Terminal outcomes
     "goat_win":      1.0,   # REWARD_GOAT_WIN (+ decay)
     "tiger_win":     1.0,   # REWARD_TIGER_WIN
-    "goat_timeout":  1.0,   # GOAT_TIMEOUT_SCALE * REWARD_TIGER_WIN
-    "goat_stall":    1.0,   # GOAT_STALL_SCALE   * REWARD_TIGER_WIN
+    "max_timeout":   1.0,   # MAX_TIMEOUT_SCALE * REWARD_TIGER_WIN
+    "repeat_stall":  1.0,   # REPEAT_STALL_SCALE * REWARD_TIGER_WIN
+
+    # Tiger-learner rewards
+    "tiger_capture": 1.0,   # REWARD_TIGER_CAPTURE
+    "tiger_win_bonus": 1.0, # REWARD_TIGER_WIN_BONUS
+    "tiger_loss":    1.0,   # REWARD_TIGER_LOSS_PENALTY
 
     # Shaping / intermediate signals
     "goat_eaten":    1.0,   # REWARD_GOAT_EATEN
@@ -166,6 +180,14 @@ COORD_LABELS = [
     "a3", "b3", "c3", "d3", "e3", "f3",      # 13–18
     "b4", "c4", "d4", "e4",                  # 19–22
 ]
+
+# Special hub capture jumps from node 0 (b0)
+HUB0_CAPTURE_JUMP = {
+    1: 8,   # 0 -> 2 (b1) -> 8 (b2)
+    2: 9,   # 0 -> 3 (c1) -> 9 (c2)
+    3: 10,  # 0 -> 4 (d1) -> 10 (d2)
+    4: 11,  # 0 -> 5 (e1) -> 11 (e2)
+}
 
 
 # ============================================================
@@ -408,26 +430,40 @@ class TnGEnv(gym.Env):
 
     def get_action_mask(self):
         """
-        Returns a Boolean mask of shape (115,),
-        where each index corresponds to (pos, dir_code) = (i // 5, i % 5).
+        Returns a Boolean mask of shape (BOARD_SIZE * DIR_CODES,),
+        where each index corresponds to (pos, dir_code) = (i // DIR_CODES, i % DIR_CODES).
 
-        Uses self.valid_moves (list of [pos, dir_code]) to build the mask.
+        - Goat learner: uses self.valid_moves (list of (pos, dir_code)).
+        - Tiger learner: uses _tiger_moves(include_dir=True) to mark legal tiger actions.
         """
         mask = np.zeros(BOARD_SIZE * DIR_CODES, dtype=bool)
 
+        if getattr(self, "learner_role", GOAT_LEARNER) == TIGER_LEARNER:
+            for from_pos, _to_pos, _cap, dir_code in self._tiger_moves(include_dir=True):
+                flat = from_pos * DIR_CODES + dir_code
+                if 0 <= flat < mask.size:
+                    mask[flat] = True
+            return mask
+
         for pos, dir_code in self.valid_moves:
             flat = pos * DIR_CODES + dir_code
-            mask[flat] = True
+            if 0 <= flat < mask.size:
+                mask[flat] = True
 
         return mask
 
-    def __init__(self, reward_weights=None, tiger_ai: str = TIGER_AI_GREEDY):
+
+    def __init__(self, reward_weights=None, tiger_ai: str = TIGER_AI_GREEDY, learner_role: str = GOAT_LEARNER, goat_opponent_ai: str = GOAT_AI_RANDOM, goat_model_predict_fn=None):
         super(TnGEnv, self).__init__()
 
         # Knob weights
         self.knobs = dict(DEFAULT_KNOBS)
         # Reward weights
         self.reward_weights = dict(DEFAULT_WEIGHTS)
+
+        self.learner_role = (learner_role or GOAT_LEARNER).lower()
+        self.goat_opponent_ai = (goat_opponent_ai or GOAT_AI_RANDOM).lower()
+        self._goat_model_predict_fn = goat_model_predict_fn  # callable(obs, mask)->flat action
 
         # Load any tuning values passed to this function into
         # their respective dictionaries.
@@ -443,6 +479,10 @@ class TnGEnv(gym.Env):
         self.tiger_ai = (tiger_ai or TIGER_AI_GREEDY).lower()
         if self.tiger_ai not in VALID_TIGER_AI:
             raise ValueError(f"tiger_ai must be one of {VALID_TIGER_AI}")
+        if self.learner_role not in {GOAT_LEARNER, TIGER_LEARNER}:
+            raise ValueError(f"learner_role must be one of: {GOAT_LEARNER}, {TIGER_LEARNER}")
+        if self.goat_opponent_ai not in {GOAT_AI_RANDOM, GOAT_AI_MODEL}:
+            raise ValueError(f"goat_opponent_ai must be one of: {GOAT_AI_RANDOM}, {GOAT_AI_MODEL}")
 
         # -------------------------
         # Observation space
@@ -716,6 +756,9 @@ class TnGEnv(gym.Env):
           4) Check tiger win (enough goats eaten)
           5) Update goat legal moves
         """
+        if self.learner_role == TIGER_LEARNER:
+            return self._step_tiger_learner(action)
+
         # If game is already over, just return terminal state again.
         if self.terminate:
             return self.get_state(), 0.0, True, False, {
@@ -729,6 +772,7 @@ class TnGEnv(gym.Env):
         self.turns += 1
 
         pos, dir_code = self._decode_action(action)
+        goats_eaten_before = self.eaten
 
         # Human readable move descriptions for this turn
         goat_desc = ""
@@ -773,9 +817,11 @@ class TnGEnv(gym.Env):
             step_pen = max(step_pen, self._w("MOVE_STEP_MIN"))
             shaped_reward = self._w("step") * step_pen
 
+
         # -------------------------
         # Goat turn
         # -------------------------
+        did_goat_move = False
         if self.phase == 0:
             # Placing phase: must place on empty cell with dir_code = 0
             if dir_code != 0 or self.board[pos] != 0:
@@ -833,17 +879,18 @@ class TnGEnv(gym.Env):
             # Perform goat move
             self.board[pos] = 0
             self.board[dest] = 1
+            did_goat_move = True
 
             # record goat move (from -> to)
             goat_desc = f"Goat {idx_to_coord(pos)} -> {idx_to_coord(dest)}"
 
-        if self.phase == 1:
+        if did_goat_move:
             self.move_steps += 1
 
         # -------------------------
         # After goat move: recompute geometry and tiger moves
         # -------------------------
-        tiger_options = self._tiger_moves()
+        tiger_options = self._tiger_moves(include_dir=False)
         tiger_moves_after = len(tiger_options)
     
         # update cached mobility for next step
@@ -865,8 +912,7 @@ class TnGEnv(gym.Env):
         # if delta moves is positive, then positive reward
         if delta_moves > 0:
             shaped_reward += (
-                self._w("block_tiger")
-                * self._w("REWARD_BLOCK_TIGER")
+                abs(self._w("block_tiger") * self._w("REWARD_BLOCK_TIGER"))
                 * delta_moves
                 * (1.0 + late)
             )
@@ -874,8 +920,7 @@ class TnGEnv(gym.Env):
         elif delta_moves < 0:
             # Penalize making tigers more mobile
             shaped_reward += (
-                self._w("block_tiger")
-                * self._w("REWARD_BLOCK_TIGER")
+                abs(self._w("block_tiger") * self._w("REWARD_BLOCK_TIGER"))
                 * self._w("MOBILITY_BACKSLIDE_SCALE")
                 * delta_moves
             )
@@ -962,16 +1007,10 @@ class TnGEnv(gym.Env):
 
         # If this move is a capture, remove the jumped goat
         if took_capture:
-            for d_code, neigh in self.move_map[t_from].items():
-                jump = self.move_map.get(neigh, {}).get(d_code, None)
-                if t_from == 0:
-                    # special-case b0 jump direction
-                    jump = self.move_map.get(neigh, {}).get(3, None)
-
-                if jump == t_to and self.board[neigh] == 1:
-                    self.board[neigh] = 0
-                    self.eaten += 1
-                    break
+            jumped_goat_pos = self._find_jumped_goat(t_from, t_to)
+            if jumped_goat_pos is not None and self.board[jumped_goat_pos] == 1:
+                self.board[jumped_goat_pos] = 0
+                self.eaten += 1
 
         # Apply tiger move
         self.board[t_to] = 2
@@ -1026,12 +1065,12 @@ class TnGEnv(gym.Env):
         if self.turns >= self._w("MAX_TURNS"):
             self.terminate = True
             shaped_reward += (
-                self._w("goat_timeout")
+                self._w("max_timeout")
                 * self._w("REWARD_TIGER_WIN")
-                * self._w("GOAT_TIMEOUT_SCALE")
+                * self._w("MAX_TIMEOUT_SCALE")
             )
             return self.get_state(), shaped_reward, True, False, {
-                "winner": "GoatTimeout",
+                "winner": "MaxTimeout",
                 "action_mask": self.get_action_mask(),
                 "tiger_ai": self.tiger_ai,
                 "tiger_ai_id": float(1 if self.tiger_ai == TIGER_AI_SMART else 0),
@@ -1054,12 +1093,12 @@ class TnGEnv(gym.Env):
             self.terminate = True
             # Treat as a "bad" timeout: goats failed to make progress
             shaped_reward += (
-                self._w("goat_stall")
+                self._w("repeat_stall")
                 * self._w("REWARD_TIGER_WIN")
-                * self._w("GOAT_STALL_SCALE")
+                * self._w("REPEAT_STALL_SCALE")
             )
             return self.get_state(), shaped_reward, True, False, {
-                "winner": "StallTimeout",
+                "winner": "RepeatTimeout",
                 "action_mask": self.get_action_mask(),
                 "tiger_ai": self.tiger_ai,
                 "tiger_ai_id": float(1 if self.tiger_ai == TIGER_AI_SMART else 0),
@@ -1086,12 +1125,327 @@ class TnGEnv(gym.Env):
             "episode_tiger_ai_id": float(1 if self._episode_tiger_ai == TIGER_AI_SMART else 0)
         }
     #end def step()
+    
+
+    def _step_tiger_learner(self, action):
+        """
+        Tiger-learner path:
+          - Agent controls tigers.
+          - Goats are scripted (random or model-driven).
+          - Rewards are tiger-centric (positive on captures/wins, negative on stalls/being locked).
+        """
+
+        # ---------------------------------------------------------
+        # Safe no-op if step() is called again after termination
+        # ---------------------------------------------------------
+        if self.terminate:
+            return self.get_state(), 0.0, True, False, {
+                "action_mask": self.get_action_mask(),
+                "tiger_ai": self.tiger_ai,
+                "tiger_ai_id": float(1 if self.tiger_ai == TIGER_AI_SMART else 0),
+                "episode_tiger_ai": self._episode_tiger_ai,
+                "episode_tiger_ai_id": float(1 if self._episode_tiger_ai == TIGER_AI_SMART else 0)
+            }
+
+        # ---------------------------------------------------------
+        # Count full tiger turns (each includes a goat response)
+        # ---------------------------------------------------------
+        self.turns += 1
+
+        # ---------------------------------------------------------
+        # Decode flattened action into board position + direction
+        # ---------------------------------------------------------
+        pos, dir_code = self._decode_action(action)
+        goats_eaten_before = self.eaten
+
+        # ---------------------------------------------------------
+        # Soft invalid: out-of-range action, penalize but continue
+        # ---------------------------------------------------------
+        if not (0 <= pos < BOARD_SIZE) or not (0 <= dir_code < DIR_CODES):
+            return (
+                self.get_state(),
+                self._w("invalid_soft") * self._w("REWARD_INVALID_SOFT"),
+                False,
+                False, {
+                    "invalid_action": True,
+                    "action_mask": self.get_action_mask(),
+                    "tiger_ai": self.tiger_ai,
+                    "tiger_ai_id": float(1 if self.tiger_ai == TIGER_AI_SMART else 0),
+                    "episode_tiger_ai": self._episode_tiger_ai,
+                    "episode_tiger_ai_id": float(1 if self._episode_tiger_ai == TIGER_AI_SMART else 0)
+                }
+            )
+
+        # ---------------------------------------------------------
+        # Build lookup table of all legal tiger moves:
+        #   (from_pos, dir_code) -> (dest_pos, is_capture)
+        # ---------------------------------------------------------
+        legal = {}
+        
+        for f, t, cap, d in self._tiger_moves(include_dir=True):
+            key = (f, d)
+            if key in legal:
+                raise ValueError(f"duplicate tiger action key (from_pos,dir_code)={key}")
+            legal[(f, d)] = (t, cap)
+        
+
+        # ---------------------------------------------------------
+        # Hard invalid: action not in legal set, terminate episode
+        # ---------------------------------------------------------
+        if (pos, dir_code) not in legal:
+            self.terminate = True
+            return (
+                self.get_state(),
+                self._w("invalid_hard") * abs(self._w("REWARD_INVALID_HARD")),
+                True,
+                False, {
+                    "error": "Invalid tiger action",
+                    "action_mask": self.get_action_mask(),
+                    "tiger_ai": self.tiger_ai,
+                    "tiger_ai_id": float(1 if self.tiger_ai == TIGER_AI_SMART else 0),
+                    "episode_tiger_ai": self._episode_tiger_ai,
+                    "episode_tiger_ai_id": float(1 if self._episode_tiger_ai == TIGER_AI_SMART else 0)
+                }
+            )
+
+        # Resolve destination and capture flag from legal move
+        dest, took_capture = legal[(pos, dir_code)]
+
+        # ---------------------------------------------------------
+        # Base step penalty to discourage stalling
+        # ---------------------------------------------------------
+        shaped_reward = self._w("step") * self._w("REWARD_STEP")
+
+        # ---------------------------------------------------------
+        # Execute tiger move on board
+        # (legality guarantees pos contains a tiger)
+        # ---------------------------------------------------------
+        self.board[dest] = 2
+        self.board[pos] = 0
+
+        # ---------------------------------------------------------
+        # Capture resolution:
+        # Find the jumped-over goat and remove it
+        # ---------------------------------------------------------
+        if took_capture:
+            # With aligned _tiger_moves(), dir_code is already the effective direction code.
+            jumped_goat_pos = self._find_jumped_goat(pos, dest)
+
+            if jumped_goat_pos is not None and self.board[jumped_goat_pos] == 1:
+                self.board[jumped_goat_pos] = 0
+                self.eaten += 1
+
+        goats_eaten_this_turn = self.eaten - goats_eaten_before
+        if goats_eaten_this_turn > 0:
+            shaped_reward += (
+                self._w("tiger_capture")
+                * self._w("REWARD_TIGER_CAPTURE")
+                * goats_eaten_this_turn
+            )
+
+        # ---------------------------------------------------------
+        # Tiger mobility shaping:
+        # More available moves is better for tiger
+        # ---------------------------------------------------------
+        tiger_before = self.prev_tiger_moves
+        tiger_after = len(self._tiger_moves())
+        self.prev_tiger_moves = tiger_after
+
+        delta_moves = tiger_after - tiger_before
+        if delta_moves > 0:
+            shaped_reward += abs(self._w("block_tiger") * self._w("REWARD_BLOCK_TIGER")) * delta_moves
+        elif delta_moves < 0:
+            shaped_reward += abs(self._w("block_tiger") * self._w("REWARD_BLOCK_TIGER")) * delta_moves
+
+        # ---------------------------------------------------------
+        # Center control shaping from tiger's perspective
+        # ---------------------------------------------------------
+        center_score = 0.0
+        for idx in KEY_CENTERS:
+            if self.board[idx] == 2:
+                center_score += abs(self._w("REWARD_CENTER_GOAT"))
+            elif self.board[idx] == 1:
+                center_score -= abs(self._w("REWARD_CENTER_GOAT"))
+
+        shaped_reward += self._w("center") * center_score
+
+        # ---------------------------------------------------------
+        # Tiger win: capture threshold reached (GOATS_EATEN_FOR_TIGER_WIN goats)
+        # ---------------------------------------------------------
+        if self.eaten >= GOATS_EATEN_FOR_TIGER_WIN:
+            self.terminate = True
+            shaped_reward += self._w("tiger_win_bonus") * self._w("REWARD_TIGER_WIN_BONUS")
+            return self.get_state(), shaped_reward, True, False, {
+                "winner": "Tiger",
+                "action_mask": self.get_action_mask(),
+                "tiger_ai": self.tiger_ai,
+                "tiger_ai_id": float(1 if self.tiger_ai == TIGER_AI_SMART else 0),
+                "episode_tiger_ai": self._episode_tiger_ai,
+                "episode_tiger_ai_id": float(1 if self._episode_tiger_ai == TIGER_AI_SMART else 0)
+            }
+
+        # ---------------------------------------------------------
+        # Scripted goat opponent moves immediately after tiger
+        # ---------------------------------------------------------
+        self._update_valid_moves()
+
+        def goat_mask():
+            # Flat action mask for goat opponent
+            mask = np.zeros(BOARD_SIZE * DIR_CODES, dtype=bool)
+            for g_pos, g_dir in self.valid_moves:
+                mask[g_pos * DIR_CODES + g_dir] = True
+            return mask
+
+        def goat_random_action():
+            mask = goat_mask()
+            legal_idxs = np.flatnonzero(mask)
+            if legal_idxs.size == 0:
+                return None
+            flat = int(np.random.choice(legal_idxs))
+            return flat // DIR_CODES, flat % DIR_CODES
+
+        def goat_model_action():
+            # Predict a flat action index and validate it against the mask
+            if self._goat_model_predict_fn is None:
+                return None
+            mask = goat_mask()
+            obs = self.get_state()
+            try:
+                flat = int(self._goat_model_predict_fn(obs, mask))
+                pos_m = flat // DIR_CODES
+                dir_m = flat % DIR_CODES
+                if 0 <= pos_m < BOARD_SIZE and 0 <= dir_m < DIR_CODES and mask[flat]:
+                    return pos_m, dir_m
+            except Exception:
+                return None
+            return None
+
+        # Prefer model-driven goat; fallback to random
+        goat_choice = None
+        if self.goat_opponent_ai == GOAT_AI_MODEL:
+            goat_choice = goat_model_action()
+        if goat_choice is None:
+            goat_choice = goat_random_action()
+
+        # ---------------------------------------------------------
+        # No goat moves available -> tiger wins
+        # ---------------------------------------------------------
+        if goat_choice is None:
+            self.terminate = True
+            shaped_reward += self._w("tiger_win_bonus") * self._w("REWARD_TIGER_WIN_BONUS")
+            return self.get_state(), shaped_reward, True, False, {
+                "winner": "Tiger",
+                "action_mask": self.get_action_mask(),
+                "tiger_ai": self.tiger_ai,
+                "tiger_ai_id": float(1 if self.tiger_ai == TIGER_AI_SMART else 0),
+                "episode_tiger_ai": self._episode_tiger_ai,
+                "episode_tiger_ai_id": float(1 if self._episode_tiger_ai == TIGER_AI_SMART else 0)
+            }
+
+        g_pos, g_dir = goat_choice
+
+        # ---------------------------------------------------------
+        # Apply goat move:
+        # phase 0 -> placing, phase 1 -> moving
+        # ---------------------------------------------------------
+        if self.phase == 0:
+            if self.board[g_pos] == 0 and g_dir == 0:
+                self.board[g_pos] = 1
+                self.goats_placed += 1
+                if self.goats_placed >= TOTAL_GOATS_TO_PLACE:
+                    self.phase = 1
+        else:
+            g_dest = self.move_map[g_pos].get(g_dir, None)
+            if g_dest is not None and self.board[g_pos] == 1 and self.board[g_dest] == 0:
+                self.board[g_pos] = 0
+                self.board[g_dest] = 1
+                self.move_steps += 1
+
+        # ---------------------------------------------------------
+        # Goat win: tiger has no legal moves after goat action
+        # ---------------------------------------------------------
+        if len(self._tiger_moves()) == 0:
+            self.terminate = True
+            shaped_reward -= self._w("tiger_loss") * self._w("REWARD_TIGER_LOSS_PENALTY")
+            return self.get_state(), shaped_reward, True, False, {
+                "winner": "Goat",
+                "action_mask": self.get_action_mask(),
+                "tiger_ai": self.tiger_ai,
+                "tiger_ai_id": float(1 if self.tiger_ai == TIGER_AI_SMART else 0),
+                "episode_tiger_ai": self._episode_tiger_ai,
+                "episode_tiger_ai_id": float(1 if self._episode_tiger_ai == TIGER_AI_SMART else 0)
+            }
+
+        # ---------------------------------------------------------
+        # Timeout / stall condition using MAX_TURNS
+        # ---------------------------------------------------------
+        if self.turns >= self._w("MAX_TURNS"):
+            self.terminate = True
+            shaped_reward -= (
+                self._w("tiger_loss")
+                * self._w("REWARD_TIGER_LOSS_PENALTY")
+                * self._w("MAX_TIMEOUT_SCALE")
+            )
+            return self.get_state(), shaped_reward, True, False, {
+                "winner": "MaxTimeout",
+                "action_mask": self.get_action_mask(),
+                "tiger_ai": self.tiger_ai,
+                "tiger_ai_id": float(1 if self.tiger_ai == TIGER_AI_SMART else 0),
+                "episode_tiger_ai": self._episode_tiger_ai,
+                "episode_tiger_ai_id": float(1 if self._episode_tiger_ai == TIGER_AI_SMART else 0)
+            }
+
+        # ---------------------------------------------------------
+        # Refresh goat move cache for next step
+        # ---------------------------------------------------------
+        self._update_valid_moves()
+
+        return self.get_state(), shaped_reward, False, False, {
+            "action_mask": self.get_action_mask(),
+            "tiger_ai": self.tiger_ai,
+            "tiger_ai_id": float(1 if self.tiger_ai == TIGER_AI_SMART else 0),
+            "episode_tiger_ai": self._episode_tiger_ai,
+            "episode_tiger_ai_id": float(1 if self._episode_tiger_ai == TIGER_AI_SMART else 0)
+        }
+        # end def _step_tiger_learner()
+
+
+    def _find_jumped_goat(self, t_from: int, t_to: int):
+        """
+        Given a tiger capture move t_from -> t_to (which must be a jump),
+        find the intermediate neighbor that was jumped over.
+        Returns jumped_pos or None if not found.
+        """
+        # Special hub rule for node 0
+        if t_from == 0:
+            for dir_code, neigh in self.move_map[0].items():
+                if neigh is None:
+                    continue
+                jump = HUB0_CAPTURE_JUMP.get(dir_code, None)
+                if jump == t_to:
+                    return neigh
+            return None
+
+        # Default rule (same dir_code twice)
+        for dir_code, neigh in self.move_map.get(t_from, {}).items():
+            if neigh is None:
+                continue
+            jump = self.move_map.get(neigh, {}).get(dir_code, None)
+            if jump == t_to:
+                return neigh
+        return None
+
 
 
     # --------------------------------------------------------
     #  Tiger AI selection helpers
     # --------------------------------------------------------
     def _select_tiger_move(self, tiger_options):
+        if self.learner_role == GOAT_LEARNER:
+            # tiger_options here should be 3-tuples
+            if tiger_options and len(tiger_options[0]) != 3:
+                raise ValueError("Goat-learner tiger_options must be (from,to,cap) 3-tuples")
+        
         if self.tiger_ai == TIGER_AI_SMART:
             return smart_tiger(self.board, tiger_options, self.move_map, debug=False)
         return self._greedy_tiger_move(tiger_options)
@@ -1112,38 +1466,52 @@ class TnGEnv(gym.Env):
     # --------------------------------------------------------
     #  Tiger move generation
     # --------------------------------------------------------
-    def _tiger_moves(self):
+    def _tiger_moves(self, include_dir: bool = False):
         """
         Compute all legal tiger moves.
 
         Returns:
-          list of (from_pos, to_pos, is_capture)
+          list of (from_pos, to_pos, is_capture[, dir_code])
+
+        Deterministic rule:
+          - dir_code is always the actual move_map direction used for both:
+              (from -> neighbor) and (neighbor -> jump)
+          - No special-case direction remapping for node 0.
         """
         moves = []
 
         for i in range(BOARD_SIZE):
-            if self.board[i] == 2:  # tiger at this position
-                for dir_code, dest in self.move_map[i].items():
+            if self.board[i] != 2:
+                continue
 
-                    if self.board[dest] == 0:
-                        # normal move into empty neighbor
-                        moves.append((i, dest, False))
+            for dir_code, neigh in self.move_map.get(i, {}).items():
+                if neigh is None:
+                    continue
 
-                    elif self.board[dest] == 1:
-                        # potential capture: goat in neighbor, check jump
-                        if i in [2, 3, 4, 5] and dir_code == 1:
-                            # special-case block (from original logic)
-                            continue
+                # normal move
+                if self.board[neigh] == 0:
+                    moves.append((i, neigh, False, dir_code) if include_dir else (i, neigh, False))
+                    continue
 
-                        jump = self.move_map.get(dest, {}).get(dir_code, None)
-                        if i == 0:
-                            # special-case b0 jump direction
-                            jump = self.move_map.get(dest, {}).get(3, None)
+                # capture candidate: goat in neighbor
+                if self.board[neigh] != 1:
+                    continue
 
-                        if jump is not None and self.board[jump] == 0:
-                            moves.append((i, jump, True))
+                # jump destination
+                if i == 0:
+                    jump = HUB0_CAPTURE_JUMP.get(dir_code, None)
+                else:
+                    jump = self.move_map.get(neigh, {}).get(dir_code, None)
+
+                if jump is None or self.board[jump] != 0:
+                    continue
+
+                moves.append((i, jump, True, dir_code) if include_dir else (i, jump, True))
 
         return moves
+
+
+
 
 
     # --------------------------------------------------------

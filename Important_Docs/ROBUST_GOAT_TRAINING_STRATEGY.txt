@@ -1,0 +1,35 @@
+Robust Goat Training Strategy
+
+Objective
+Build a goat policy that stays strong against multiple tiger opponents, not just one.
+
+Current Training Approach
+1. Train the goat against a greedy tiger until the goat starts getting wins.
+2. Continue training the same existing goat model (do not restart from scratch) against the smart tiger.
+3. This transfer stage usually improves learning speed versus training against the smart tiger from scratch.
+
+Observed Issue
+When I evaluate the continued model against both greedy and smart tigers, it seems to lose some of the strategy learned from the greedy tiger while becoming specifically strong against the smart tiger.
+
+New Direction: Probabilistic Opponent Training
+I introduced a probabilistic training mode:
+- During training, the goat faces the smart tiger with a chosen probability.
+- The remaining probability mass is assigned to other tiger opponents (currently including the greedy tiger).
+- I am still tuning these probabilities to find the most robust multi-opponent play style.
+
+Scalability Update
+I expanded the training code so that as more tiger variants are added, the goat can be trained against many tigers probabilistically in a single training session.
+
+Paragraph Summary
+My strategy for training a robust goat starts by training against a greedy tiger until the goat 
+begins to win consistently, then continue training with the same trained model against a smart tiger 
+instead of restarting from scratch. As a side note, training a goat model against the smart tiger 
+after greedgy tiger training, speeds up training by a factor of 10, as opposed to training from scratch.
+During testing, I noticed the goat can become highly effective against the smart tiger while losing 
+some of the behaviors it learned against the greedy tiger. To address this, I added a probabilistic 
+training mode where the goat faces the smart tiger with a configurable probability and spends the 
+remaining training time against the greedy tiger, and I am tuning these probabilities to produce a 
+stronger, more general play style. I also expanded the code to support probabilistic training against
+multiple tiger variants in one training session as new tiger policies are added. This probabilistic 
+method was implemented to work with a tiger learner agent with probabilistic goat opponents, so we 
+can create a robust tiger as well.
