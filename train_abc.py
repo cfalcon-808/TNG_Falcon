@@ -188,13 +188,13 @@ ENV_VER         = "env_5.0"
 MODEL_VER       = "mppo_train3.0"
 CHECKPOINTS_PER_RUN = 10
 RESUME_MODEL_PATH = None
-GOAT_MODEL_PATH  = "artifacts/models/train/mppo/GvNT/baselineGoatTraining/mppo_GvNT_goat_vs_GT_p0.zip"  # path to a saved goat model (used when opponent is goat_model)
+GOAT_MODEL_PATH  = "stable_models\models\Goats\mppo_GvMixT_goat_GT_to_ST_to_mix_p2.zip"  # path to a saved goat model (used when opponent is goat_model)
 
 # ============================================================
 #  USER CONFIG — Scale / Hardware
 # ============================================================
 
-DEVICE_MODE = "cpu"
+DEVICE_MODE = "gpu"
 DEBUG_MODE  = False                  # True or False
 TIMESTEPS   = 2_000_000 if DEBUG_MODE else 20_000_000
 NUM_CPU     = 16
