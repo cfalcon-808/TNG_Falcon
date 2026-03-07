@@ -172,12 +172,12 @@ OPP_GOAT_MODEL   = "goat_model"
 #  USER CONFIG — Opponent & Naming
 # ============================================================
 
-EXPERIMENT_NAME = "BenchmarkTigerTraining"
+EXPERIMENT_NAME = "baselineTigerTraining"
 LEARNER_ROLE    = TIGER_LEARNER                # GOAT_LEARNER | TIGER_LEARNER
 # Unified opponent selector (interpreted by learner role; used when MIX_PROB is None):
 #   - GOAT learner  : "tiger_greedy" | "tiger_smart"  (model tiger not yet supported)
 #   - TIGER learner : "goat_random"  | "goat_model"
-OPPONENT_AI     = OPP_GOAT_RANDOM
+OPPONENT_AI     = OPP_GOAT_MODEL
 # Mixing control (set to None for fixed opponent):
 #   - GOAT learner  : P(smart tiger), else greedy
 #   - TIGER learner : P(model goat),  else random
@@ -188,8 +188,7 @@ ENV_VER         = "env_5.0"
 MODEL_VER       = "mppo_train3.0"
 CHECKPOINTS_PER_RUN = 10
 RESUME_MODEL_PATH = None
-RESUME_MODEL_PATH = None
-GOAT_MODEL_PATH  = None  # path to a saved goat model (used when opponent is goat_model)
+GOAT_MODEL_PATH  = "artifacts/models/train/mppo/GvNT/baselineGoatTraining/mppo_GvNT_goat_vs_GT_p0.zip"  # path to a saved goat model (used when opponent is goat_model)
 
 # ============================================================
 #  USER CONFIG — Scale / Hardware
@@ -197,7 +196,7 @@ GOAT_MODEL_PATH  = None  # path to a saved goat model (used when opponent is goa
 
 DEVICE_MODE = "cpu"
 DEBUG_MODE  = False                  # True or False
-TIMESTEPS   = 2_000_000 if DEBUG_MODE else 100_000_000
+TIMESTEPS   = 2_000_000 if DEBUG_MODE else 20_000_000
 NUM_CPU     = 16
 SEED        = 42
 
@@ -228,8 +227,13 @@ else:
 # ============================================================
 
 VARIATIONS = {
-    "tiger_vs_random_goat_100M": [
-        {"timesteps": 10_000_000, "opponent_ai": OPP_GOAT_RANDOM, "mix_prob": None},
+    "tiger_vs_baselineNormalGoat20M": [
+        {
+            "timesteps": 20_000_000,
+            "opponent_ai": OPP_GOAT_MODEL,
+            "goat_model_path": GOAT_MODEL_PATH,
+            "mix_prob": None,
+        },
     ]
 }
 

@@ -120,7 +120,7 @@ DEFAULT_KNOBS = {
     "REWARD_INVALID_SOFT":     -0.05,   # small penalty for soft invalid actions
     "REWARD_INVALID_HARD":     -1.0,    # large penalty for hard invalid actions (terminate)
     "REWARD_REPEAT_STATE":     -0.5,    # (Quadratic along count) penalty for repeating a previous board state
-    "MAX_REPEATS":              6,      # how many repeats before a stall timeout triggers
+    "MAX_REPEATS":              4,      # how many repeats before a stall timeout triggers
 
     # Tiger AI difficulty
     "BASE_TIGER_CAPTURE_BIAS": 1.0,     # how greedy tigers are toward captures (1.0 = full greedy)
@@ -198,7 +198,7 @@ def idx_to_coord(idx: int) -> str:
 
 
 # ============================================================
-#  TIGER AI ƒ?" smart_tiger (shared across modes)
+#  TIGER AI smart_tiger (shared across modes)
 # ============================================================
 
 def smart_tiger(board, tiger_moves, move_map, debug: bool = False):
@@ -219,6 +219,7 @@ def smart_tiger(board, tiger_moves, move_map, debug: bool = False):
     }
 
     def debug_print(*args):
+        """Print tiger AI diagnostics only when debug mode is enabled."""
         if debug:
             print("[TIGER DEBUG]", *args)
 
@@ -465,6 +466,7 @@ class TnGEnv(gym.Env):
             reward_fn=None,
             max_turns: int | None = None,
             ):
+        """Initialize environment state, tuning knobs, spaces, and board topology."""
         super(TnGEnv, self).__init__()
 
         # Knob weights
@@ -729,6 +731,7 @@ class TnGEnv(gym.Env):
     # end def render()
 
     def encode_action(self, pos: int, dir_code: int) -> int:
+        """Map (board position, direction code) -> flat Discrete action id."""
         return int(pos) * DIR_CODES + int(dir_code)
 
     def decode_action(self, action):
@@ -751,6 +754,7 @@ class TnGEnv(gym.Env):
         raise ValueError(f"Unrecognized action format: {action} (type {type(action)})")
 
     def _apply_reward_fn(self, prev_obs, action, result):
+        """Run the configured reward function while preserving legacy callback signatures."""
         obs, reward, terminated, truncated, info = result
         try:
             final_reward = self.reward_fn(
@@ -781,9 +785,11 @@ class TnGEnv(gym.Env):
     #  Action decoding helper
     # --------------------------------------------------------
     def _decode_action(self, action):
+        """Internal alias for action decoding."""
         return self.decode_action(action)
 
     def _action_to_flat(self, action):
+        """Best-effort conversion from scalar or [pos, dir] into flat action id."""
         if isinstance(action, np.ndarray) and action.ndim == 0:
             action = action.item()
         if np.isscalar(action):
@@ -795,6 +801,7 @@ class TnGEnv(gym.Env):
         return None
 
     def _safe_decode_action(self, action):
+        """Decode action into (pos, dir) and return None on malformed input."""
         try:
             pos, dir_code = self._decode_action(action)
             return int(pos), int(dir_code)
@@ -802,6 +809,7 @@ class TnGEnv(gym.Env):
             return None
 
     def _build_step_info(self, **extra):
+        """Build a consistent info payload and apply call-site overrides."""
         info = {
             "reason": None,
             "winner": None,
@@ -824,12 +832,14 @@ class TnGEnv(gym.Env):
         return info
 
     def sparse_reward(self, prev_obs, action, obs, terminated, truncated, info):
+        """Dispatch reward shaping to the active learner role."""
         role = info.get("learner_role", self.learner_role)
         if role == TIGER_LEARNER:
             return self._sparse_reward_tiger(prev_obs, action, obs, terminated, truncated, info)
         return self._sparse_reward_goat(prev_obs, action, obs, terminated, truncated, info)
 
     def _sparse_reward_goat(self, prev_obs, action, obs, terminated, truncated, info):
+        """Compute goat-learner shaped reward from transition summary in info."""
         reason = info.get("reason")
         if reason == "already_terminated":
             return 0.0
@@ -912,18 +922,52 @@ class TnGEnv(gym.Env):
 
         return shaped_reward
 
+
     def _sparse_reward_tiger(self, prev_obs, action, obs, terminated, truncated, info):
+        """
+        Compute the tiger-learner reward based on the transition summary stored in `info`.
+
+        The reward is composed of:
+        1. Base step penalty (discourages stalling)
+        2. Capture rewards (positive reward for eating goats)
+        3. Mobility shaping (reward for increasing tiger mobility)
+        4. Positional shaping (reward for controlling key center nodes)
+        5. Terminal rewards/penalties (win, loss, timeout)
+        """
+
+        # --------------------------------------------------------
+        # 1. Early exit / invalid action handling
+        # --------------------------------------------------------
+        # These should almost never occur if action masking works correctly.
+        # They act as safety guards in case an invalid action slips through.
         reason = info.get("reason")
+
         if reason == "already_terminated":
             return 0.0
+
         if reason == "invalid_soft":
+            # Small penalty for illegal-but-non-fatal action
             return self._w("invalid_soft") * self._w("REWARD_INVALID_SOFT")
+
         if reason == "invalid_hard":
+            # Large penalty for a serious invalid action that terminates the episode
             return self._w("invalid_hard") * abs(self._w("REWARD_INVALID_HARD"))
 
-        shaped_reward = self._w("step") * float(info.get("step_penalty", self._w("REWARD_STEP")))
+        # --------------------------------------------------------
+        # 2. Base step penalty
+        # --------------------------------------------------------
+        # Small negative reward each turn to encourage faster wins
+        # and discourage infinite wandering.
+        shaped_reward = self._w("step") * float(
+            info.get("step_penalty", self._w("REWARD_STEP"))
+        )
 
+        # --------------------------------------------------------
+        # 3. Capture reward
+        # --------------------------------------------------------
+        # Tigers receive positive reward when they capture goats.
         goats_eaten_this_turn = int(info.get("goats_eaten_this_turn", 0))
+
         if goats_eaten_this_turn > 0:
             shaped_reward += (
                 self._w("tiger_capture")
@@ -931,16 +975,47 @@ class TnGEnv(gym.Env):
                 * goats_eaten_this_turn
             )
 
+        # --------------------------------------------------------
+        # 4. Tiger mobility shaping
+        # --------------------------------------------------------
+        # delta_moves measures change in number of available tiger moves.
+        # Positive delta -> more mobility -> good for tigers.
         delta_moves = int(info.get("delta_moves", 0))
+
         if delta_moves != 0:
-            shaped_reward += abs(self._w("block_tiger") * self._w("REWARD_BLOCK_TIGER")) * delta_moves
+            shaped_reward += (
+                abs(self._w("block_tiger") * self._w("REWARD_BLOCK_TIGER"))
+                * delta_moves
+            )
 
-        shaped_reward += self._w("center") * float(info.get("center_score", 0.0))
+        # --------------------------------------------------------
+        # 5. Center control shaping
+        # --------------------------------------------------------
+        # Reward for occupying strategically strong center nodes. This
+        # reward is only active in the placing phase of the game, so the
+        # agent doesnt prioritize center control over eating goats.  
+        phase = int(info.get("phase", self.phase))
+        if phase == 0:
+            shaped_reward += self._w("center") * float(info.get("center_score", 0.0))
 
+        # --------------------------------------------------------
+        # 6. Terminal outcome rewards / penalties
+        # --------------------------------------------------------
+        # Large reward when tigers win the game.
         if reason in {"tiger_win_capture_threshold", "tiger_win_no_goat_moves"}:
-            shaped_reward += self._w("tiger_win_bonus") * self._w("REWARD_TIGER_WIN_BONUS")
+            shaped_reward += (
+                self._w("tiger_win_bonus")
+                * self._w("REWARD_TIGER_WIN_BONUS")
+            )
+
+        # Penalty when goats successfully immobilize the tigers.
         elif reason == "goat_win_no_tiger_moves":
-            shaped_reward -= self._w("tiger_loss") * self._w("REWARD_TIGER_LOSS_PENALTY")
+            shaped_reward -= (
+                self._w("tiger_loss")
+                * self._w("REWARD_TIGER_LOSS_PENALTY")
+            )
+
+        # Timeout penalty (scaled loss)
         elif reason == "max_timeout":
             shaped_reward -= (
                 self._w("tiger_loss")
@@ -949,13 +1024,14 @@ class TnGEnv(gym.Env):
             )
 
         return shaped_reward
-    
+
 
     
     # --------------------------------------------------------
     #  Gym API: step
     # --------------------------------------------------------
     def step(self, action):
+        """Gym step: execute learner-role transition, then shape reward from step info."""
         prev_obs = self.get_state().copy()
         if self.learner_role == TIGER_LEARNER:
             result = self._step_tiger_transition(action)
@@ -965,6 +1041,7 @@ class TnGEnv(gym.Env):
 
 
     def _step_goat_transition(self, action):
+        """Single full turn when goats are the learner (goat act, then tiger response)."""
         if self.terminate:
             return self.get_state(), 0.0, True, False, self._build_step_info(reason="already_terminated")
 
@@ -1147,6 +1224,7 @@ class TnGEnv(gym.Env):
         return self.get_state(), 0.0, False, False, info
 
     def _step_tiger_transition(self, action):
+        """Single full turn when tigers are the learner (tiger act, then goat response)."""
         if self.terminate:
             return self.get_state(), 0.0, True, False, self._build_step_info(reason="already_terminated")
 
@@ -1229,6 +1307,7 @@ class TnGEnv(gym.Env):
         self._update_valid_moves()
 
         def goat_mask():
+            """Build a legal-action mask for the scripted/model goat opponent."""
             mask = np.zeros(BOARD_SIZE * DIR_CODES, dtype=bool)
             for mv in self.valid_moves:
                 if np.isscalar(mv):
@@ -1240,6 +1319,7 @@ class TnGEnv(gym.Env):
             return mask
 
         def goat_random_action():
+            """Sample one legal goat action uniformly from the current mask."""
             mask = goat_mask()
             legal_idxs = np.flatnonzero(mask)
             if legal_idxs.size == 0:
@@ -1248,6 +1328,7 @@ class TnGEnv(gym.Env):
             return flat // DIR_CODES, flat % DIR_CODES
 
         def goat_model_action():
+            """Query goat model policy and return a validated decoded action."""
             if self._goat_model_predict_fn is None:
                 return None
             mask = goat_mask()
@@ -1261,6 +1342,7 @@ class TnGEnv(gym.Env):
             return None
 
         goat_choice = None
+        # Model goat is optional; invalid/missing model prediction falls back to random goat.
         if self.goat_opponent_ai == GOAT_AI_MODEL:
             goat_choice = goat_model_action()
         if goat_choice is None:
@@ -1331,6 +1413,7 @@ class TnGEnv(gym.Env):
     #  Tiger AI selection helpers
     # --------------------------------------------------------
     def _select_tiger_move(self, tiger_options):
+        """Select tiger move using configured tiger policy (smart or greedy)."""
         if self.learner_role == GOAT_LEARNER:
             # tiger_options here should be 3-tuples
             if tiger_options and len(tiger_options[0]) != 3:
@@ -1341,6 +1424,7 @@ class TnGEnv(gym.Env):
         return self._greedy_tiger_move(tiger_options)
 
     def _greedy_tiger_move(self, tiger_options):
+        """Pick a capture-biased random tiger move from legal options."""
         captures = [m for m in tiger_options if m[2]]
         capture_bias = self._w("BASE_TIGER_CAPTURE_BIAS")
 
