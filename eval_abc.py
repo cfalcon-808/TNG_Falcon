@@ -1,76 +1,54 @@
-# ============================================================
+﻿# ============================================================
 #  Project    : Tigers & Goats - Falcon Branch
-#  Module     : Unified Debug + Evaluation Runner (Greedy vs Smart Tiger)
-#  File       : eval_falcon.py
-#  Version    : eval2.0
-#  Last Update: 2025-12-27
+#  Module     : Unified Evaluation Runner (Single + Sweep)
+#  File       : eval_abc.py
+#  Version    : eval3.0
+#  Last Update: 2026-03-08
 #
 #  Purpose / Goal:
-#    Provide a single script to (1) step-debug a trained goat policy and
-#    (2) batch-evaluate win/timeout stats against either tiger opponent,
-#    without swapping environment files.
+#    Evaluate trained goat or tiger policies in two modes:
+#      1) Single-mode debug + evaluation for one configured matchup
+#      2) Sweep-mode permutation matrix across goat-model and tiger-model sets
 #
 #  Overview:
-#    - Always uses env_tng_falcon.TnGEnv (unified env backend)
-#    - Selects tiger opponent at runtime via CLI:
-#        • normal / greedy  -> TIGER_AI_GREEDY  (ENV_NAME="NORMAL")
-#        • battle / smart   -> TIGER_AI_SMART   (ENV_NAME="BATTLE")
-#    - Two capabilities:
-#        1) Step-by-step Debug:
-#           • runs N_DEBUG_EPISODES episodes
-#           • prints decoded actions (flat -> pos,dir)
-#           • shows masks, rewards, termination/truncation, and winner info
-#           • optionally renders the board each turn if env.render() exists
-#        2) Batch Evaluation:
-#           • runs N_EVAL_GAMES episodes deterministically
-#           • tallies Goat / Tiger / GoatTimeout / StallTimeout outcomes
-#           • reports average reward + average episode length
-#           • prints a condensed single-line summary for quick comparisons
+#    - Uses env_tng_abc.TnGEnv with action masking (MaskablePPO-compatible)
+#    - Supports goat learner and tiger learner evaluation
+#    - Supports scripted and model-driven opponents:
+#        tiger_ai: greedy | smart | model
+#        goat_opponent_ai: random | model
+#    - Sweep mode runs full goat-model x tiger-model permutations and exports:
+#        artifacts/eval_sweeps/sweep_results_<timestamp>.json
+#        artifacts/eval_sweeps/sweep_results_<timestamp>.csv
 #
-#  Workflow:
-#    1) Train a model (saved as .zip in artifacts/models/experiment/)
-#    2) Run debug + eval:
-#         python eval_falcon.py
-#           -> NORMAL (greedy tiger), latest model in MODELS_DIR
+#  Quick Start:
+#    1) Open USER CONFIG in this file:
+#         EVAL_MODE = "single" or "sweep"
 #
-#         python eval_falcon.py my_model.zip
-#           -> NORMAL (greedy tiger), evaluate explicit model path
+#    2) For single mode:
+#         - Configure SINGLE_CONFIG:
+#             model_path, learner_role, tiger_ai/goat_opponent_ai,
+#             optional tiger_model_path/goat_model_path
+#         - Run:
+#             python eval_abc.py
 #
-#         python eval_falcon.py normal my_model.zip
-#           -> NORMAL (greedy tiger), evaluate explicit model path
+#    3) For sweep mode:
+#         - Set EVAL_MODE = "sweep"
+#         - Fill SWEEP_CONFIG["goat_models"] and SWEEP_CONFIG["tiger_models"]
+#         - Run:
+#             python eval_abc.py
 #
-#         python eval_falcon.py battle
-#           -> BATTLE (smart tiger), latest model in MODELS_DIR
-#
-#         python eval_falcon.py battle my_model.zip
-#           -> BATTLE (smart tiger), evaluate explicit model path
-#
-#    3) Review the log file under artifacts/logging/eval_debug/
-#
-#  Quick Use:
-#    - Change evaluation size:
-#        N_DEBUG_EPISODES = 3
-#        N_EVAL_GAMES     = 100
-#    - Console mirroring (in addition to file logging):
-#        PRINT_DEBUG_TO_CONSOLE = True
-#    - Safety cap for debug loops:
-#        MAX_STEPS_PER_EP = 100
-#
-#  Compatibility:
-#    - stable-baselines3 + sb3-contrib:
-#        • MaskablePPO
-#        • ActionMasker + get_action_masks
-#    - Uses native Discrete action env + masking (no flatten wrapper)
-#    - Designed to pair with:
-#        • env_tng_falcon.py     (unified greedy/smart tiger env)
-#        • experiment_sweep.py   (Reward variation sweeps that produce models to eval)
+#    4) Check outputs:
+#         - Per-run logs in artifacts/logging/eval_debug/
+#         - Sweep summary files in artifacts/eval_sweeps/
 # ============================================================
-
 
 
 import os
 import glob
 import sys
+import json
+import csv
+from datetime import datetime
 from typing import Optional, Dict, List, TextIO, Tuple
 
 import numpy as np
@@ -84,6 +62,11 @@ from env_tng_abc import (
     DIR_CODES,
     TIGER_AI_GREEDY,
     TIGER_AI_SMART,
+    TIGER_AI_MODEL,
+    GOAT_LEARNER,
+    TIGER_LEARNER,
+    GOAT_AI_RANDOM,
+    GOAT_AI_MODEL,
 )
 
 
@@ -144,12 +127,9 @@ def parse_cli_args():
 
 
 # ============================================================
-#  ENVIRONMENT SWITCH
-#    TIGER_AI_MODE picks greedy vs smart tiger in the unified env
+#  CLI FALLBACK (single-mode convenience)
 # ============================================================
 TIGER_AI_MODE, EXPLICIT_MODEL_PATH = parse_cli_args()
-ENV_NAME = "BATTLE" if TIGER_AI_MODE == TIGER_AI_SMART else "NORMAL"
-OPPONENT_LABEL = "GOAT VS SMART TIGER" if TIGER_AI_MODE == TIGER_AI_SMART else "GOAT VS GREEDY TIGER"
 
 
 # ============================================================
@@ -180,6 +160,54 @@ DEBUG_LOG_DIR: str = "artifacts/logging/eval_debug"
 # If False: all debug/eval output goes ONLY to log file
 # If True : mirror output to both log file AND console
 PRINT_DEBUG_TO_CONSOLE: bool = False
+
+# ============================================================
+#  USER CONFIG - Mode Selection
+# ============================================================
+
+# True  -> run step-by-step debug episodes before batch evaluation (single mode)
+# False -> skip debug and run only batch evaluation
+DEBUG_MODE: bool = True
+
+# "single": evaluate one learner model against one opponent setup
+# "sweep" : evaluate all tiger-model x goat-model permutations
+EVAL_MODE: str = "sweep"  # "single" | "sweep"
+
+# SINGLE MODE CONFIG
+SINGLE_CONFIG = {
+    # learner model to evaluate; None -> EXPLICIT_MODEL_PATH (CLI) -> latest in MODELS_DIR
+    "model_path": None,
+    # "goat" or "tiger"
+    "learner_role": GOAT_LEARNER,
+    # used when learner_role == goat
+    "tiger_ai": TIGER_AI_MODE,      # CLI mode fallback (greedy/smart/model)
+    "tiger_model_path": None,       # required if tiger_ai == "model"
+    # used when learner_role == tiger
+    "goat_opponent_ai": GOAT_AI_RANDOM,   # "random" | "model"
+    "goat_model_path": None,        # required if goat_opponent_ai == "model"
+    # run controls
+    "run_debug": DEBUG_MODE,
+    "n_debug_episodes": N_DEBUG_EPISODES,
+    "n_eval_games": N_EVAL_GAMES,
+}
+
+# SWEEP MODE CONFIG
+SWEEP_CONFIG = {
+    "n_eval_games": 100,
+    "deterministic": True,
+    "save_results": True,
+    "results_dir": "artifacts/eval_sweeps",
+    "tiger_models": {
+        "robust_tiger_030726": r"stable_models\models\Tigers\mppo_RobustTiger030726.zip",
+        "best_tiger_vs_normal_goat_10M": r"stable_models\models\Tigers\best_tiger_vs_normal_goat_10M_20260307_220408.zip",
+        "best_tiger_vs_smart_goat_10M": r"stable_models\models\Tigers\best_tiger_vs_smart_goat_10M_20260307_225859.zip",
+    },
+    "goat_models": {
+        "normal_goat_030726": r"stable_models\models\Goats\mppo_NormalGoat030726.zip",
+        "smart_goat_030726": r"stable_models\models\Goats\mppo_SmartGoat030726.zip",
+        "robust_goat_030726": r"stable_models\models\Goats\mppo_RobustGoat030726.zip",
+    },
+}
 
 
 # ============================================================
@@ -215,7 +243,7 @@ def log_and_console(*args, **kwargs):
     print(*args, **kwargs)
 
 
-def build_log_path(model_path: Optional[str]) -> str:
+def build_log_path(model_path: Optional[str], mode_tag: str = "single") -> str:
     """
     Build a log file path inside DEBUG_LOG_DIR based on the model filename.
 
@@ -228,20 +256,17 @@ def build_log_path(model_path: Optional[str]) -> str:
     """
     os.makedirs(DEBUG_LOG_DIR, exist_ok=True)
 
-    # Tag to indicate which env was used for this eval
-    env_tag = ENV_NAME.lower()  # "normal" or "battle"
-
     if model_path is None:
         stub = "latest_model"
     else:
         base = os.path.basename(model_path)
         stub = os.path.splitext(base)[0]
 
-    filename = f"{stub}_{env_tag}_eval.txt"
+    filename = f"{stub}_{mode_tag}_eval.txt"
     return os.path.join(DEBUG_LOG_DIR, filename)
 
 
-def setup_logging(log_path: str) -> Tuple[TextIO, TextIO]:
+def setup_logging(log_path: str, log_tag: str = "single") -> Tuple[TextIO, TextIO]:
     """
     Set up logging so that all stdout goes to a log file, and optionally
     to the console as well (controlled by PRINT_DEBUG_TO_CONSOLE).
@@ -259,7 +284,7 @@ def setup_logging(log_path: str) -> Tuple[TextIO, TextIO]:
         streams.append(sys.__stdout__)
 
     sys.stdout = Tee(*streams)
-    print(f"[LOG] Debug + Eval log started ({ENV_NAME}): {log_path}")
+    print(f"[LOG] Eval log started ({log_tag}): {log_path}")
     return original_stdout, log_f
 
 
@@ -293,13 +318,116 @@ def _mask_fn(env) -> np.ndarray:
     return env.unwrapped.get_action_mask()
 
 
-def make_debug_env(seed: Optional[int] = SEED):
+def make_goat_model_predict_fn(model_path: Optional[str]):
+    """
+    Build a lazy goat-model policy callable for tiger-learner evaluation.
+    Signature expected by env: fn(obs, mask) -> flat_action
+    """
+    if not model_path:
+        return None
+
+    model = None
+
+    def _predict(obs, mask):
+        nonlocal model
+        if model is None:
+            model = MaskablePPO.load(model_path)
+
+        obs_arr = np.asarray(obs)
+        if obs_arr.ndim == 1:
+            obs_arr = obs_arr.reshape(1, -1)
+
+        mask_arr = None
+        if mask is not None:
+            mask_arr = np.asarray(mask, dtype=bool)
+            if mask_arr.ndim == 1:
+                mask_arr = mask_arr.reshape(1, -1)
+
+        action, _ = model.predict(obs_arr, deterministic=True, action_masks=mask_arr)
+        if isinstance(action, np.ndarray):
+            return int(action[0])
+        return int(action)
+
+    return _predict
+
+
+def make_tiger_model_predict_fn(model_path: Optional[str]):
+    """
+    Build a lazy tiger-model policy callable for goat-learner evaluation.
+    Signature expected by env: fn(obs, mask) -> flat_action
+    """
+    if not model_path:
+        return None
+
+    model = None
+
+    def _predict(obs, mask):
+        nonlocal model
+        if model is None:
+            model = MaskablePPO.load(model_path)
+
+        obs_arr = np.asarray(obs)
+        if obs_arr.ndim == 1:
+            obs_arr = obs_arr.reshape(1, -1)
+
+        mask_arr = None
+        if mask is not None:
+            mask_arr = np.asarray(mask, dtype=bool)
+            if mask_arr.ndim == 1:
+                mask_arr = mask_arr.reshape(1, -1)
+
+        action, _ = model.predict(obs_arr, deterministic=True, action_masks=mask_arr)
+        if isinstance(action, np.ndarray):
+            return int(action[0])
+        return int(action)
+
+    return _predict
+
+
+def describe_matchup(
+    learner_role: str,
+    tiger_ai: str,
+    goat_opponent_ai: str,
+    goat_model_path: Optional[str],
+    tiger_model_path: Optional[str] = None,
+) -> str:
+    if learner_role == GOAT_LEARNER:
+        if tiger_ai == TIGER_AI_MODEL:
+            tiger_label = os.path.splitext(os.path.basename(tiger_model_path or "unknown_tiger"))[0]
+            return f"GOAT MODEL vs TIGER MODEL ({tiger_label})"
+        tiger_label = "SMART" if tiger_ai == TIGER_AI_SMART else "GREEDY"
+        return f"GOAT MODEL vs {tiger_label} TIGER"
+
+    if goat_opponent_ai == GOAT_AI_MODEL:
+        goat_name = os.path.splitext(os.path.basename(goat_model_path or "unknown_goat"))[0]
+        return f"TIGER MODEL vs GOAT MODEL ({goat_name})"
+
+    return "TIGER MODEL vs RANDOM GOAT"
+
+
+def make_debug_env(
+    seed: Optional[int] = SEED,
+    learner_role: str = GOAT_LEARNER,
+    tiger_ai: str = TIGER_AI_GREEDY,
+    goat_opponent_ai: str = GOAT_AI_RANDOM,
+    goat_model_path: Optional[str] = None,
+    tiger_model_path: Optional[str] = None,
+):
     """
     Build the debug environment:
 
-      TnGEnv(tiger_ai=...) -> Monitor -> ActionMasker
+      TnGEnv(configured matchup) -> Monitor -> ActionMasker
     """
-    env = BaseEnv(tiger_ai=TIGER_AI_MODE)
+    goat_predict_fn = make_goat_model_predict_fn(goat_model_path)
+    tiger_predict_fn = make_tiger_model_predict_fn(tiger_model_path)
+
+    env = BaseEnv(
+        tiger_ai=tiger_ai,
+        learner_role=learner_role,
+        goat_opponent_ai=goat_opponent_ai,
+        goat_model_predict_fn=goat_predict_fn,
+        tiger_model_predict_fn=tiger_predict_fn,
+    )
     env = Monitor(env)
     env = ActionMasker(env, _mask_fn)
 
@@ -311,13 +439,27 @@ def make_debug_env(seed: Optional[int] = SEED):
     return env
 
 
-def make_eval_env():
+def make_eval_env(
+    learner_role: str = GOAT_LEARNER,
+    tiger_ai: str = TIGER_AI_GREEDY,
+    goat_opponent_ai: str = GOAT_AI_RANDOM,
+    goat_model_path: Optional[str] = None,
+    tiger_model_path: Optional[str] = None,
+):
     """
     Build the evaluation environment:
 
-      TnGEnv(tiger_ai=...) -> ActionMasker
+      TnGEnv(configured matchup) -> ActionMasker
     """
-    env = BaseEnv(tiger_ai=TIGER_AI_MODE)
+    goat_predict_fn = make_goat_model_predict_fn(goat_model_path)
+    tiger_predict_fn = make_tiger_model_predict_fn(tiger_model_path)
+    env = BaseEnv(
+        tiger_ai=tiger_ai,
+        learner_role=learner_role,
+        goat_opponent_ai=goat_opponent_ai,
+        goat_model_predict_fn=goat_predict_fn,
+        tiger_model_predict_fn=tiger_predict_fn,
+    )
     env = ActionMasker(env, _mask_fn)
     return env
 
@@ -351,25 +493,44 @@ def run_debug_episodes(
     n_episodes: int = N_DEBUG_EPISODES,
     deterministic: bool = DETERMINISTIC_DEBUG,
     max_steps_per_ep: int = MAX_STEPS_PER_EP,
+    learner_role: str = GOAT_LEARNER,
+    tiger_ai: str = TIGER_AI_GREEDY,
+    goat_opponent_ai: str = GOAT_AI_RANDOM,
+    goat_model_path: Optional[str] = None,
+    tiger_model_path: Optional[str] = None,
 ) -> None:
     """
     Run a small number of evaluation episodes with a loaded model,
     printing/logging each step, including decoded action and env.render().
     """
+    matchup_label = describe_matchup(
+        learner_role,
+        tiger_ai,
+        goat_opponent_ai,
+        goat_model_path,
+        tiger_model_path=tiger_model_path,
+    )
     print("\n" + "=" * 60)
-    print(f"[DBG] STEP-BY-STEP {OPPONENT_LABEL} DEBUG EPISODES")
+    print(f"[DBG] STEP-BY-STEP {matchup_label} DEBUG EPISODES")
     print("=" * 60)
 
     print(f"[DBG] Loading model: {model_path}")
     model = MaskablePPO.load(model_path)
 
-    env = make_debug_env(seed=SEED)
+    env = make_debug_env(
+        seed=SEED,
+        learner_role=learner_role,
+        tiger_ai=tiger_ai,
+        goat_opponent_ai=goat_opponent_ai,
+        goat_model_path=goat_model_path,
+        tiger_model_path=tiger_model_path,
+    )
 
     wins: Dict[str, int] = {
         "Tiger": 0,
         "Goat": 0,
-        "GoatTimeout": 0,
-        "StallTimeout": 0,
+        "MaxTimeout": 0,
+        "RepeatTimeout": 0,
         "Unknown": 0,
     }
     rewards_all: List[float] = []
@@ -431,7 +592,7 @@ def run_debug_episodes(
                     f"reward={ep_reward:.3f}, info={info}"
                 )
 
-        winner = info.get("winner", "Unknown")
+        winner = classify_outcome(ep_reward, info)
         wins[winner] = wins.get(winner, 0) + 1
         rewards_all.append(ep_reward)
 
@@ -444,15 +605,15 @@ def run_debug_episodes(
     mean_r = float(np.mean(rewards_all)) if rewards_all else 0.0
     std_r = float(np.std(rewards_all)) if rewards_all else 0.0
 
-    log_and_console(f"\n[DBG] ========= OVERALL {OPPONENT_LABEL} DEBUG SUMMARY =========")
+    log_and_console(f"\n[DBG] ========= OVERALL {matchup_label} DEBUG SUMMARY =========")
     log_and_console(f"[DBG] Episodes run : {n_episodes}")
-    log_and_console(f"[DBG] Avg Reward   : {mean_r:.3f}  (±{std_r:.3f})")
+    log_and_console(f"[DBG] Avg Reward   : {mean_r:.3f} (+/-{std_r:.3f})")
     log_and_console(
         "[DBG] Wins         : "
         f"Tiger={wins.get('Tiger', 0)}, "
         f"Goat={wins.get('Goat', 0)}, "
-        f"GoatTimeout={wins.get('GoatTimeout', 0)}, "
-        f"StallTimeout={wins.get('StallTimeout', 0)}, "
+        f"MaxTimeout={wins.get('MaxTimeout', 0)}, "
+        f"RepeatTimeout={wins.get('RepeatTimeout', 0)}, "
         f"Unknown={wins.get('Unknown', 0)}"
     )
     log_and_console("[DBG] ===============================================\n")
@@ -471,18 +632,25 @@ def classify_outcome(episode_reward: float, info: dict) -> str:
     2. Fall back to reward-based thresholds.
 
     Returns:
-        "Goat", "Tiger", "GoatTimeout", "StallTimeout", or "Unknown"
+        "Goat", "Tiger", "MaxTimeout", "RepeatTimeout", or "Unknown"
     """
     winner = info.get("winner", None)
+    mapping = {
+        "GoatTimeout": "MaxTimeout",
+        "StallTimeout": "RepeatTimeout",
+    }
+    if winner in mapping:
+        winner = mapping[winner]
 
-    if winner in ("Goat", "Tiger", "GoatTimeout", "StallTimeout"):
+    if winner in ("Goat", "Tiger", "MaxTimeout", "RepeatTimeout"):
         return winner
 
     # Fallback based on reward if env didn't provide a winner
+    role = info.get("learner_role", GOAT_LEARNER)
     if episode_reward >= WIN_REWARD_THRESHOLD:
-        return "Goat"
+        return "Goat" if role == GOAT_LEARNER else "Tiger"
     if episode_reward <= LOSS_REWARD_THRESHOLD:
-        return "Tiger"
+        return "Tiger" if role == GOAT_LEARNER else "Goat"
     return "Unknown"
 
 
@@ -493,8 +661,14 @@ def classify_outcome(episode_reward: float, info: dict) -> str:
 def run_batch_evaluation(
     model_path: str,
     n_games: int = N_EVAL_GAMES,
-    model_dir: str = MODELS_DIR,
-) -> None:
+    deterministic: bool = DETERMINISTIC_EVAL,
+    learner_role: str = GOAT_LEARNER,
+    tiger_ai: str = TIGER_AI_GREEDY,
+    goat_opponent_ai: str = GOAT_AI_RANDOM,
+    goat_model_path: Optional[str] = None,
+    tiger_model_path: Optional[str] = None,
+    summary_label: Optional[str] = None,
+) -> Dict[str, float]:
     """
     Evaluate a MaskablePPO model over n_games episodes.
 
@@ -503,30 +677,56 @@ def run_batch_evaluation(
         - Average reward
         - Average episode length
         - Condensed single-line summary
+    Returns:
+        Dict of evaluation metrics for this matchup.
     """
+    matchup_label = summary_label or describe_matchup(
+        learner_role,
+        tiger_ai,
+        goat_opponent_ai,
+        goat_model_path,
+        tiger_model_path=tiger_model_path,
+    )
+
     print("\n" + "=" * 60)
-    print(f"[EVAL] {OPPONENT_LABEL} EVALUATION")
+    print(f"[EVAL] {matchup_label} EVALUATION")
     print("=" * 60)
 
     if not os.path.isfile(model_path):
         print(f"[EVAL] Model file not found: {model_path}")
-        return
+        return {}
+
+    if learner_role == TIGER_LEARNER and goat_opponent_ai == GOAT_AI_MODEL and not goat_model_path:
+        print("[EVAL] goat_model_path is required for tiger-learner vs goat-model evaluation.")
+        return {}
+    if learner_role == GOAT_LEARNER and tiger_ai == TIGER_AI_MODEL and not tiger_model_path:
+        print("[EVAL] tiger_model_path is required for goat-learner vs tiger-model evaluation.")
+        return {}
 
     print(f"[EVAL] Loading model from: {model_path}")
     model = MaskablePPO.load(model_path)
 
-    env = make_eval_env()
+    env = make_eval_env(
+        learner_role=learner_role,
+        tiger_ai=tiger_ai,
+        goat_opponent_ai=goat_opponent_ai,
+        goat_model_path=goat_model_path,
+        tiger_model_path=tiger_model_path,
+    )
 
-    wins = 0
-    losses = 0
-    timeouts = 0
-    stall_timeouts = 0
+    counts = {
+        "Goat": 0,
+        "Tiger": 0,
+        "MaxTimeout": 0,
+        "RepeatTimeout": 0,
+        "Unknown": 0,
+    }
 
     total_rewards: List[float] = []
     game_lengths: List[int] = []
 
     print(f"[EVAL] Starting evaluation of {n_games} games...")
-    print(f"[EVAL] Deterministic policy: {DETERMINISTIC_EVAL}")
+    print(f"[EVAL] Deterministic policy: {deterministic}")
 
     for i in range(n_games):
         obs, info = env.reset()
@@ -538,11 +738,13 @@ def run_batch_evaluation(
         while not (terminated or truncated):
             # Get current action mask from wrapped env
             action_masks = get_action_masks(env)
+            if action_masks is None:
+                raise RuntimeError("No action mask available for batch evaluation.")
 
             action, _ = model.predict(
                 obs,
                 action_masks=action_masks,
-                deterministic=DETERMINISTIC_EVAL,
+                deterministic=deterministic,
             )
 
             obs, reward, terminated, truncated, info = env.step(action)
@@ -553,27 +755,21 @@ def run_batch_evaluation(
         game_lengths.append(steps)
 
         outcome = classify_outcome(episode_reward, info)
-        if outcome == "Goat":
-            wins += 1
-        elif outcome == "Tiger":
-            losses += 1
-        elif outcome == "GoatTimeout":
-            timeouts += 1
-        elif outcome == "StallTimeout":
-            stall_timeouts += 1
+        counts[outcome] = counts.get(outcome, 0) + 1
 
     # Summary stats
     def pct(count: int) -> float:
         return (count / n_games * 100.0) if n_games > 0 else 0.0
 
     log_and_console("\n" + "=" * 40)
-    log_and_console(f"  {OPPONENT_LABEL} EVALUATION RESULTS (N={n_games})")
+    log_and_console(f"  {matchup_label} EVALUATION RESULTS (N={n_games})")
     log_and_console("=" * 40)
 
-    log_and_console(f"Goat Wins :     {wins:4d} ({pct(wins):5.1f}%)")
-    log_and_console(f"Tiger Wins:     {losses:4d} ({pct(losses):5.1f}%)")
-    log_and_console(f"Goat Timeout  : {timeouts:4d} ({pct(timeouts):5.1f}%)")
-    log_and_console(f"Stall Timeout  : {stall_timeouts:4d} ({pct(stall_timeouts):5.1f}%)")
+    log_and_console(f"Goat Wins     : {counts['Goat']:4d} ({pct(counts['Goat']):5.1f}%)")
+    log_and_console(f"Tiger Wins    : {counts['Tiger']:4d} ({pct(counts['Tiger']):5.1f}%)")
+    log_and_console(f"Max Timeout   : {counts['MaxTimeout']:4d} ({pct(counts['MaxTimeout']):5.1f}%)")
+    log_and_console(f"Repeat Timeout: {counts['RepeatTimeout']:4d} ({pct(counts['RepeatTimeout']):5.1f}%)")
+    log_and_console(f"Unknown       : {counts['Unknown']:4d} ({pct(counts['Unknown']):5.1f}%)")
 
     log_and_console("-" * 40)
     log_and_console(f"Avg Reward:     {np.mean(total_rewards):7.3f}")
@@ -584,50 +780,231 @@ def run_batch_evaluation(
     #  Condensed Summary (Single-Line)
     # ========================================================
     condensed = (
-        f"G {wins} | "
-        f"T {losses} | "
-        f"TO {timeouts} | "
-        f"ST {stall_timeouts} | "
+        f"G {counts['Goat']} | "
+        f"T {counts['Tiger']} | "
+        f"MTO {counts['MaxTimeout']} | "
+        f"RTO {counts['RepeatTimeout']} | "
         f"AR {np.mean(total_rewards):.2f} | "
         f"AL {np.mean(game_lengths):.3f}"
     )
     log_and_console("[CONDENSED] " + condensed + "\n")
 
+    env.close()
 
-# ============================================================
-#  MAIN
-# ============================================================
+    return {
+        "matchup": matchup_label,
+        "model_path": model_path,
+        "goat_model_path": goat_model_path or "",
+        "tiger_model_path": tiger_model_path or "",
+        "episodes": int(n_games),
+        "goat_wins": int(counts["Goat"]),
+        "tiger_wins": int(counts["Tiger"]),
+        "max_timeouts": int(counts["MaxTimeout"]),
+        "repeat_timeouts": int(counts["RepeatTimeout"]),
+        "unknown": int(counts["Unknown"]),
+        "goat_win_rate": float(pct(counts["Goat"])),
+        "tiger_win_rate": float(pct(counts["Tiger"])),
+        "max_timeout_rate": float(pct(counts["MaxTimeout"])),
+        "repeat_timeout_rate": float(pct(counts["RepeatTimeout"])),
+        "unknown_rate": float(pct(counts["Unknown"])),
+        "avg_reward": float(np.mean(total_rewards)),
+        "avg_length": float(np.mean(game_lengths)),
+    }
 
-if __name__ == "__main__":
-    # 1) Optional command-line arg: path to a specific checkpoint
-    explicit_path = EXPLICIT_MODEL_PATH
 
-    # 2) Resolve model path (explicit > latest in directory)
+def save_sweep_results(results: List[dict]) -> Tuple[Optional[str], Optional[str]]:
+    if not results or not SWEEP_CONFIG.get("save_results", True):
+        return None, None
+
+    results_dir = SWEEP_CONFIG.get("results_dir", "artifacts/eval_sweeps")
+    os.makedirs(results_dir, exist_ok=True)
+    stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+    json_path = os.path.join(results_dir, f"sweep_results_{stamp}.json")
+    csv_path = os.path.join(results_dir, f"sweep_results_{stamp}.csv")
+
+    with open(json_path, "w", encoding="utf-8") as f:
+        json.dump(results, f, indent=2)
+
+    fieldnames = [
+        "tiger_name",
+        "goat_name",
+        "matchup",
+        "episodes",
+        "goat_wins",
+        "tiger_wins",
+        "max_timeouts",
+        "repeat_timeouts",
+        "unknown",
+        "goat_win_rate",
+        "tiger_win_rate",
+        "max_timeout_rate",
+        "repeat_timeout_rate",
+        "unknown_rate",
+        "avg_reward",
+        "avg_length",
+        "model_path",
+        "goat_model_path",
+        "tiger_model_path",
+    ]
+    with open(csv_path, "w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+        for row in results:
+            writer.writerow({k: row.get(k, "") for k in fieldnames})
+
+    return json_path, csv_path
+
+
+def run_sweep_mode() -> List[dict]:
+    tiger_models: Dict[str, str] = SWEEP_CONFIG.get("tiger_models", {})
+    goat_models: Dict[str, str] = SWEEP_CONFIG.get("goat_models", {})
+    n_games = int(SWEEP_CONFIG.get("n_eval_games", N_EVAL_GAMES))
+    deterministic = bool(SWEEP_CONFIG.get("deterministic", True))
+
+    if not tiger_models:
+        print("[SWEEP] No tiger models configured in SWEEP_CONFIG['tiger_models'].")
+        return []
+    if not goat_models:
+        print("[SWEEP] No goat models configured in SWEEP_CONFIG['goat_models'].")
+        return []
+
+    print("\n" + "=" * 70)
+    print(f"[SWEEP] Starting permutation sweep: {len(goat_models)} goat x {len(tiger_models)} tiger")
+    print(f"[SWEEP] Games per matchup: {n_games} | Deterministic: {deterministic}")
+    print("=" * 70)
+
+    results: List[dict] = []
+
+    for goat_name, goat_path in goat_models.items():
+        for tiger_name, tiger_path in tiger_models.items():
+            label = f"{goat_name} vs {tiger_name}"
+            print(f"\n[SWEEP] Matchup: {label}")
+            res = run_batch_evaluation(
+                model_path=goat_path,
+                n_games=n_games,
+                deterministic=deterministic,
+                learner_role=GOAT_LEARNER,
+                tiger_ai=TIGER_AI_MODEL,
+                goat_opponent_ai=GOAT_AI_RANDOM,
+                tiger_model_path=tiger_path,
+                summary_label=label,
+            )
+            if not res:
+                continue
+            res["tiger_name"] = tiger_name
+            res["goat_name"] = goat_name
+            results.append(res)
+
+    print("\n" + "=" * 70)
+    print("[SWEEP] FINAL SUMMARY")
+    print("=" * 70)
+    for row in results:
+        print(
+            f"{row['goat_name']} vs {row['tiger_name']} | "
+            f"G {row['goat_wins']} | T {row['tiger_wins']} | "
+            f"MTO {row['max_timeouts']} | RTO {row['repeat_timeouts']} | "
+            f"AR {row['avg_reward']:.2f} | AL {row['avg_length']:.2f}"
+        )
+
+    # Compact recap block for quick scanning across all matchups.
+    print("\n" + "=" * 70)
+    print("[SWEEP] SHORT SUMMARY")
+    print("=" * 70)
+    for row in results:
+        print(
+            f"{row['goat_name']} vs {row['tiger_name']} | "
+            f"G% {row['goat_win_rate']:.1f} | "
+            f"T% {row['tiger_win_rate']:.1f} | "
+            f"MTO {row['max_timeouts']} | "
+            f"RTO {row['repeat_timeouts']}"
+        )
+
+    json_path, csv_path = save_sweep_results(results)
+    if json_path and csv_path:
+        print(f"[SWEEP] Saved JSON results: {json_path}")
+        print(f"[SWEEP] Saved CSV results : {csv_path}")
+
+    return results
+
+
+def run_single_mode() -> None:
+    learner_role = (SINGLE_CONFIG.get("learner_role", GOAT_LEARNER) or GOAT_LEARNER).lower()
+    tiger_ai = SINGLE_CONFIG.get("tiger_ai", TIGER_AI_GREEDY)
+    tiger_model_path = SINGLE_CONFIG.get("tiger_model_path", None)
+    goat_opponent_ai = SINGLE_CONFIG.get("goat_opponent_ai", GOAT_AI_RANDOM)
+    goat_model_path = SINGLE_CONFIG.get("goat_model_path", None)
+    run_debug = bool(SINGLE_CONFIG.get("run_debug", DEBUG_MODE))
+    n_debug_episodes = int(SINGLE_CONFIG.get("n_debug_episodes", N_DEBUG_EPISODES))
+    n_eval_games = int(SINGLE_CONFIG.get("n_eval_games", N_EVAL_GAMES))
+
+    explicit_cfg_model_path = SINGLE_CONFIG.get("model_path", None)
+    explicit_path = explicit_cfg_model_path or EXPLICIT_MODEL_PATH
     if explicit_path is None:
         model_path = load_latest_model_path(MODELS_DIR)
     else:
         model_path = explicit_path
 
     if model_path is None:
-        # No logging redirection yet, so this prints to console
         print(f"[!] No models found in '{MODELS_DIR}' (pattern *{MODEL_EXT}).")
-        sys.exit(1)
+        return
 
-    # 3) Build log path based on model filename (preserves run id)
-    log_path = build_log_path(model_path)
+    if learner_role not in {GOAT_LEARNER, TIGER_LEARNER}:
+        print(f"[!] Invalid SINGLE_CONFIG['learner_role']: {learner_role}")
+        return
 
-    # 4) Redirect stdout -> log (and optionally console)
-    original_stdout, log_f = setup_logging(log_path)
+    if learner_role == TIGER_LEARNER and goat_opponent_ai == GOAT_AI_MODEL and not goat_model_path:
+        print("[!] SINGLE_CONFIG requires goat_model_path when tiger learner uses goat_model opponent.")
+        return
+    if learner_role == GOAT_LEARNER and tiger_ai == TIGER_AI_MODEL and not tiger_model_path:
+        print("[!] SINGLE_CONFIG requires tiger_model_path when goat learner uses tiger model opponent.")
+        return
+
+    mode_tag = f"single_{learner_role}"
+    log_path = build_log_path(model_path, mode_tag=mode_tag)
+    original_stdout, log_f = setup_logging(log_path, log_tag=mode_tag)
 
     try:
-        # 5) Run step-by-step debug episodes
-        run_debug_episodes(model_path=model_path)
+        if run_debug:
+            run_debug_episodes(
+                model_path=model_path,
+                n_episodes=n_debug_episodes,
+                learner_role=learner_role,
+                tiger_ai=tiger_ai,
+                goat_opponent_ai=goat_opponent_ai,
+                goat_model_path=goat_model_path,
+                tiger_model_path=tiger_model_path,
+            )
 
-        # 6) Append a batch evaluation to the same log file
-        run_batch_evaluation(model_path=model_path, n_games=N_EVAL_GAMES)
-
-        print(f"[DONE] {OPPONENT_LABEL} debug + evaluation completed.")
+        run_batch_evaluation(
+            model_path=model_path,
+            n_games=n_eval_games,
+            learner_role=learner_role,
+            tiger_ai=tiger_ai,
+            goat_opponent_ai=goat_opponent_ai,
+            goat_model_path=goat_model_path,
+            tiger_model_path=tiger_model_path,
+        )
+        print("[DONE] Single-mode evaluation completed.")
     finally:
-        # 7) Restore stdout and close log file
         sys.stdout = original_stdout
         log_f.close()
+
+
+if __name__ == "__main__":
+    mode = (EVAL_MODE or "single").strip().lower()
+    if mode == "single":
+        run_single_mode()
+    elif mode == "sweep":
+        stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        log_path = build_log_path(None, mode_tag=f"sweep_{stamp}")
+        original_stdout, log_f = setup_logging(log_path, log_tag="sweep")
+        try:
+            run_sweep_mode()
+        finally:
+            sys.stdout = original_stdout
+            log_f.close()
+    else:
+        print(f"[!] Unknown EVAL_MODE='{EVAL_MODE}'. Use 'single' or 'sweep'.")
+
+

@@ -199,7 +199,7 @@ GOAT_MODEL_PATH  = "stable_models\models\Goats\mppo_GvMixT_goat_GT_to_ST_to_mix_
 #  USER CONFIG — Scale / Hardware
 # ============================================================
 
-DEVICE_MODE = "gpu"
+DEVICE_MODE = "cpu"
 DEBUG_MODE  = False                  # True or False
 TIMESTEPS   = 2_000_000 if DEBUG_MODE else 20_000_000
 NUM_CPU     = 16
@@ -232,21 +232,27 @@ else:
 # ============================================================
 
 VARIATIONS = {
-    "tiger_vs_normal_then_smart_goat_2x10M": [
-        {
-            "timesteps": 10_000_000,
-            "opponent_ai": OPP_GOAT_MODEL,
-            "goat_model_path": r"stable_models\models\Goats\mppo_GvNT_goat_greedy_tiger_p0.zip",
-            "mix_prob": None,
-        },
-        {
-            "timesteps": 10_000_000,
-            "opponent_ai": OPP_GOAT_MODEL,
-            "goat_model_path": r"stable_models\models\Goats\mppo_GvST_goat_smart_tiger_p0.zip",
-            "mix_prob": None,
-        },
-    ]
+    
+    "tiger_vs_normal_goat_10M": {
+        "timesteps": 5_000_000,
+        "opponent_ai": OPP_GOAT_MODEL,
+        "goat_model_path": r"stable_models\models\Goats\mppo_NormalGoat030726.zip",
+        "mix_prob": None,
+    },
+    "tiger_vs_smart_goat_10M": {
+        "timesteps": 5_000_000,
+        "opponent_ai": OPP_GOAT_MODEL,
+        "goat_model_path": r"stable_models\models\Goats\mppo_SmartGoat030726.zip",
+        "mix_prob": None,
+    },
+    "tiger_vs_robust_goat_10M": {
+        "timesteps": 5_000_000,
+        "opponent_ai": OPP_GOAT_MODEL,
+        "goat_model_path": r"stable_models\models\Goats\mppo_RobustGoat030726.zip",
+        "mix_prob": None,
+    },
 }
+
 
 
 # ============================================================
@@ -318,7 +324,14 @@ def normalize_phases(reward_weights) -> list[dict]:
         phase_goat_model = reward_weights.get("goat_model_path", GOAT_MODEL_PATH)
         phase_rewards = {
             k: v for k, v in reward_weights.items()
-            if k not in {"timesteps", "tiger_ai", "opponent_ai", "mix_prob", "checkpoints_per_run", "goat_model_path"}
+            if k not in {
+                "timesteps",
+                "tiger_ai",
+                "opponent_ai",
+                "mix_prob",
+                "checkpoints_per_run",
+                "goat_model_path",
+            }
         } or None
         return [{
             "timesteps": phase_timesteps,
@@ -768,7 +781,6 @@ def run_single_variation(variation_name: str, reward_weights):
     if RESUME_MODEL_PATH and not resume_path:
         print(f"[{variation_name}] [WARN] RESUME_MODEL_PATH set but no .zip found at: {RESUME_MODEL_PATH}")
     resumed = bool(resume_path)
-
     model = None
     model_identity = None
     best_phase_score = float("-inf")
