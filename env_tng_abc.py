@@ -63,7 +63,8 @@ DEBUG_INVALID = False
 
 TIGER_AI_GREEDY = "greedy"
 TIGER_AI_SMART = "smart"
-VALID_TIGER_AI = {TIGER_AI_GREEDY, TIGER_AI_SMART}
+TIGER_AI_MODEL = "model"
+VALID_TIGER_AI = {TIGER_AI_GREEDY, TIGER_AI_SMART, TIGER_AI_MODEL}
 GOAT_LEARNER = "goat"
 TIGER_LEARNER = "tiger"
 GOAT_AI_RANDOM = "random"
@@ -189,6 +190,7 @@ class TnGEnv(gym.Env):
             learner_role: str = GOAT_LEARNER, 
             goat_opponent_ai: str = GOAT_AI_RANDOM, 
             goat_model_predict_fn=None, 
+            tiger_model_predict_fn=None,
             reward_fn=None,
             max_turns: int | None = None,
             ):
@@ -201,6 +203,7 @@ class TnGEnv(gym.Env):
         self.learner_role = (learner_role or GOAT_LEARNER).lower()
         self.goat_opponent_ai = (goat_opponent_ai or GOAT_AI_RANDOM).lower()
         self._goat_model_predict_fn = goat_model_predict_fn  # callable(obs, mask)->flat action
+        self._tiger_model_predict_fn = tiger_model_predict_fn  # callable(obs, mask)->flat action
         self.reward_fn = reward_fn or self.sparse_reward
 
         # Load any tuning values passed to this function.
@@ -991,9 +994,15 @@ class TnGEnv(gym.Env):
             info = self._build_step_info(reason="goat_win_no_tiger_moves", winner="Goat", **base_info, **common)
             return self.get_state(), 0.0, True, False, info
 
-        # Scripted tiger response.
-        chosen = self._select_tiger_move(tiger_options)
+        # Tiger response (scripted or learned model).
+        tiger_options_with_dir = self._tiger_moves(include_dir=True)
+        chosen = self._select_tiger_move(tiger_options, tiger_options_with_dir=tiger_options_with_dir)
         if chosen is None:
+            if self.tiger_ai == TIGER_AI_MODEL:
+                raise RuntimeError(
+                    "Tiger model opponent returned no valid action. "
+                    "Check tiger_model_predict_fn and mask handling."
+                )
             raise RuntimeError(
                 f"Tiger policy '{self.tiger_ai}' returned None despite "
                 f"{len(tiger_options)} legal moves. State={self.get_state().tolist()}"
@@ -1284,16 +1293,44 @@ class TnGEnv(gym.Env):
     #  Selects tiger responses for goat-learner turns.
     #  Contains smart heuristic and greedy capture-biased policies.
     # ============================================================
-    def _select_tiger_move(self, tiger_options):
-        """Select tiger move using configured tiger policy (smart or greedy)."""
+    def _select_tiger_move(self, tiger_options, tiger_options_with_dir=None):
+        """Select tiger move using configured tiger policy (smart, greedy, or model)."""
         if self.learner_role == GOAT_LEARNER:
             # tiger_options here should be 3-tuples
             if tiger_options and len(tiger_options[0]) != 3:
                 raise ValueError("Goat-learner tiger_options must be (from,to,cap) 3-tuples")
-        
+
+        if self.tiger_ai == TIGER_AI_MODEL:
+            return self._model_tiger_move(tiger_options_with_dir or [])
         if self.tiger_ai == TIGER_AI_SMART:
             return self._smart_tiger_move(tiger_options)
         return self._greedy_tiger_move(tiger_options)
+
+    def _model_tiger_move(self, tiger_options_with_dir):
+        """
+        Query tiger model opponent and map predicted flat action to a legal tiger move.
+
+        Expected callback signature:
+          tiger_model_predict_fn(obs, mask) -> flat action id
+        """
+        if self._tiger_model_predict_fn is None:
+            return None
+        if not tiger_options_with_dir:
+            return None
+
+        legal = {}
+        mask = np.zeros(BOARD_SIZE * DIR_CODES, dtype=bool)
+        for from_pos, to_pos, cap, dir_code in tiger_options_with_dir:
+            flat = self.encode_action(from_pos, dir_code)
+            legal[flat] = (from_pos, to_pos, cap)
+            mask[flat] = True
+
+        try:
+            flat = int(self._tiger_model_predict_fn(self.get_state(), mask))
+        except Exception:
+            return None
+
+        return legal.get(flat, None)
 
     def _smart_tiger_move(self, tiger_options, debug: bool = False):
         """
