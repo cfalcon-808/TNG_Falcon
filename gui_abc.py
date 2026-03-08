@@ -1297,7 +1297,7 @@ class TigersGoatsGUI:
             for k, v in info.items()
         }
 
-    def _predict_loaded_goat_action(self, obs, mask):
+    def _predict_loaded_goat_action(self, obs, mask, deterministic: bool = True):
         if self.model is None:
             raise RuntimeError("No goat model loaded.")
         obs_arr = np.asarray(obs)
@@ -1308,10 +1308,17 @@ class TigersGoatsGUI:
             mask_arr = np.asarray(mask, dtype=bool)
             if mask_arr.ndim == 1:
                 mask_arr = mask_arr.reshape(1, -1)
-        action, _ = self.model.predict(obs_arr, deterministic=True, action_masks=mask_arr)
+        action, _ = self.model.predict(
+            obs_arr,
+            deterministic=deterministic,
+            action_masks=mask_arr,
+        )
         if isinstance(action, np.ndarray):
             return int(action.reshape(-1)[0])
         return int(action)
+
+    def _predict_loaded_goat_action_stochastic(self, obs, mask):
+        return self._predict_loaded_goat_action(obs, mask, deterministic=False)
 
     def _get_move_map(self):
         if self.base_env is not None:
@@ -1381,7 +1388,7 @@ class TigersGoatsGUI:
                 tiger_ai=self.tiger_ai,
                 learner_role=TIGER_LEARNER,
                 goat_opponent_ai=goat_ai,
-                goat_model_predict_fn=self._predict_loaded_goat_action,
+                goat_model_predict_fn=self._predict_loaded_goat_action_stochastic,
             )
         else:
             rec_env_base = TnGEnv(tiger_ai=self.tiger_ai)
@@ -1402,7 +1409,11 @@ class TigersGoatsGUI:
             else:
                 valid = np.flatnonzero(mask)
                 if self.game_mode == "tiger_play" and self.tiger_model is not None:
-                    action_flat, _ = self.tiger_model.predict(obs, deterministic=True, action_masks=mask)
+                    action_flat, _ = self.tiger_model.predict(
+                        obs,
+                        deterministic=False,
+                        action_masks=mask,
+                    )
                     action_flat = int(action_flat)
                 elif self.game_mode == "goat_play" and self.model is not None:
                     action_flat, _ = self.model.predict(obs, deterministic=True, action_masks=mask)
