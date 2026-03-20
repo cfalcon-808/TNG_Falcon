@@ -177,12 +177,12 @@ OPP_GOAT_MODEL   = "goat_model"
 #  USER CONFIG — Opponent & Naming
 # ============================================================
 
-EXPERIMENT_NAME = "baselineTigerTraining"
-LEARNER_ROLE    = TIGER_LEARNER                # GOAT_LEARNER | TIGER_LEARNER
+EXPERIMENT_NAME = "baselineGoatTrainingV2"
+LEARNER_ROLE    = GOAT_LEARNER                # GOAT_LEARNER | TIGER_LEARNER
 # Unified opponent selector (interpreted by learner role; used when MIX_PROB is None):
 #   - GOAT learner  : "tiger_greedy" | "tiger_smart"  (model tiger not yet supported)
 #   - TIGER learner : "goat_random"  | "goat_model"
-OPPONENT_AI     = OPP_GOAT_MODEL
+OPPONENT_AI     = OPP_TIGER_GREEDY
 # Mixing control (set to None for fixed opponent):
 #   - GOAT learner  : P(smart tiger), else greedy
 #   - TIGER learner : P(model goat),  else random
@@ -199,7 +199,7 @@ GOAT_MODEL_PATH  = "stable_models\models\Goats\mppo_GvMixT_goat_GT_to_ST_to_mix_
 #  USER CONFIG — Scale / Hardware
 # ============================================================
 
-DEVICE_MODE = "cpu"
+DEVICE_MODE = "gpu"
 DEBUG_MODE  = False                  # True or False
 TIMESTEPS   = 2_000_000 if DEBUG_MODE else 20_000_000
 NUM_CPU     = 16
@@ -233,24 +233,22 @@ else:
 
 VARIATIONS = {
     
-    "tiger_vs_normal_goat_10M": {
-        "timesteps": 5_000_000,
-        "opponent_ai": OPP_GOAT_MODEL,
-        "goat_model_path": r"stable_models\models\Goats\mppo_NormalGoat030726.zip",
+    "goat_vs_greedy_tiger_50M": {
+        "timesteps": 50_000_000,
+        "opponent_ai": OPP_TIGER_GREEDY,
         "mix_prob": None,
     },
-    "tiger_vs_smart_goat_10M": {
-        "timesteps": 5_000_000,
-        "opponent_ai": OPP_GOAT_MODEL,
-        "goat_model_path": r"stable_models\models\Goats\mppo_SmartGoat030726.zip",
+    "goat_vs_smart_tiger_50M": {
+        "timesteps": 50_000_000,
+        "opponent_ai": OPP_TIGER_SMART,
         "mix_prob": None,
     },
-    "tiger_vs_robust_goat_10M": {
-        "timesteps": 5_000_000,
-        "opponent_ai": OPP_GOAT_MODEL,
-        "goat_model_path": r"stable_models\models\Goats\mppo_RobustGoat030726.zip",
-        "mix_prob": None,
-    },
+    "robust_goat_training": [
+        {"timesteps": 15_000_000, "opponent_ai": OPP_TIGER_GREEDY, "reward_weights": None},
+        {"timesteps": 10_000_000, "opponent_ai": OPP_TIGER_SMART,  "reward_weights": None},
+        {"timesteps": 20_000_000, "opponent_ai": OPP_TIGER_SMART,  "mix_prob": 0.3, "reward_weights": None},
+        {"timesteps": 20_000_000, "opponent_ai": OPP_TIGER_SMART,  "mix_prob": 0.5, "reward_weights": None}
+  ],
 }
 
 
@@ -435,6 +433,7 @@ class WinStatsCallback(BaseCallback):
         super().__init__(verbose)
         self.log_every_episodes = log_every_episodes
         self.last_logged_episodes = 0
+        self.window_episodes = window_episodes
 
         # cumulative
         self.episodes = 0
@@ -450,10 +449,41 @@ class WinStatsCallback(BaseCallback):
         # rolling window of realized opponent modes (optional)
         self.window_tiger_ai = deque(maxlen=window_episodes)  # values: greedy/smart/None
         self.window_goat_ai = deque(maxlen=window_episodes)   # values: random/model/None
+        self.reward_component_names = [
+            "reward_step_component",
+            "reward_near_lock_component",
+            "reward_block_component",
+            "reward_bubble_component",
+            "reward_cluster_component",
+            "reward_center_component",
+            "reward_goat_eaten_component",
+            "reward_repeat_component",
+            "reward_terminal_component",
+            "reward_decay_mult",
+            "reward_total",
+        ]
+        self.reward_component_windows = {
+            name: deque(maxlen=1_000) for name in self.reward_component_names
+        }
+        self.episode_reward_window = deque(maxlen=window_episodes)
+        self.terminal_penalty_windows = {
+            "Goat": deque(maxlen=window_episodes),
+            "Tiger": deque(maxlen=window_episodes),
+            "MaxTimeout": deque(maxlen=window_episodes),
+            "RepeatTimeout": deque(maxlen=window_episodes),
+        }
 
     def _on_step(self) -> bool:
         dones = self.locals.get("dones", None)
         infos = self.locals.get("infos", None)
+
+        if infos is not None:
+            for info in infos:
+                if info is None:
+                    continue
+                for name in self.reward_component_names:
+                    if name in info:
+                        self.reward_component_windows[name].append(float(info.get(name, 0.0)))
 
         if dones is not None and infos is not None:
             for done, info in zip(dones, infos):
@@ -478,6 +508,15 @@ class WinStatsCallback(BaseCallback):
                 # env_tng_falcon can set info["tiger_ai"] = TIGER_AI_GREEDY/SMART (or strings)
                 self.window_tiger_ai.append(info.get("tiger_ai", None))
                 self.window_goat_ai.append(info.get("goat_opponent_ai", info.get("goat_ai", None)))
+
+                episode_info = info.get("episode", None)
+                if isinstance(episode_info, dict) and "r" in episode_info:
+                    self.episode_reward_window.append(float(episode_info["r"]))
+
+                if winner in self.terminal_penalty_windows:
+                    self.terminal_penalty_windows[winner].append(
+                        float(info.get("reward_terminal_component", 0.0))
+                    )
 
         # always keep current episode index in logs
         self.logger.record("1.episode_stats (total episodes)/1.episode_index", float(self.episodes))
@@ -529,6 +568,47 @@ class WinStatsCallback(BaseCallback):
                 if denom > 0:
                     self.logger.record("2.window_stats (per 1000 eps)/8.realized_random_goat_frac", random_goat / denom)
                     self.logger.record("2.window_stats (per 1000 eps)/9.realized_model_goat_frac", model / denom)
+
+            reward_component_labels = {
+                "reward_step_component": "1.step_penalty_mean",
+                "reward_near_lock_component": "2.near_lock_mean",
+                "reward_block_component": "3.block_mean",
+                "reward_bubble_component": "4.bubble_mean",
+                "reward_cluster_component": "5.cluster_mean",
+                "reward_center_component": "6.center_mean",
+                "reward_goat_eaten_component": "7.goat_eaten_mean",
+                "reward_repeat_component": "8.repeat_mean",
+                "reward_terminal_component": "9.terminal_mean",
+                "reward_decay_mult": "10.decay_mult_mean",
+                "reward_total": "11.total_reward_mean",
+            }
+            for name, label in reward_component_labels.items():
+                values = self.reward_component_windows[name]
+                if values:
+                    self.logger.record(
+                        f"4.reward_components (per 1000 steps)/{label}",
+                        sum(values) / float(len(values)),
+                    )
+
+            if self.episode_reward_window:
+                self.logger.record(
+                    "5.episode_reward (per 1000 eps)/1.episode_reward_mean",
+                    sum(self.episode_reward_window) / float(len(self.episode_reward_window)),
+                )
+
+            terminal_labels = {
+                "Goat": "2.goat_terminal_reward_mean",
+                "Tiger": "3.tiger_terminal_penalty_mean",
+                "MaxTimeout": "4.max_timeout_terminal_penalty_mean",
+                "RepeatTimeout": "5.repeat_timeout_terminal_penalty_mean",
+            }
+            for outcome, label in terminal_labels.items():
+                values = self.terminal_penalty_windows[outcome]
+                if values:
+                    self.logger.record(
+                        f"5.episode_reward (per 1000 eps)/{label}",
+                        sum(values) / float(len(values)),
+                    )
 
         return True
     
