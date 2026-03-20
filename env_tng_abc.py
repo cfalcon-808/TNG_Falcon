@@ -93,8 +93,8 @@ DEFAULT_KNOBS = {
     "REWARD_GOAT_EATEN":       -0.35,   # penalty for each goat captured by tigers
 
     # Timeout scales
-    "MAX_TIMEOUT_SCALE":        1.0,    # scale for turn-limit (max turns) timeout penalty
-    "REPEAT_STALL_SCALE":       0.8,    # scale for stall-timeout (repeat-state) penalty
+    "MAX_TIMEOUT_SCALE":        1.5,    # scale for turn-limit (max turns) timeout penalty
+    "REPEAT_STALL_SCALE":       1.25,   # scale for stall-timeout (repeat-state) penalty
     "MAX_TURNS":                100,    # max turns before enforcing max-timeout
 
     # Move penalty shaping
@@ -109,13 +109,14 @@ DEFAULT_KNOBS = {
     "REWARD_BLOCK_TIGER":       0.08,   # reward for reducing tiger mobility
     "REWARD_BUBBLE_SPACE":      0.02,   # reward for increasing goat "bubble" territory
     "REWARD_CLUSTER_TIGERS":    0.02,   # reward for spreading tigers apart
-    "REWARD_CENTER_GOAT":       0.05,   # reward for goats occupying strong center nodes
+    "REWARD_CENTER_GOAT":       0.03,   # reward for goats occupying strong center nodes
     "REWARD_CENTER_TIGER":     -0.03,   # penalty for tigers holding center nodes
 
     # Special shaping
-    "NEAR_LOCK_BONUS":          0.3,    # bonus when goats push tigers into near-lock states
+    "NEAR_LOCK_BONUS":          0.05,   # bonus when goats push tigers into near-lock states
     "LATE_GAME_START_TURN":     40,     # turn at which late-game shaping begins to scale
     "MOBILITY_BACKSLIDE_SCALE": 0.5,    # penalty multiplier when goats worsen tiger mobility
+    "GOAT_SHAPING_DECAY_BASE":  0.95,   # exponential decay for positive goat shaping in moving phase
 
     # Anti-repeat penalty
     "REWARD_INVALID_SOFT":     -0.05,   # small penalty for soft invalid actions
@@ -560,9 +561,25 @@ class TnGEnv(gym.Env):
             "episode_tiger_ai": self._episode_tiger_ai,
             "episode_tiger_ai_id": float(1 if self._episode_tiger_ai == TIGER_AI_SMART else 0),
             "goat_opponent_ai": self.goat_opponent_ai,
+            "reward_step_component": 0.0,
+            "reward_near_lock_component": 0.0,
+            "reward_block_component": 0.0,
+            "reward_bubble_component": 0.0,
+            "reward_cluster_component": 0.0,
+            "reward_center_component": 0.0,
+            "reward_goat_eaten_component": 0.0,
+            "reward_repeat_component": 0.0,
+            "reward_terminal_component": 0.0,
+            "reward_decay_mult": 1.0,
+            "reward_total": 0.0,
         }
         info.update(extra)
         return info
+
+    def _set_reward_components(self, info, **components):
+        """Attach scalar reward breakdown fields to info for logging/debugging."""
+        for key, value in components.items():
+            info[key] = float(value)
 
 
 
@@ -636,92 +653,114 @@ class TnGEnv(gym.Env):
         # --------------------------------------------------------
         # These bypass incremental shaping to keep terminal semantics explicit.
         if reason == "already_terminated":
+            self._set_reward_components(info, reward_total=0.0)
             return 0.0
         if reason == "invalid_soft":
-            return self._w("REWARD_INVALID_SOFT")
+            reward_total = self._w("REWARD_INVALID_SOFT")
+            self._set_reward_components(info, reward_total=reward_total)
+            return reward_total
         if reason == "invalid_hard":
-            return self._w("REWARD_INVALID_HARD")
+            reward_total = self._w("REWARD_INVALID_HARD")
+            self._set_reward_components(info, reward_total=reward_total)
+            return reward_total
         if reason == "goat_win_no_tiger_moves":
             # Goat terminal win bonus, with optional late-turn decay.
-            return (
+            reward_total = (
                 self._w("REWARD_GOAT_WIN")
                 - self._w("GOAT_WIN_TURN_DECAY") * self.turns
             )
+            self._set_reward_components(
+                info,
+                reward_terminal_component=reward_total,
+                reward_total=reward_total,
+            )
+            return reward_total
 
         # --------------------------------------------------------
         # 2) Base step + tactical shaping
         # --------------------------------------------------------
         # Step penalty comes from transition code (placing/moving can differ).
-        shaped_reward = float(info.get("step_penalty", self._w("REWARD_STEP")))
+        step_component = float(info.get("step_penalty", self._w("REWARD_STEP")))
+        near_lock_component = 0.0
+        block_component = 0.0
+        bubble_component = 0.0
+        cluster_component = 0.0
+        center_component = 0.0
+        goat_eaten_component = 0.0
+        repeat_component = 0.0
+        terminal_component = 0.0
 
-        # Near-lock bonus when tigers have very low mobility.
-        if bool(info.get("near_lock", False)):
-            shaped_reward += self._w("NEAR_LOCK_BONUS")
-
-        # `late` is a [0,1] progress factor used to up-weight selected
-        # containment signals in later game stages.
-        late = float(info.get("late", 0.0))
+        phase = int(info.get("phase", self.phase))
+        move_steps = int(info.get("move_steps", self.move_steps))
+        decay_mult = (
+            self._w("GOAT_SHAPING_DECAY_BASE") ** move_steps
+            if phase == 1 else 1.0
+        )
 
         # Mobility delta is defined from goat perspective:
         #   delta_moves > 0 means goats reduced tiger options (good for goats).
         #   delta_moves < 0 means goats increased tiger options (bad backslide).
         delta_moves = int(info.get("delta_moves", 0))
-        if delta_moves > 0:
-            shaped_reward += (
-                abs(self._w("REWARD_BLOCK_TIGER"))
-                * delta_moves
-                * (1.0 + late)
-            )
-        elif delta_moves < 0:
-            shaped_reward += (
-                abs(self._w("REWARD_BLOCK_TIGER"))
-                * self._w("MOBILITY_BACKSLIDE_SCALE")
-                * delta_moves
-            )
-
-        # Bubble delta > 0 means more tiger-unreachable safe space for goats.
         delta_bubble = int(info.get("delta_bubble", 0))
-        if delta_bubble > 0:
-            shaped_reward += (
-                self._w("REWARD_BUBBLE_SPACE")
-                * delta_bubble
-                * (1.0 + late)
-            )
-
-        # Spread delta > 0 means tigers became more clustered (good for goats).
         delta_spread = float(info.get("delta_spread", 0.0))
-        if delta_spread > 0:
-            shaped_reward += (
-                self._w("REWARD_CLUSTER_TIGERS")
-                * delta_spread
-                * (1.0 + late)
-            )
-
-        # Center score is precomputed in transition logic.
-        # Sign already encodes good/bad for goat learner.
-        shaped_reward += float(info.get("center_score", 0.0))
-
-        # Material loss: each goat eaten applies a penalty term.
         goats_eaten_this_turn = int(info.get("goats_eaten_this_turn", 0))
+
+        terminal_loss_reason = reason in {
+            "tiger_win_capture_threshold",
+            "max_timeout",
+            "repeat_timeout",
+        }
+
+        if not terminal_loss_reason:
+            if bool(info.get("near_lock", False)):
+                near_lock_component = self._w("NEAR_LOCK_BONUS") * decay_mult
+
+            if delta_moves > 0:
+                block_component = (
+                    abs(self._w("REWARD_BLOCK_TIGER"))
+                    * float(np.tanh(delta_moves))
+                    * decay_mult
+                )
+            elif delta_moves < 0:
+                block_component = (
+                    abs(self._w("REWARD_BLOCK_TIGER"))
+                    * self._w("MOBILITY_BACKSLIDE_SCALE")
+                    * delta_moves
+                )
+
+            if delta_bubble > 0:
+                bubble_component = (
+                    self._w("REWARD_BUBBLE_SPACE")
+                    * float(np.tanh(delta_bubble))
+                    * decay_mult
+                )
+
+            if delta_spread > 0:
+                cluster_component = (
+                    self._w("REWARD_CLUSTER_TIGERS")
+                    * float(np.tanh(delta_spread))
+                    * decay_mult
+                )
+
+            # Goat center shaping is intentionally limited to the placing phase.
+            if phase == 0:
+                center_component = float(info.get("center_score", 0.0))
+
         if goats_eaten_this_turn > 0:
-            shaped_reward += (
+            goat_eaten_component = (
                 self._w("REWARD_GOAT_EATEN")
                 * goats_eaten_this_turn
             )
 
-        # --------------------------------------------------------
-        # 3) Outcome penalties or repeat penalty
-        # --------------------------------------------------------
-        # Tiger win/timeout reasons map to negative goat outcomes.
         if reason == "tiger_win_capture_threshold":
-            shaped_reward += self._w("REWARD_TIGER_WIN")
+            terminal_component = self._w("REWARD_TIGER_WIN")
         elif reason == "max_timeout":
-            shaped_reward += (
+            terminal_component = (
                 self._w("REWARD_TIGER_WIN")
                 * self._w("MAX_TIMEOUT_SCALE")
             )
         elif reason == "repeat_timeout":
-            shaped_reward += (
+            terminal_component = (
                 self._w("REWARD_TIGER_WIN")
                 * self._w("REPEAT_STALL_SCALE")
             )
@@ -730,10 +769,35 @@ class TnGEnv(gym.Env):
             # quadratic in prior repeat count to ramp anti-cycling pressure.
             prev_count = int(info.get("repeat_prev_count", 0))
             if prev_count > 0:
-                repeat_pen = self._w("REWARD_REPEAT_STATE") * (prev_count ** 2)
-                shaped_reward += repeat_pen
+                repeat_component = self._w("REWARD_REPEAT_STATE") * (prev_count ** 2)
 
-        return shaped_reward
+        reward_total = (
+            step_component
+            + near_lock_component
+            + block_component
+            + bubble_component
+            + cluster_component
+            + center_component
+            + goat_eaten_component
+            + repeat_component
+            + terminal_component
+        )
+
+        self._set_reward_components(
+            info,
+            reward_step_component=step_component,
+            reward_near_lock_component=near_lock_component,
+            reward_block_component=block_component,
+            reward_bubble_component=bubble_component,
+            reward_cluster_component=cluster_component,
+            reward_center_component=center_component,
+            reward_goat_eaten_component=goat_eaten_component,
+            reward_repeat_component=repeat_component,
+            reward_terminal_component=terminal_component,
+            reward_decay_mult=decay_mult,
+            reward_total=reward_total,
+        )
+        return reward_total
 
 
     def _sparse_reward_tiger(self, prev_obs, action, obs, terminated, truncated, info):
@@ -985,6 +1049,7 @@ class TnGEnv(gym.Env):
             center_score=float(center_score),
             goats_eaten_this_turn=0,
             repeat_prev_count=0,
+            move_steps=int(self.move_steps),
         )
 
         # Immediate goat terminal win: tiger has no legal reply.
