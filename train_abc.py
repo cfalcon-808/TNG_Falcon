@@ -177,7 +177,7 @@ OPP_GOAT_MODEL   = "goat_model"
 #  USER CONFIG — Opponent & Naming
 # ============================================================
 
-EXPERIMENT_NAME = "baselineGoatTrainingV2"
+EXPERIMENT_NAME = "baselineGoatTrainingV3"
 LEARNER_ROLE    = GOAT_LEARNER                # GOAT_LEARNER | TIGER_LEARNER
 # Unified opponent selector (interpreted by learner role; used when MIX_PROB is None):
 #   - GOAT learner  : "tiger_greedy" | "tiger_smart"  (model tiger not yet supported)

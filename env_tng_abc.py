@@ -651,7 +651,7 @@ class TnGEnv(gym.Env):
         # --------------------------------------------------------
         # 1) Immediate terminal/invalid outcomes
         # --------------------------------------------------------
-        # These bypass incremental shaping to keep terminal semantics explicit.
+        # These bypass incremental shaping to keep terminal reward semantics explicit.
         if reason == "already_terminated":
             self._set_reward_components(info, reward_total=0.0)
             return 0.0
@@ -679,7 +679,7 @@ class TnGEnv(gym.Env):
         # --------------------------------------------------------
         # 2) Base step + tactical shaping
         # --------------------------------------------------------
-        # Step penalty comes from transition code (placing/moving can differ).
+        # Step penalty comes from step_transition code (placing/moving can differ).
         step_component = float(info.get("step_penalty", self._w("REWARD_STEP")))
         near_lock_component = 0.0
         block_component = 0.0
@@ -692,11 +692,15 @@ class TnGEnv(gym.Env):
 
         phase = int(info.get("phase", self.phase))
         move_steps = int(info.get("move_steps", self.move_steps))
+
+        # Exponential decay based on number of steps
         decay_mult = (
             self._w("GOAT_SHAPING_DECAY_BASE") ** move_steps
             if phase == 1 else 1.0
         )
 
+        # Get delta and goat eaten stats which are computed in the goat_step_transition function
+        
         # Mobility delta is defined from goat perspective:
         #   delta_moves > 0 means goats reduced tiger options (good for goats).
         #   delta_moves < 0 means goats increased tiger options (bad backslide).
@@ -712,6 +716,7 @@ class TnGEnv(gym.Env):
         }
 
         if not terminal_loss_reason:
+            # Near lock is computed in the goat step transition function
             if bool(info.get("near_lock", False)):
                 near_lock_component = self._w("NEAR_LOCK_BONUS") * decay_mult
 
