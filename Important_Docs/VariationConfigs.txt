@@ -5,22 +5,19 @@
 # This file shows examples for the VARIATIONS dict used by train_abc.py.
 #
 # A variation can be either:
-#   1) a single dict  -> one training phase
-#   2) a list of dict -> multi-phase curriculum that continues the same model
+#   1) None       -> one default single-phase run
+#   2) dict       -> one training phase
+#   3) list[dict] -> multi-phase curriculum that continues the same model
 #
-# Core phase/control keys:
+# Supported control keys:
 #   "timesteps"
 #       Number of training timesteps for this variation or phase.
-#       If omitted in train_abc.py, it falls back to TIMESTEPS.
+#       If omitted, train_abc.py falls back to TIMESTEPS.
 #
 #   "opponent_ai"
-#       Main opponent selector used by the runner.
-#       For goat learner runs, use OPP_TIGER_GREEDY or OPP_TIGER_SMART.
-#       For tiger learner runs, use OPP_GOAT_RANDOM or OPP_GOAT_MODEL.
-#
-#   "tiger_ai"
-#       Legacy alias for opponent_ai.
-#       Only kept for backward compatibility; prefer opponent_ai.
+#       Opponent selector used by the runner.
+#       Goat learner: OPP_TIGER_GREEDY or OPP_TIGER_SMART
+#       Tiger learner: OPP_GOAT_RANDOM or OPP_GOAT_MODEL
 #
 #   "mix_prob"
 #       Enables mixed opponents on episode reset.
@@ -29,43 +26,32 @@
 #       Use None for a fixed opponent.
 #
 #   "checkpoints_per_run"
-#       How many checkpoints to save during this variation/phase.
+#       How many checkpoints to save during this phase.
 #       If omitted, train_abc.py uses CHECKPOINTS_PER_RUN.
 #
 #   "goat_model_path"
 #       Path to a saved goat model. Only relevant when the opponent side uses
-#       OPP_GOAT_MODEL or mixed goat opponents for tiger-learner training.
+#       OPP_GOAT_MODEL or mixed goat opponents for tiger-learner runs.
 #
-#   "reward_weights"
-#       Optional nested dict of reward overrides.
-#       In practice, train_abc.py also accepts reward override keys directly
-#       in the variation dict, and treats all non-control keys as reward_weights.
-#       Because of that, most runs can leave this as None and just place reward
-#       keys alongside timesteps/opponent_ai.
-#
-# Reward/config override keys:
-#   Any extra keys not listed above are passed into the environment as
-#   reward/config overrides. These map to DEFAULT_KNOBS in env_tng_abc.py.
-#   Examples: REWARD_BLOCK_TIGER, REWARD_BUBBLE_SPACE, MAX_TURNS,
-#             REWARD_REPEAT_STATE, BASE_TIGER_CAPTURE_BIAS.
+# Tuning knobs:
+#   Any other keys are passed directly into env_tng_abc.py as overrides for
+#   DEFAULT_KNOBS. Examples: REWARD_BLOCK_TIGER, REWARD_BUBBLE_SPACE,
+#   MAX_TURNS, REWARD_REPEAT_STATE, BASE_TIGER_CAPTURE_BIAS.
 #
 # Usage notes:
-#   - Use None to inherit the defaults from train_abc.py / env_tng_abc.py.
-#   - Use a list of phase dicts when you want curriculum training.
-#   - Each phase can change opponent_ai, mix_prob, timesteps, and rewards.
+#   - Use None to inherit train_abc.py and env_tng_abc.py defaults.
+#   - Put each tuning knob directly in the phase dict.
+#   - Legacy keys such as tiger_ai and nested reward_weights are not supported.
 #
 VARIATIONS = {
     "blank_template": {
-        "timesteps": 50_000_000,                         # default example; runner falls back to TIMESTEPS if omitted
-        "tiger_ai": None,                                # legacy alias for opponent_ai
-        "opponent_ai": None,                             # default fallback: OPPONENT_AI
-        "mix_prob": None,                                # default fallback: MIX_PROB
-        "checkpoints_per_run": 10,                       # default fallback: CHECKPOINTS_PER_RUN
-        "goat_model_path": None,                         # default fallback: GOAT_MODEL_PATH
-        "reward_weights": None,                          # optional wrapper key; usually leave None
+        "timesteps": 50_000_000,
+        "opponent_ai": None,
+        "mix_prob": None,
+        "checkpoints_per_run": 10,
+        "goat_model_path": None,
 
-        # Optional reward override keys (defaults from env_tng_abc.py DEFAULT_KNOBS):
-        # Any extra keys in the dict are treated as reward_weights by train_abc.py.
+        # Optional tuning knobs (defaults from env_tng_abc.py DEFAULT_KNOBS):
         "REWARD_GOAT_WIN": 3.2,
         "REWARD_TIGER_WIN": -3.2,
         "REWARD_TIGER_CAPTURE": 0.35,
@@ -96,21 +82,6 @@ VARIATIONS = {
         "BASE_TIGER_CAPTURE_BIAS": 1.0,
     },
 
-    "nested_reward_weights_example": {
-        "timesteps": 50_000_000,
-        "opponent_ai": OPP_TIGER_SMART,
-        "mix_prob": None,
-        "checkpoints_per_run": 10,
-        "goat_model_path": None,
-        "reward_weights": {
-            "REWARD_BLOCK_TIGER": 0.12,
-            "REWARD_BUBBLE_SPACE": 0.03,
-            "REWARD_REPEAT_STATE": -0.75,
-            "MAX_TURNS": 120,
-            "BASE_TIGER_CAPTURE_BIAS": 0.8,
-        },
-    },
-
     "goat_vs_GT": {
         "timesteps": 100_000_000,
         "opponent_ai": OPP_TIGER_GREEDY,
@@ -119,7 +90,7 @@ VARIATIONS = {
         "timesteps": 50_000_000,
         "opponent_ai": OPP_TIGER_SMART,
     },
-    "goat_GT->ST->MT": [
+    "goat_GT_to_ST_to_mix": [
         {"timesteps": 50_000_000, "opponent_ai": OPP_TIGER_GREEDY},
         {"timesteps": 30_000_000, "opponent_ai": OPP_TIGER_SMART},
         {"timesteps": 30_000_000, "opponent_ai": OPP_TIGER_SMART, "mix_prob": 0.3},
