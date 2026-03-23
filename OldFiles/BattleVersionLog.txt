@@ -1,0 +1,121 @@
+================== BATTLE BRANCH OVERVIEW ==================
+
+The Battle Branch introduces an alternate training and evaluation pipeline
+derived directly from the stable env3.0 / mppo3.0 / debug_eval1.2 lineage.
+Its purpose is to train a learning Goat agent specifically against a fixed,
+strategic Tiger opponent (“smart_tiger”) rather than the symmetric Goat–Tiger
+self-play structure used in the main Falcons branch.
+
+########## Environment Lineage ##########
+* battle_env1.0 forks directly from env3.0.
+* Retains all env3.0 game rules and reward shaping:
+  * Complete shaping suite (mobility, bubble, clustering, center control).
+  * Ramp-based Move-phase penalties.
+  * Repetition penalties, MAX_REPEATS, StallTimeout.
+  * GOAT_TIMEOUT_SCALE, GOAT_STALL_SCALE.
+* Key difference:
+  * Tiger behavior is no longer learned.
+  * Tiger actions come from a deterministic heuristic engine (smart_tiger),
+    enabling robust goat-only training.
+
+########## Training Lineage ##########
+* mppo_b1.0 inherits mppo3.0’s GPU-oriented PPO pipeline:
+  * net_arch=[256,256,256]
+  * batch_size=256, n_steps=2048, n_epochs=5
+  * MaskablePPO + ActionMasker identical to main branch.
+* Customizations:
+  * Uses BattleEnv wrappers and action flattening.
+  * Maintains independent run tracking via run_counter_battle.txt.
+  * Output model naming:
+    battle_falcon_final_ENV_VER_MODEL_VER_run_<id>.zip
+
+########## Evaluation Lineage ##########
+* eval_battle_falcon1.0 is a fork of debug_eval1.2:
+  * Same step-by-step debug workflow.
+  * Same batch-evaluation pipeline.
+  * Same logging system (Tee + debug_logs).
+* Additions for Battle:
+  * Condensed battle metrics line:
+    G <wins> | T <losses> | TO <timeouts> | ST <stall> | AL <avg_len> | AR <avg_reward>
+
+########## Purpose of the Battle Branch ##########
+* Provide a stable, consistent Tiger opponent for controlled goat training.
+* Allow fine-grained reward shaping experiments without Tiger-policy drift.
+* Enable ablation studies and reward-importance analysis using a fixed adversary.
+* Produce models that specialize in defeating or surviving against an expert,
+  heuristic Tiger rather than co-evolving with another RL agent.
+
+Overall, the Battle Branch is a clean, self-contained ecosystem—fully compatible
+with the main Falcons tools but intentionally separated for scientific clarity,
+debug precision, and controlled curriculum design.
+
+================== 2025-12-04 ==================
+
+########## battle_env1.0 (from env3.0) ##########
+* Fork of env3.0 reward structure into a battle-only environment
+  where a learning Goat agent plays against a fixed smart_tiger AI. 
+* Reuses core game rules from env3.0:
+  * 23-node board, 3 tigers, 15 goats, same move_map and graph geometry.
+  * Same core outcome rewards and shaping constants:
+    * REWARD_GOAT_WIN, REWARD_TIGER_WIN, REWARD_GOAT_EATEN, REWARD_STEP
+    * MOVE_STEP_BASE / MOVE_STEP_SLOPE / MOVE_STEP_MIN
+    * REWARD_BLOCK_TIGER, REWARD_BUBBLE_SPACE, REWARD_CLUSTER_TIGERS
+    * REWARD_CENTER_GOAT / REWARD_CENTER_TIGER
+    * REWARD_INVALID_SOFT / REWARD_INVALID_HARD / REWARD_REPEAT_STATE
+    * GOAT_TIMEOUT_SCALE, GOAT_STALL_SCALE, MAX_REPEATS.
+* New opponent logic:
+  * Replaces simple capture-biased tiger with smart_tiger() heuristic:
+    * Prioritizes captures using positional values (POS_VALS).
+    * Maintains structural “anchors” at 0 and {9,10}.
+    * Roams toward high-value target squares with a fallback random move. :contentReference[oaicite:1]{index=1}
+* Same termination taxonomy as env3.0:
+  * Goat, Tiger, GoatTimeout, StallTimeout winners exposed via info["winner"].
+* Provides FlattenBattleActionWrapper to expose Discrete(115) while keeping
+  internal MultiDiscrete([23, 5]) action interface. :contentReference[oaicite:2]{index=2}
+
+
+########## mppo_b1.0 (from mppo3.0) ##########
+* Battle training script for MaskablePPO on BattleEnv:
+  * Uses ENV_VER="env_b1.0" and MODEL_VER="mppo_b1.0". :contentReference[oaicite:3]{index=3}
+* Derived from the env3.0 GPU training pipeline (mppo3.0): :contentReference[oaicite:4]{index=4}
+  * Same overall structure:
+    * SubprocVecEnv with NUM_CPU workers.
+    * ActionMasker with mask_fn → env.unwrapped.get_action_mask().
+    * 256×256×256 MLP policy (net_arch=[256, 256, 256]).
+    * MaskablePPO with γ=0.99, lr=3e-4, ent_coef=0.02.
+    * GPU mode: DEVICE="cuda", n_steps=2048, batch_size=256, n_epochs=5. 
+  * Same callback stack style:
+    * CheckpointCallback with ~10 checkpoints per full run.
+    * EpisodeCounterCallback logging episodes_total and episodes_per_million.
+    * WinStatsCallback tracking goat/tiger wins, timeouts, stall timeouts
+      and windowed rates to TensorBoard. 
+* Battle-specific changes:
+  * Uses BattleEnv + FlattenBattleActionWrapper as the base env factory.
+  * Separate run counter file (run_counter_battle.txt) so battle models
+    don’t collide with main TnG run IDs. :contentReference[oaicite:7]{index=7}
+* Output models:
+  * models/battle_falcon_final_ENV_VER_MODEL_VER_run_<id>.zip. :contentReference[oaicite:8]{index=8}
+
+
+########## eval_battle_falcon1.0 (from debug_eval1.2) ##########
+* Battle debug + eval script for BattleEnv, forked from debug_eval1.2. 
+* Mirrors the two main capabilities of debug_eval1.2:
+  * Step-by-step debugging:
+    * Deterministic episodes.
+    * Board render every step.
+    * Decoded (pos, dir) actions and masks.
+    * Per-step rewards + termination info. :contentReference[oaicite:10]{index=10}
+  * Batch evaluation:
+    * N deterministic evaluation games (default 100).
+    * Tracks Goat, Tiger, GoatTimeout, StallTimeout outcomes.
+    * Computes average reward and episode length.
+    * Emits both detailed multi-line summary and a condensed single line:
+      * G <wins> | T <losses> | TO <timeouts> | ST <stall> | AR <avg_reward> | AL <avg_len>. :contentReference[oaicite:11]{index=11}
+* Logging behavior:
+  * Uses Tee to mirror output to log file + optional console.
+  * Logs saved under ./debug_logs with filenames derived from the model
+    name (…_debug_eval.txt), matching the main debug_eval tooling. :contentReference[oaicite:12]{index=12}
+* Workflow parallel to main branch:
+  * Train with train_battle_falcon.py → evaluate with eval_battle_falcon.py,
+    just like training_tng_falcon.py pairs with debug_eval_tng_falcon.py. 
+

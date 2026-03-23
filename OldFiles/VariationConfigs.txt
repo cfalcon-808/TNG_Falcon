@@ -1,0 +1,9 @@
+VARIATIONS = {
+  
+  "greedy_to_smart_mix": [
+    {"timesteps": 10_000_000, "tiger_ai": TIGER_AI_GREEDY, "reward_weights": None},
+    {"timesteps": 10_000_000, "tiger_ai": TIGER_AI_SMART,  "reward_weights": None},
+    {"timesteps": 30_000_000, "tiger_ai": TIGER_AI_SMART,  "mix_prob": 0.3, "reward_weights": None},
+    {"timesteps": 30_000_000, "tiger_ai": TIGER_AI_SMART,  "mix_prob": 0.5, "reward_weights": None}
+  ],
+}
