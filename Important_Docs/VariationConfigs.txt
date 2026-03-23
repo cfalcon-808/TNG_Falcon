@@ -51,34 +51,55 @@ VARIATIONS = {
         "checkpoints_per_run": 10,
         "goat_model_path": None,
 
-        # Optional tuning knobs (defaults from env_tng_abc.py DEFAULT_KNOBS):
+        # Goat learner knobs:
+        # Terminal rewards:
         "REWARD_GOAT_WIN": 3.2,
         "REWARD_TIGER_WIN": -3.2,
-        "REWARD_TIGER_CAPTURE": 0.35,
-        "REWARD_TIGER_WIN_BONUS": 3.2,
-        "REWARD_TIGER_LOSS_PENALTY": 3.2,
+
+        # Step and capture shaping:
         "REWARD_STEP": -0.001,
         "REWARD_GOAT_EATEN": -0.35,
+
+        # Timeout family:
         "MAX_TIMEOUT_SCALE": 1.5,
         "REPEAT_STALL_SCALE": 1.25,
         "MAX_TURNS": 100,
+
+        # Moving-phase step penalty family:
         "MOVE_STEP_BASE": -0.01,
         "MOVE_STEP_SLOPE": -0.01,
         "MOVE_STEP_MIN": -0.6,
+
+        # Goat win decay:
         "GOAT_WIN_TURN_DECAY": 0.01,
+
+        # Positional and mobility shaping:
         "REWARD_BLOCK_TIGER": 0.08,
         "REWARD_BUBBLE_SPACE": 0.02,
         "REWARD_CLUSTER_TIGERS": 0.02,
         "REWARD_CENTER_GOAT": 0.03,
         "REWARD_CENTER_TIGER": -0.03,
+
+        # Special shaping:
         "NEAR_LOCK_BONUS": 0.05,
         "LATE_GAME_START_TURN": 40,
         "MOBILITY_BACKSLIDE_SCALE": 0.5,
         "GOAT_SHAPING_DECAY_BASE": 0.95,
+
+        # Tiger learner knobs:
+        # Tiger terminal / capture rewards:
+        "REWARD_TIGER_CAPTURE": 0.35,
+        "REWARD_TIGER_WIN_BONUS": 3.2,
+        "REWARD_TIGER_LOSS_PENALTY": 3.2,
+
+        # Shared invalid/repeat and opponent-behavior knobs:
+        # Invalid action and anti-repeat family:
         "REWARD_INVALID_SOFT": -0.05,
         "REWARD_INVALID_HARD": -1.0,
         "REWARD_REPEAT_STATE": -0.5,
         "MAX_REPEATS": 4,
+
+        # Scripted tiger behavior family:
         "BASE_TIGER_CAPTURE_BIAS": 1.0,
     },
 
