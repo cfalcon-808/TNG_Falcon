@@ -1,0 +1,259 @@
+[LOG] Eval log started (sweep): artifacts/logging/eval_debug\latest_model_sweep_20260309_170511_eval.txt
+
+======================================================================
+[SWEEP] Starting permutation sweep: 3 goat x 3 tiger
+[SWEEP] Games per matchup: 100 | Deterministic: True
+======================================================================
+
+[SWEEP] Matchup: normal_goat_030726 vs robust_tiger_030726
+
+============================================================
+[EVAL] normal_goat_030726 vs robust_tiger_030726 EVALUATION
+============================================================
+[EVAL] Loading model from: stable_models\models\Goats\mppo_NormalGoat030726.zip
+[EVAL] Starting evaluation of 100 games...
+[EVAL] Deterministic policy: True
+
+========================================
+  normal_goat_030726 vs robust_tiger_030726 EVALUATION RESULTS (N=100)
+========================================
+Goat Wins     :    0 (  0.0%)
+Tiger Wins    :  100 (100.0%)
+Max Timeout   :    0 (  0.0%)
+Repeat Timeout:    0 (  0.0%)
+Unknown       :    0 (  0.0%)
+----------------------------------------
+Avg Reward:      -3.535
+Avg Length:       36.00 steps
+========================================
+
+[CONDENSED] G 0 | T 100 | MTO 0 | RTO 0 | AR -3.54 | AL 36.000
+
+
+[SWEEP] Matchup: normal_goat_030726 vs best_tiger_vs_normal_goat_10M
+
+============================================================
+[EVAL] normal_goat_030726 vs best_tiger_vs_normal_goat_10M EVALUATION
+============================================================
+[EVAL] Loading model from: stable_models\models\Goats\mppo_NormalGoat030726.zip
+[EVAL] Starting evaluation of 100 games...
+[EVAL] Deterministic policy: True
+
+========================================
+  normal_goat_030726 vs best_tiger_vs_normal_goat_10M EVALUATION RESULTS (N=100)
+========================================
+Goat Wins     :    0 (  0.0%)
+Tiger Wins    :    0 (  0.0%)
+Max Timeout   :    0 (  0.0%)
+Repeat Timeout:  100 (100.0%)
+Unknown       :    0 (  0.0%)
+----------------------------------------
+Avg Reward:      -7.035
+Avg Length:       27.00 steps
+========================================
+
+[CONDENSED] G 0 | T 0 | MTO 0 | RTO 100 | AR -7.03 | AL 27.000
+
+
+[SWEEP] Matchup: normal_goat_030726 vs best_tiger_vs_smart_goat_10M
+
+============================================================
+[EVAL] normal_goat_030726 vs best_tiger_vs_smart_goat_10M EVALUATION
+============================================================
+[EVAL] Loading model from: stable_models\models\Goats\mppo_NormalGoat030726.zip
+[EVAL] Starting evaluation of 100 games...
+[EVAL] Deterministic policy: True
+
+========================================
+  normal_goat_030726 vs best_tiger_vs_smart_goat_10M EVALUATION RESULTS (N=100)
+========================================
+Goat Wins     :    0 (  0.0%)
+Tiger Wins    :    0 (  0.0%)
+Max Timeout   :    0 (  0.0%)
+Repeat Timeout:  100 (100.0%)
+Unknown       :    0 (  0.0%)
+----------------------------------------
+Avg Reward:      -5.315
+Avg Length:       21.00 steps
+========================================
+
+[CONDENSED] G 0 | T 0 | MTO 0 | RTO 100 | AR -5.32 | AL 21.000
+
+
+[SWEEP] Matchup: smart_goat_030726 vs robust_tiger_030726
+
+============================================================
+[EVAL] smart_goat_030726 vs robust_tiger_030726 EVALUATION
+============================================================
+[EVAL] Loading model from: stable_models\models\Goats\mppo_SmartGoat030726.zip
+[EVAL] Starting evaluation of 100 games...
+[EVAL] Deterministic policy: True
+
+========================================
+  smart_goat_030726 vs robust_tiger_030726 EVALUATION RESULTS (N=100)
+========================================
+Goat Wins     :    0 (  0.0%)
+Tiger Wins    :  100 (100.0%)
+Max Timeout   :    0 (  0.0%)
+Repeat Timeout:    0 (  0.0%)
+Unknown       :    0 (  0.0%)
+----------------------------------------
+Avg Reward:      -3.655
+Avg Length:       27.00 steps
+========================================
+
+[CONDENSED] G 0 | T 100 | MTO 0 | RTO 0 | AR -3.65 | AL 27.000
+
+
+[SWEEP] Matchup: smart_goat_030726 vs best_tiger_vs_normal_goat_10M
+
+============================================================
+[EVAL] smart_goat_030726 vs best_tiger_vs_normal_goat_10M EVALUATION
+============================================================
+[EVAL] Loading model from: stable_models\models\Goats\mppo_SmartGoat030726.zip
+[EVAL] Starting evaluation of 100 games...
+[EVAL] Deterministic policy: True
+
+========================================
+  smart_goat_030726 vs best_tiger_vs_normal_goat_10M EVALUATION RESULTS (N=100)
+========================================
+Goat Wins     :    0 (  0.0%)
+Tiger Wins    :  100 (100.0%)
+Max Timeout   :    0 (  0.0%)
+Repeat Timeout:    0 (  0.0%)
+Unknown       :    0 (  0.0%)
+----------------------------------------
+Avg Reward:      -3.985
+Avg Length:       27.00 steps
+========================================
+
+[CONDENSED] G 0 | T 100 | MTO 0 | RTO 0 | AR -3.98 | AL 27.000
+
+
+[SWEEP] Matchup: smart_goat_030726 vs best_tiger_vs_smart_goat_10M
+
+============================================================
+[EVAL] smart_goat_030726 vs best_tiger_vs_smart_goat_10M EVALUATION
+============================================================
+[EVAL] Loading model from: stable_models\models\Goats\mppo_SmartGoat030726.zip
+[EVAL] Starting evaluation of 100 games...
+[EVAL] Deterministic policy: True
+
+========================================
+  smart_goat_030726 vs best_tiger_vs_smart_goat_10M EVALUATION RESULTS (N=100)
+========================================
+Goat Wins     :    0 (  0.0%)
+Tiger Wins    :  100 (100.0%)
+Max Timeout   :    0 (  0.0%)
+Repeat Timeout:    0 (  0.0%)
+Unknown       :    0 (  0.0%)
+----------------------------------------
+Avg Reward:      -4.255
+Avg Length:       16.00 steps
+========================================
+
+[CONDENSED] G 0 | T 100 | MTO 0 | RTO 0 | AR -4.26 | AL 16.000
+
+
+[SWEEP] Matchup: robust_goat_030726 vs robust_tiger_030726
+
+============================================================
+[EVAL] robust_goat_030726 vs robust_tiger_030726 EVALUATION
+============================================================
+[EVAL] Loading model from: stable_models\models\Goats\mppo_RobustGoat030726.zip
+[EVAL] Starting evaluation of 100 games...
+[EVAL] Deterministic policy: True
+
+========================================
+  robust_goat_030726 vs robust_tiger_030726 EVALUATION RESULTS (N=100)
+========================================
+Goat Wins     :    0 (  0.0%)
+Tiger Wins    :  100 (100.0%)
+Max Timeout   :    0 (  0.0%)
+Repeat Timeout:    0 (  0.0%)
+Unknown       :    0 (  0.0%)
+----------------------------------------
+Avg Reward:      -4.705
+Avg Length:       18.00 steps
+========================================
+
+[CONDENSED] G 0 | T 100 | MTO 0 | RTO 0 | AR -4.70 | AL 18.000
+
+
+[SWEEP] Matchup: robust_goat_030726 vs best_tiger_vs_normal_goat_10M
+
+============================================================
+[EVAL] robust_goat_030726 vs best_tiger_vs_normal_goat_10M EVALUATION
+============================================================
+[EVAL] Loading model from: stable_models\models\Goats\mppo_RobustGoat030726.zip
+[EVAL] Starting evaluation of 100 games...
+[EVAL] Deterministic policy: True
+
+========================================
+  robust_goat_030726 vs best_tiger_vs_normal_goat_10M EVALUATION RESULTS (N=100)
+========================================
+Goat Wins     :    0 (  0.0%)
+Tiger Wins    :  100 (100.0%)
+Max Timeout   :    0 (  0.0%)
+Repeat Timeout:    0 (  0.0%)
+Unknown       :    0 (  0.0%)
+----------------------------------------
+Avg Reward:      -3.305
+Avg Length:       25.00 steps
+========================================
+
+[CONDENSED] G 0 | T 100 | MTO 0 | RTO 0 | AR -3.31 | AL 25.000
+
+
+[SWEEP] Matchup: robust_goat_030726 vs best_tiger_vs_smart_goat_10M
+
+============================================================
+[EVAL] robust_goat_030726 vs best_tiger_vs_smart_goat_10M EVALUATION
+============================================================
+[EVAL] Loading model from: stable_models\models\Goats\mppo_RobustGoat030726.zip
+[EVAL] Starting evaluation of 100 games...
+[EVAL] Deterministic policy: True
+
+========================================
+  robust_goat_030726 vs best_tiger_vs_smart_goat_10M EVALUATION RESULTS (N=100)
+========================================
+Goat Wins     :    0 (  0.0%)
+Tiger Wins    :  100 (100.0%)
+Max Timeout   :    0 (  0.0%)
+Repeat Timeout:    0 (  0.0%)
+Unknown       :    0 (  0.0%)
+----------------------------------------
+Avg Reward:      -4.995
+Avg Length:       33.00 steps
+========================================
+
+[CONDENSED] G 0 | T 100 | MTO 0 | RTO 0 | AR -4.99 | AL 33.000
+
+
+======================================================================
+[SWEEP] FINAL SUMMARY
+======================================================================
+normal_goat_030726 vs robust_tiger_030726 | G 0 | T 100 | MTO 0 | RTO 0 | AR -3.54 | AL 36.00
+normal_goat_030726 vs best_tiger_vs_normal_goat_10M | G 0 | T 0 | MTO 0 | RTO 100 | AR -7.03 | AL 27.00
+normal_goat_030726 vs best_tiger_vs_smart_goat_10M | G 0 | T 0 | MTO 0 | RTO 100 | AR -5.32 | AL 21.00
+smart_goat_030726 vs robust_tiger_030726 | G 0 | T 100 | MTO 0 | RTO 0 | AR -3.65 | AL 27.00
+smart_goat_030726 vs best_tiger_vs_normal_goat_10M | G 0 | T 100 | MTO 0 | RTO 0 | AR -3.98 | AL 27.00
+smart_goat_030726 vs best_tiger_vs_smart_goat_10M | G 0 | T 100 | MTO 0 | RTO 0 | AR -4.26 | AL 16.00
+robust_goat_030726 vs robust_tiger_030726 | G 0 | T 100 | MTO 0 | RTO 0 | AR -4.70 | AL 18.00
+robust_goat_030726 vs best_tiger_vs_normal_goat_10M | G 0 | T 100 | MTO 0 | RTO 0 | AR -3.31 | AL 25.00
+robust_goat_030726 vs best_tiger_vs_smart_goat_10M | G 0 | T 100 | MTO 0 | RTO 0 | AR -4.99 | AL 33.00
+
+======================================================================
+[SWEEP] SHORT SUMMARY
+======================================================================
+normal_goat_030726 vs robust_tiger_030726 | G% 0.0 | T% 100.0 | MTO 0 | RTO 0
+normal_goat_030726 vs best_tiger_vs_normal_goat_10M | G% 0.0 | T% 0.0 | MTO 0 | RTO 100
+normal_goat_030726 vs best_tiger_vs_smart_goat_10M | G% 0.0 | T% 0.0 | MTO 0 | RTO 100
+smart_goat_030726 vs robust_tiger_030726 | G% 0.0 | T% 100.0 | MTO 0 | RTO 0
+smart_goat_030726 vs best_tiger_vs_normal_goat_10M | G% 0.0 | T% 100.0 | MTO 0 | RTO 0
+smart_goat_030726 vs best_tiger_vs_smart_goat_10M | G% 0.0 | T% 100.0 | MTO 0 | RTO 0
+robust_goat_030726 vs robust_tiger_030726 | G% 0.0 | T% 100.0 | MTO 0 | RTO 0
+robust_goat_030726 vs best_tiger_vs_normal_goat_10M | G% 0.0 | T% 100.0 | MTO 0 | RTO 0
+robust_goat_030726 vs best_tiger_vs_smart_goat_10M | G% 0.0 | T% 100.0 | MTO 0 | RTO 0
+[SWEEP] Saved JSON results: artifacts/eval_sweeps\sweep_results_20260309_170628.json
+[SWEEP] Saved CSV results : artifacts/eval_sweeps\sweep_results_20260309_170628.csv
