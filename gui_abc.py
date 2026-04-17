@@ -1,115 +1,29 @@
 # ============================================================
-#  Project    : Tigers & Goats – Falcon Branch
-#  Module     : Tkinter GUI (Live Play + Model + Replay Viewer)
-#  File       : tng_GUI_falcon.py
-#  Version    : gui1.0  (set this however you version your tools)
-#  Last Update: 2025-12-29
+#  Project    : Tigers & Goats
+#  Module     : Tkinter GUI
+#  File       : gui_abc.py
+#  Last Update: 2026-04-01
 #
-#  Overview
-#  --------
-#  This script provides a lightweight Tkinter GUI for interacting with the
-#  unified Tigers & Goats environment in three modes:
+#  Overview:
+#    Tkinter GUI for live play, model-assisted play, and replay viewing.
 #
-#    (1) LIVE HUMAN PLAY (default)
-#        - You click nodes to place/move goats.
-#        - The tiger plays automatically using the env’s built-in tiger AI.
+#  Supported modes:
+#    - Play as Goat
+#    - Play as Tiger
+#    - Player vs Player
+#    - Replay Viewer
 #
-#    (2) LIVE AUTO-PLAY (optional)
-#        - A trained MaskablePPO goat model can make goat moves on demand
-#          ("Model Move") or continuously ("Play") with action masking.
+#  Current CLI:
+#    python gui_abc.py
+#    python gui_abc.py --env normal
+#    python gui_abc.py --env battle
+#    python gui_abc.py --env battle --model path\\to\\model.zip
 #
-#    (3) REPLAY VIEWER (optional)
-#        - Browse an in-memory replay timeline using:
-#            Prev / Next buttons, a timeline slider, and Play/Pause.
-#        - Each step shows phase, goats eaten/placed, blocked tigers, action,
-#          plus cumulative reward and outcome (when available).
-#
-#  Purpose
-#  -------
-#  • Debug tactics visually (goat placements, traps, tiger captures).
-#  • Demo trained goat policies against greedy/smart tigers.
-#  • Inspect recorded episodes frame-by-frame to understand "why" a model
-#    won/lost (including sacrifice patterns and capture events).
-#  • Provide a quick “Record Episode” pipeline to generate a timeline
-#    immediately after running a fresh game.
-#
-#  Key Features
-#  ------------
-#  • Clickable graph board (nodes + edges) based on NODE_LAYOUT coordinates.
-#  • Unified environment switch:
-#       --env normal  -> greedy tiger (TIGER_AI_GREEDY)
-#       --env battle  -> smart tiger  (TIGER_AI_SMART)
-#  • Optional MaskablePPO model loading:
-#       - Uses env.get_action_mask() so the model only selects legal actions.
-#  • ReplayTimeline helper:
-#       - Loads JSON with "timeline" entries containing {before, action, reward, info}
-#       - Builds prefix reward sums for fast "running reward" display
-#       - Attempts to infer winner if missing
-#  • “Record Episode”:
-#       - Runs a new episode (model-driven or random-goat) and stores an
-#         in-memory replay with per-step snapshots for immediate browsing.
-#  • Playback controls:
-#       - Prev/Next stepping with goat-only preview animation on forward
-#       - Timeline slider scrubbing
-#       - Play/Pause with adjustable speed (ms delay)
-#
-#  Quick Start
-#  ----------
-#  1) Human vs Greedy Tiger (normal):
-#       python gui_tigers_goats.py --env normal
-#
-#  2) Human vs Smart Tiger (battle):
-#       python gui_tigers_goats.py --env battle
-#
-#  3) Load a trained goat model and record + browse an episode:
-#       python gui_tigers_goats.py --env battle --model artifacts/models/train/mppo/GvST/.../your_model.zip
-#       (Then click "Load Model" or "Record Episode")
-#
-#  Workflow (recommended usage)
-#  ----------------------------
-#  1) Visual sanity check (live mode):
-#     - Run with --env normal or --env battle
-#     - Play a few turns manually to confirm:
-#         • node clicks map to expected placements/moves
-#         • tiger AI responds as expected
-#         • phase switching (Place -> Move) looks correct
-#
-#  2) Model smoke test:
-#     - Provide --model path/to/model.zip
-#     - Use "Model Move" to step the model once at a time.
-#     - If it makes illegal moves, your masking pipeline is broken:
-#         • check env.get_action_mask()
-#         • check action encoding/decoding and mask alignment
-#
-#  3) Generate a replay quickly:
-#     - Click "Record Episode"
-#     - The GUI runs a fresh episode using:
-#         • the loaded model (deterministic=True), OR
-#         • random legal actions if no model is loaded
-#     - Immediately browse the recorded timeline (Prev/Next, slider, Play).
-#
-#  4) Replay deep dive:
-#     - Use the step text to track phase, action, blocked tigers, captures.
-#     - Use "Running reward" and move descriptions to correlate reward spikes
-#       with tactical events (capture avoidance, traps, sacrifices).
-#
-#  5) Compare tiger modes:
-#     - Use the "Tiger toggle" button to switch greedy <-> smart.
-#     - Re-run Record Episode for side-by-side qualitative comparisons.
-#
-#  Notes / Practical Tips
-#  ----------------------
-#  • The GUI uses native flat Discrete actions and pack/unpack helpers so that:
-#       action_flat = pos * N_DIR_CODES + dir
-#    matches the Discrete action space used by training.
-#  • Forward replay shows a goat-only preview first, then updates to the
-#    post-tiger board after a short delay (speed slider controls delay).
-#  • Live labeling tracks piece IDs (G1.., T1..) to make trajectories easier
-#    to follow across moves/captures.
-#
+#  Notes:
+#    - The GUI uses the native flat Discrete action space from env_tng_abc.py
+#    - Loaded PPO models use env.get_action_mask() for legality
+#    - Replay files are loaded from the Replay Viewer screen
 # ============================================================
-
-
 import argparse
 import json
 import os
@@ -344,21 +258,15 @@ class TigersGoatsGUI:
             command=self._start_tiger_mode,
             enabled=True,
         )
-        self.btn_home_cvc = add_mode_card(
-            2,
-            "Computer vs Computer (coming soon)",
-            "Run model vs model matchups for evaluation or demos.",
-            enabled=False,
-        )
         self.btn_home_pvp = add_mode_card(
-            3,
+            2,
             "Player vs Player",
             "Two humans play to craft custom replays and scenarios.",
             command=self._start_pvp_mode,
             enabled=True,
         )
         self.btn_home_replay = add_mode_card(
-            4,
+            3,
             "Replay Game",
             "Load a saved replay and browse the timeline.",
             command=self._start_replay_mode,

@@ -1,9 +1,8 @@
 # ============================================================
-#  Project    : Tigers & Goats - Falcon Branch
-#  Module     : Maskable PPO Environment (Full Game, Unified Tigers)
+#  Project    : Tigers & Goats
+#  Module     : Maskable PPO Environment
 #  File       : env_tng_abc.py
-#  Version    : env6.0
-#  Last Update: 2026-02-15
+#  Last Update: 2026-04-01
 #
 #  Purpose / Goal:
 #    Provide a stable Gymnasium environment for training robust goat/tiger
@@ -12,9 +11,10 @@
 #
 #  Overview:
 #    - Full game rules: placing phase + moving phase
-#    - Native Discrete(115) action space (no flatten wrapper)
+#    - Native Discrete(115) action space
 #    - Action masking for valid actions (MaskablePPO-compatible)
-#    - Unified tiger opponent selection (greedy / smart)
+#    - Tiger opponents: greedy / smart / model
+#    - Goat opponents: random / model
 #    - Reward hook via self.reward_fn (default: sparse_reward)
 #    - Consistent terminated vs truncated handling + strict info schema
 #    - Repetition tracking and timeout handling
@@ -32,13 +32,10 @@
 #    env = TnGEnv(max_turns=150)                        # explicit turn truncation limit
 #    env = TnGEnv(reward_weights={"REWARD_BUBBLE_SPACE": 0.0})  # ablate bubble shaping
 #
-#  Compatibility:
-#    - Designed for MaskablePPO training loops
-#    - Exposes native Discrete(115) action space
-#    - Intended integration points:
-#        - train_falcon.py
-#        - eval_falcon.py
-#        - tng_GUI_falcon.py
+#  Integration points:
+#    - train_abc.py
+#    - eval_abc.py
+#    - gui_abc.py
 # ============================================================
 import gymnasium as gym
 from gymnasium import spaces
@@ -500,44 +497,34 @@ class TnGEnv(gym.Env):
         return int(pos) * DIR_CODES + int(dir_code)
 
     def decode_action(self, action):
-        """
-        Primary decode helper for Discrete(115) action ids.
-        Also accepts [pos, dir] vectors for compatibility.
-        """
-        if isinstance(action, np.ndarray) and action.ndim == 0:
-            action = action.item()
+        """Decode a flat Discrete(115) action id into `(pos, dir_code)`."""
+        if isinstance(action, np.ndarray):
+            arr = np.asarray(action)
+            if arr.size != 1:
+                raise ValueError(f"Unrecognized action format: {action} (type {type(action)})")
+            action = arr.item()
 
-        if np.isscalar(action):
-            a = int(action)
-            return a // DIR_CODES, a % DIR_CODES
+        if not np.isscalar(action):
+            raise ValueError(f"Unrecognized action format: {action} (type {type(action)})")
 
-        if isinstance(action, (list, tuple, np.ndarray)):
-            arr = np.asarray(action).reshape(-1)
-            if arr.size == 2:
-                return int(arr[0]), int(arr[1])
-
-        raise ValueError(f"Unrecognized action format: {action} (type {type(action)})")
-
-    def _decode_action(self, action):
-        """Internal alias for action decoding."""
-        return self.decode_action(action)
+        a = int(action)
+        return a // DIR_CODES, a % DIR_CODES
 
     def _action_to_flat(self, action):
-        """Best-effort conversion from scalar or [pos, dir] into flat action id."""
-        if isinstance(action, np.ndarray) and action.ndim == 0:
-            action = action.item()
+        """Best-effort conversion from a scalar action into a flat action id."""
+        if isinstance(action, np.ndarray):
+            arr = np.asarray(action)
+            if arr.size != 1:
+                return None
+            action = arr.item()
         if np.isscalar(action):
             return int(action)
-        if isinstance(action, (list, tuple, np.ndarray)):
-            arr = np.asarray(action).reshape(-1)
-            if arr.size == 2:
-                return self.encode_action(int(arr[0]), int(arr[1]))
         return None
 
     def _safe_decode_action(self, action):
         """Decode action into (pos, dir) and return None on malformed input."""
         try:
-            pos, dir_code = self._decode_action(action)
+            pos, dir_code = self.decode_action(action)
             return int(pos), int(dir_code)
         except Exception:
             return None
@@ -589,31 +576,16 @@ class TnGEnv(gym.Env):
     #  Keeps reward flow consistent across goat/tiger learner modes.
     # ============================================================
     def _apply_reward_fn(self, prev_obs, action, result):
-        """Run the configured reward function while preserving legacy callback signatures."""
+        """Run the configured reward function for the transition result."""
         obs, reward, terminated, truncated, info = result
-        try:
-            final_reward = self.reward_fn(
-                prev_obs,
-                action,
-                obs,
-                bool(terminated),
-                bool(truncated),
-                info,
-            )
-        except TypeError as first_err:
-            # Backward compatibility: older callbacks may still expect base_reward.
-            try:
-                final_reward = self.reward_fn(
-                    prev_obs,
-                    action,
-                    obs,
-                    float(reward),
-                    bool(terminated),
-                    bool(truncated),
-                    info,
-                )
-            except TypeError:
-                raise first_err
+        final_reward = self.reward_fn(
+            prev_obs,
+            action,
+            obs,
+            bool(terminated),
+            bool(truncated),
+            info,
+        )
         return obs, float(final_reward), bool(terminated), bool(truncated), info
 
     def sparse_reward(self, prev_obs, action, obs, terminated, truncated, info):
