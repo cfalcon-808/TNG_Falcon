@@ -1,0 +1,52 @@
+{
+  "dataset_name": "full_20k_30_30_40",
+  "dataset_goal": "full",
+  "dataset_dir": "C:\\Users\\chris\\OneDrive\\Documents\\GitHub\\TNG_Falcon\\VAE_DATA\\full_20k_30_30_40",
+  "target_total_rows": 20000,
+  "target_rows": {
+    "goat_win": 6000,
+    "tiger_win": 6000,
+    "timeout": 8000
+  },
+  "actual_total_rows": 20000,
+  "actual_bucket_counts": {
+    "goat_win": 6000,
+    "tiger_win": 6000,
+    "timeout": 8000
+  },
+  "actual_value_label_counts": {
+    "0.0": 6000,
+    "0.5": 8000,
+    "1.0": 6000
+  },
+  "endgame_progress_threshold": 0.7,
+  "min_progress_ratio": 0.0,
+  "max_progress_ratio": 0.99,
+  "state_columns": [
+    "cell_00",
+    "cell_01",
+    "cell_02",
+    "cell_03",
+    "cell_04",
+    "cell_05",
+    "cell_06",
+    "cell_07",
+    "cell_08",
+    "cell_09",
+    "cell_10",
+    "cell_11",
+    "cell_12",
+    "cell_13",
+    "cell_14",
+    "cell_15",
+    "cell_16",
+    "cell_17",
+    "cell_18",
+    "cell_19",
+    "cell_20",
+    "cell_21",
+    "cell_22",
+    "goats_eaten_state",
+    "phase_state"
+  ]
+}

@@ -102,6 +102,7 @@ from env_tng_abc import (
     GOAT_AI_RANDOM,
     GOAT_AI_MODEL,
 )
+from VAE.LVS_VALUE_SHAPING import LVSValueShapingConfig, make_lvs_vae_reward_fn
 
 GOAT_LEARNER     = "goat"
 TIGER_LEARNER    = "tiger"
@@ -113,7 +114,7 @@ OPP_GOAT_MODEL   = "goat_model"
 # ============================================================
 #  USER CONFIG - Opponent & Naming
 
-EXPERIMENT_NAME = "baselineGoatTrainingV3"
+EXPERIMENT_NAME = "DataSetCreation"
 LEARNER_ROLE    = GOAT_LEARNER                # GOAT_LEARNER | TIGER_LEARNER
 # Unified opponent selector (interpreted by learner role; used when MIX_PROB is None):
 #   - GOAT learner  : "tiger_greedy" | "tiger_smart"  (model tiger not yet supported)
@@ -128,7 +129,7 @@ ALGO_TAG        = "mppo"
 ENV_VER         = "env6.0"
 MODEL_VER       = "mppo_train3.1"
 CHECKPOINTS_PER_RUN = 10
-RESUME_MODEL_PATH = r"artifacts\baselineGoatTrainingV3\checkpoints\goat_vs_smart_tiger_continue_50M_20260322_112935_phase_01\cp_mppo_GvST_goat_vs_smart_tiger_continue_50M_20260322_112935_120007936_steps.zip"
+RESUME_MODEL_PATH = None
 GOAT_MODEL_PATH  = "stable_models\models\Goats\mppo_GvMixT_goat_GT_to_ST_to_mix_p2.zip"  # path to a saved goat model (used when opponent is goat_model)
 
 # ============================================================
@@ -139,6 +140,58 @@ DEBUG_MODE  = False                  # True or False
 TIMESTEPS   = 2_000_000 if DEBUG_MODE else 20_000_000
 NUM_CPU     = 16
 SEED        = 42
+
+# ============================================================
+#  USER CONFIG - Optional LVS-VAE Reward Shaping
+
+PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
+
+USE_LVS_VAE_SHAPING = False
+LVS_VAE_SHAPING_COEF = 0.02
+LVS_VAE_PROGRESS_THRESHOLD = 0.7
+LVS_VAE_ENDGAME_BLEND = 0.7
+LVS_VAE_PROGRESS_MODE = "turn_max_ratio"
+LVS_VAE_DEVICE = "cpu"
+
+LVS_VAE_FULL_CHECKPOINT_PATHS = [
+    os.path.join(
+        PROJECT_ROOT,
+        "artifacts",
+        "lvs_vae",
+        "full_40k_lvsvae_v1",
+        "full_40k_lvsvae_v1_final_model.pt",
+    ),
+    os.path.join(
+        PROJECT_ROOT,
+        "artifacts",
+        "lvs_vae",
+        "full_20k_lvsvae_v1",
+        "full_20k_lvsvae_v1_final_model.pt",
+    ),
+]
+LVS_VAE_END_CHECKPOINT_PATHS = [
+    os.path.join(
+        PROJECT_ROOT,
+        "artifacts",
+        "lvs_vae",
+        "end_40k_lvsvae_v1",
+        "end_40k_lvsvae_v1_final_model.pt",
+    ),
+    os.path.join(
+        PROJECT_ROOT,
+        "artifacts",
+        "lvs_vae",
+        "end_20k_lvsvae_v1",
+        "end_20k_lvsvae_v1_final_model.pt",
+    ),
+    os.path.join(
+        PROJECT_ROOT,
+        "artifacts",
+        "lvs_vae",
+        "end06_20k_lvsvae_v1",
+        "end06_20k_lvsvae_v1_final_model.pt",
+    ),
+]
 
 # ============================================================
 #  USER CONFIG - PPO Hyperparameters
@@ -166,61 +219,10 @@ else:
 # ============================================================
 
 VARIATIONS = {
-    "goat_vs_smart_tiger_continue3_50M": {
-        "timesteps": 50_000_000,
-        "opponent_ai": OPP_TIGER_SMART,
+    "": {
+        "timesteps": 20_000_000,
+        "opponent_ai": OPP_TIGER_GREEDY,
         "mix_prob": None,
-
-        # Goat learner knobs:
-        # Terminal rewards:
-        "REWARD_GOAT_WIN": 3.2,
-        "REWARD_TIGER_WIN": -3.2,
-
-        # Step and capture shaping:
-        "REWARD_STEP": -0.001, 
-        "REWARD_GOAT_EATEN": -0.6, # -0.35 to -0.6
-
-        # Moving-phase step penalty family:
-        "MOVE_STEP_BASE": -0.01,
-        "MOVE_STEP_SLOPE": -0.01,
-        "MOVE_STEP_MIN": -0.6,
-
-        # Timeout family:
-        "MAX_TIMEOUT_SCALE": 1.5,
-        "REPEAT_STALL_SCALE": 1.25,
-        "MAX_TURNS": 100,
-
-        # Goat win decay:
-        "GOAT_WIN_TURN_DECAY": 0.005, # 0.01 -> 0.005
-
-        # Positional and mobility shaping:
-        "REWARD_BLOCK_TIGER": 0.12, # 0.08 -> 0.12
-        "REWARD_BUBBLE_SPACE": 0.02,
-        "REWARD_CLUSTER_TIGERS": 0.02,
-        "REWARD_CENTER_GOAT": 0.05, # 0.03 -> 0.05
-        "REWARD_CENTER_TIGER": -0.06, # -0.03 -> -0.06
-
-        # Special shaping:
-        "NEAR_LOCK_BONUS": 0.08, # 0.05 -> 0.08
-        "LATE_GAME_START_TURN": 40,
-        "MOBILITY_BACKSLIDE_SCALE": 0.5,
-        "GOAT_SHAPING_DECAY_BASE": 0.95,
-
-        # Tiger learner knobs:
-        # Tiger terminal / capture rewards:
-        "REWARD_TIGER_CAPTURE": 0.35,
-        "REWARD_TIGER_WIN_BONUS": 3.2,
-        "REWARD_TIGER_LOSS_PENALTY": 3.2,
-
-        # Shared invalid/repeat and opponent-behavior knobs:
-        # Invalid action and anti-repeat family:
-        "REWARD_INVALID_SOFT": -0.05,
-        "REWARD_INVALID_HARD": -1.0,
-        "REWARD_REPEAT_STATE": -0.5,
-        "MAX_REPEATS": 4,
-
-        # Scripted tiger behavior family:
-        "BASE_TIGER_CAPTURE_BIAS": 1.0,
     },
 }
 
@@ -411,6 +413,22 @@ def checkpoint_save_freq(phase: PhaseConfig) -> int:
     return max((phase.timesteps // max(phase.checkpoints_per_run, 1)) // NUM_CPU, 1)
 
 
+def build_lvs_vae_shaping_config(knobs: dict[str, Any] | None) -> LVSValueShapingConfig:
+    """Create the frozen VAE shaping config for one env worker."""
+    active_knobs = knobs or {}
+    max_turns = int(active_knobs.get("MAX_TURNS", 100))
+    return LVSValueShapingConfig(
+        full_checkpoint_paths=tuple(LVS_VAE_FULL_CHECKPOINT_PATHS),
+        end_checkpoint_paths=tuple(LVS_VAE_END_CHECKPOINT_PATHS),
+        shaping_coef=LVS_VAE_SHAPING_COEF,
+        progress_threshold=LVS_VAE_PROGRESS_THRESHOLD,
+        endgame_weight_after_threshold=LVS_VAE_ENDGAME_BLEND,
+        progress_mode=LVS_VAE_PROGRESS_MODE,
+        max_turns=max_turns,
+        device=LVS_VAE_DEVICE,
+    )
+
+
 def mask_fn(env):
     return env.unwrapped.get_action_mask()
 
@@ -460,8 +478,15 @@ class WinStatsCallback(BaseCallback):
             "reward_goat_eaten_component",
             "reward_repeat_component",
             "reward_terminal_component",
+            "reward_sparse_component",
+            "reward_vae_component",
             "reward_decay_mult",
             "reward_total",
+            "lvs_value_before",
+            "lvs_value_after",
+            "lvs_value_delta",
+            "lvs_progress_ratio",
+            "lvs_gate_active",
         ]
         self.reward_component_windows = {
             name: deque(maxlen=1_000) for name in self.reward_component_names
@@ -580,8 +605,15 @@ class WinStatsCallback(BaseCallback):
                 "reward_goat_eaten_component": "7.goat_eaten_mean",
                 "reward_repeat_component": "8.repeat_mean",
                 "reward_terminal_component": "9.terminal_mean",
-                "reward_decay_mult": "10.decay_mult_mean",
-                "reward_total": "11.total_reward_mean",
+                "reward_sparse_component": "10.sparse_mean",
+                "reward_vae_component": "11.vae_mean",
+                "reward_decay_mult": "12.decay_mult_mean",
+                "reward_total": "13.total_reward_mean",
+                "lvs_value_before": "14.lvs_value_before_mean",
+                "lvs_value_after": "15.lvs_value_after_mean",
+                "lvs_value_delta": "16.lvs_value_delta_mean",
+                "lvs_progress_ratio": "17.lvs_progress_ratio_mean",
+                "lvs_gate_active": "18.lvs_gate_active_frac",
             }
             for name, label in reward_component_labels.items():
                 values = self.reward_component_windows[name]
@@ -687,6 +719,11 @@ def make_env(
             goat_opponent_ai=_sample_goat_ai(),
             goat_model_predict_fn=goat_model_predict_fn,
         )
+        if USE_LVS_VAE_SHAPING and LEARNER_ROLE == GOAT_LEARNER:
+            base_env.reward_fn = make_lvs_vae_reward_fn(
+                base_env.sparse_reward,
+                build_lvs_vae_shaping_config(knobs),
+            )
 
         # If mixing, resample per reset
         if mix_prob is not None and LEARNER_ROLE == GOAT_LEARNER:
