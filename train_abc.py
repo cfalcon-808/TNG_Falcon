@@ -102,7 +102,11 @@ from env_tng_abc import (
     GOAT_AI_RANDOM,
     GOAT_AI_MODEL,
 )
-from VAE.LVS_VALUE_SHAPING import LVSValueShapingConfig, make_lvs_vae_reward_fn
+from VAE.LVS_VALUE_SHAPING import (
+    LVSValueShapingConfig,
+    make_lvs_vae_reward_fn,
+    smoke_check_lvs_vae_value_predictor,
+)
 
 GOAT_LEARNER     = "goat"
 TIGER_LEARNER    = "tiger"
@@ -114,7 +118,7 @@ OPP_GOAT_MODEL   = "goat_model"
 # ============================================================
 #  USER CONFIG - Opponent & Naming
 
-EXPERIMENT_NAME = "DataSetCreation"
+EXPERIMENT_NAME = "VAE_INTEGRATION_V2"
 LEARNER_ROLE    = GOAT_LEARNER                # GOAT_LEARNER | TIGER_LEARNER
 # Unified opponent selector (interpreted by learner role; used when MIX_PROB is None):
 #   - GOAT learner  : "tiger_greedy" | "tiger_smart"  (model tiger not yet supported)
@@ -127,7 +131,7 @@ MIX_PROB        = None
 
 ALGO_TAG        = "mppo"
 ENV_VER         = "env6.0"
-MODEL_VER       = "mppo_train3.1"
+MODEL_VER       = "mppo_train4.0"
 CHECKPOINTS_PER_RUN = 10
 RESUME_MODEL_PATH = None
 GOAT_MODEL_PATH  = "stable_models\models\Goats\mppo_GvMixT_goat_GT_to_ST_to_mix_p2.zip"  # path to a saved goat model (used when opponent is goat_model)
@@ -146,9 +150,11 @@ SEED        = 42
 
 PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
 
-USE_LVS_VAE_SHAPING = False
-LVS_VAE_SHAPING_COEF = 0.02
-LVS_VAE_PROGRESS_THRESHOLD = 0.7
+USE_LVS_VAE_SHAPING = True
+RUN_LVS_VAE_SMOKE_CHECK = True
+RUN_LVS_VAE_SMOKE_CHECK_ONLY = False
+LVS_VAE_SHAPING_COEF = 0.1
+LVS_VAE_PROGRESS_THRESHOLD = 0.3
 LVS_VAE_ENDGAME_BLEND = 0.7
 LVS_VAE_PROGRESS_MODE = "turn_max_ratio"
 LVS_VAE_DEVICE = "cpu"
@@ -218,13 +224,26 @@ else:
 #  VARIATIONS
 # ============================================================
 
-VARIATIONS = {
-    "": {
-        "timesteps": 20_000_000,
+# VARIATIONS = {
+#     "": {
+#         "timesteps": 20_000_000,
+#         "opponent_ai": OPP_TIGER_GREEDY,
+#         "mix_prob": None,
+#     },
+# }
+
+LVS_VAE_SHAPED_VARIATIONS = {
+    "goat_vs_greedy_lvs_vae_shaping": {
+        "timesteps": TIMESTEPS,
         "opponent_ai": OPP_TIGER_GREEDY,
         "mix_prob": None,
+        "use_lvs_vae_shaping": True,
     },
 }
+VARIATIONS = LVS_VAE_SHAPED_VARIATIONS
+
+# To train only the shaped run, set:
+# VARIATIONS = LVS_VAE_SHAPED_VARIATIONS
 
 
 
@@ -238,6 +257,7 @@ CONTROL_KEYS = frozenset({
     "mix_prob",
     "checkpoints_per_run",
     "goat_model_path",
+    "use_lvs_vae_shaping",
 })
 
 @dataclass(frozen=True)
@@ -247,6 +267,7 @@ class PhaseConfig:
     mix_prob: float | None
     checkpoints_per_run: int
     goat_model_path: str | None
+    use_lvs_vae_shaping: bool
     knobs: dict[str, Any]
 
 
@@ -257,6 +278,7 @@ def default_phase_config() -> PhaseConfig:
         mix_prob=MIX_PROB,
         checkpoints_per_run=CHECKPOINTS_PER_RUN,
         goat_model_path=GOAT_MODEL_PATH,
+        use_lvs_vae_shaping=USE_LVS_VAE_SHAPING,
         knobs={},
     )
 def normalize_phase_dict(phase_config: dict[str, Any], context: str) -> PhaseConfig:
@@ -276,6 +298,12 @@ def normalize_phase_dict(phase_config: dict[str, Any], context: str) -> PhaseCon
         mix_prob=phase_config.get("mix_prob", default_phase.mix_prob),
         checkpoints_per_run=phase_config.get("checkpoints_per_run", default_phase.checkpoints_per_run),
         goat_model_path=phase_config.get("goat_model_path", default_phase.goat_model_path),
+        use_lvs_vae_shaping=bool(
+            phase_config.get(
+                "use_lvs_vae_shaping",
+                default_phase.use_lvs_vae_shaping,
+            )
+        ),
         knobs=knobs,
     )
 
@@ -427,6 +455,67 @@ def build_lvs_vae_shaping_config(knobs: dict[str, Any] | None) -> LVSValueShapin
         max_turns=max_turns,
         device=LVS_VAE_DEVICE,
     )
+
+
+def run_lvs_vae_smoke_check() -> dict[str, float]:
+    """Load LVS-VAE models and verify one shaped env transition."""
+    config = build_lvs_vae_shaping_config({"MAX_TURNS": 100})
+    value_check = smoke_check_lvs_vae_value_predictor(config)
+
+    env = BaseEnv(
+        reward_weights={"MAX_TURNS": config.max_turns},
+        tiger_ai=TIGER_AI_GREEDY,
+        learner_role=GOAT_LEARNER,
+    )
+    try:
+        env.reward_fn = make_lvs_vae_reward_fn(env.sparse_reward, config)
+        env.reset(seed=SEED)
+        valid_actions = np.flatnonzero(env.get_action_mask())
+        if len(valid_actions) == 0:
+            raise AssertionError("LVS-VAE smoke check found no valid goat actions.")
+
+        action = int(valid_actions[0])
+        _obs, reward, _terminated, _truncated, info = env.step(action)
+        reward = float(reward)
+
+        required_fields = [
+            "reward_sparse_component",
+            "reward_vae_component",
+            "reward_total",
+            "lvs_value_before",
+            "lvs_value_after",
+            "lvs_progress_ratio",
+        ]
+        missing_fields = [field for field in required_fields if field not in info]
+        if missing_fields:
+            raise AssertionError(f"LVS-VAE smoke check missing info fields: {missing_fields}")
+
+        for field in ("lvs_value_before", "lvs_value_after"):
+            value = float(info[field])
+            if not 0.0 <= value <= 1.0:
+                raise AssertionError(f"{field} must be in [0, 1], got {value}")
+
+        expected_progress = float(info["turn_counter"]) / float(config.max_turns)
+        actual_progress = float(info["lvs_progress_ratio"])
+        if not np.isclose(actual_progress, expected_progress):
+            raise AssertionError(
+                "lvs_progress_ratio should equal turn_counter / MAX_TURNS; "
+                f"got {actual_progress}, expected {expected_progress}"
+            )
+    finally:
+        env.close()
+
+    return {
+        "early_value": value_check["early_value"],
+        "late_value": value_check["late_value"],
+        "reward": reward,
+        "reward_sparse_component": float(info["reward_sparse_component"]),
+        "reward_vae_component": float(info["reward_vae_component"]),
+        "reward_total": float(info["reward_total"]),
+        "lvs_value_before": float(info["lvs_value_before"]),
+        "lvs_value_after": float(info["lvs_value_after"]),
+        "lvs_progress_ratio": actual_progress,
+    }
 
 
 def mask_fn(env):
@@ -696,6 +785,7 @@ def make_env(
     mix_prob: float | None = None,
     resolved_goat_ai: str | None = None,
     goat_model_path: str | None = None,
+    use_lvs_vae_shaping: bool = False,
 ):
     def _init():
         def _sample_ai():
@@ -719,7 +809,7 @@ def make_env(
             goat_opponent_ai=_sample_goat_ai(),
             goat_model_predict_fn=goat_model_predict_fn,
         )
-        if USE_LVS_VAE_SHAPING and LEARNER_ROLE == GOAT_LEARNER:
+        if use_lvs_vae_shaping and LEARNER_ROLE == GOAT_LEARNER:
             base_env.reward_fn = make_lvs_vae_reward_fn(
                 base_env.sparse_reward,
                 build_lvs_vae_shaping_config(knobs),
@@ -829,6 +919,17 @@ def write_run_metadata(
         "device_mode": DEVICE_MODE,
         "device": DEVICE,
         "seed": SEED,
+        "lvs_vae_shaping": {
+            "default_enabled": USE_LVS_VAE_SHAPING,
+            "enabled_in_any_phase": any(phase.use_lvs_vae_shaping for phase in phases),
+            "shaping_coef": LVS_VAE_SHAPING_COEF,
+            "progress_threshold": LVS_VAE_PROGRESS_THRESHOLD,
+            "endgame_weight_after_threshold": LVS_VAE_ENDGAME_BLEND,
+            "progress_mode": LVS_VAE_PROGRESS_MODE,
+            "device": LVS_VAE_DEVICE,
+            "full_checkpoint_paths": LVS_VAE_FULL_CHECKPOINT_PATHS,
+            "end_checkpoint_paths": LVS_VAE_END_CHECKPOINT_PATHS,
+        },
         "phases": [asdict(phase) for phase in phases],
         "layout": layout,
     }
@@ -850,7 +951,7 @@ def write_run_metadata(
 # Matchup info logger (scalar)
 # ============================================================
 
-def log_matchup_info(model_obj, learner_role, tiger_ai, resolved_goat_ai, mix_prob):
+def log_matchup_info(model_obj, learner_role, tiger_ai, resolved_goat_ai, mix_prob, use_lvs_vae_shaping):
     learner_id = 0.0 if learner_role == GOAT_LEARNER else 1.0
     opp_source_id = 0.0 if learner_role == GOAT_LEARNER else 1.0  # 0=tiger, 1=goat
     if learner_role == GOAT_LEARNER:
@@ -862,8 +963,9 @@ def log_matchup_info(model_obj, learner_role, tiger_ai, resolved_goat_ai, mix_pr
     model_obj.logger.record("3.matchup_info/2.opp_source_id", opp_source_id)
     model_obj.logger.record("3.matchup_info/3.opp_family_id", opp_family_id)
     model_obj.logger.record("3.matchup_info/4.is_mixed", 0.0 if mix_prob is None else 1.0)
+    model_obj.logger.record("3.matchup_info/5.use_lvs_vae_shaping", float(bool(use_lvs_vae_shaping)))
     if mix_prob is not None:
-        model_obj.logger.record("3.matchup_info/5.mix_prob", float(mix_prob))
+        model_obj.logger.record("3.matchup_info/6.mix_prob", float(mix_prob))
     model_obj.logger.dump(step=model_obj.num_timesteps)
 
 
@@ -969,7 +1071,11 @@ def run_single_variation(variation_name: str, variation_config):
 
         phase_tiger_ai, phase_goat_ai = resolve_phase_matchup(phase)
 
-        print(f"Phase {phase_number}: timesteps={phase.timesteps}, opponent_ai={phase.opponent_ai}, mix_prob={phase.mix_prob}")
+        print(
+            f"Phase {phase_number}: timesteps={phase.timesteps}, "
+            f"opponent_ai={phase.opponent_ai}, mix_prob={phase.mix_prob}, "
+            f"use_lvs_vae_shaping={phase.use_lvs_vae_shaping}"
+        )
         warn_if_missing_goat_model_path(
             phase_goat_ai,
             phase.goat_model_path,
@@ -985,6 +1091,7 @@ def run_single_variation(variation_name: str, variation_config):
                 mix_prob=phase.mix_prob,
                 resolved_goat_ai=phase_goat_ai,
                 goat_model_path=phase.goat_model_path,
+                use_lvs_vae_shaping=phase.use_lvs_vae_shaping,
             )
             for i in range(NUM_CPU)
         ]
@@ -1022,7 +1129,14 @@ def run_single_variation(variation_name: str, variation_config):
         cont = resumed or phase_idx > 0
 
         # log matchup info AFTER logger exists
-        log_matchup_info(model, LEARNER_ROLE, phase_tiger_ai, phase_goat_ai, phase.mix_prob)
+        log_matchup_info(
+            model,
+            LEARNER_ROLE,
+            phase_tiger_ai,
+            phase_goat_ai,
+            phase.mix_prob,
+            phase.use_lvs_vae_shaping,
+        )
 
 
         model.learn(
@@ -1090,6 +1204,13 @@ def run_single_variation(variation_name: str, variation_config):
 
 if __name__ == "__main__":
     all_results = []
+
+    if RUN_LVS_VAE_SMOKE_CHECK or RUN_LVS_VAE_SMOKE_CHECK_ONLY:
+        smoke_result = run_lvs_vae_smoke_check()
+        print("[LVS-VAE smoke check] passed")
+        print(json.dumps(smoke_result, indent=2))
+        if RUN_LVS_VAE_SMOKE_CHECK_ONLY:
+            sys.exit(0)
 
     print("\n" + "=" * 70)
     print(f"EXPERIMENT (suite): {EXPERIMENT_NAME}")

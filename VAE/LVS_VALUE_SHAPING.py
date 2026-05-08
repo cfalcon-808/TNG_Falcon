@@ -84,7 +84,7 @@ def _turn_max_progress(info: dict, max_turns: int) -> tuple[float, float]:
     return progress_before, progress_after
 
 
-class _PhaseGatedLVSValue:
+class PhaseGatedLVSValuePredictor:
     """Lazy CPU inference object used inside each env worker process."""
 
     def __init__(self, config: LVSValueShapingConfig) -> None:
@@ -134,13 +134,45 @@ def _coerce_config(config: LVSValueShapingConfig | dict) -> LVSValueShapingConfi
     raise TypeError(f"Expected LVSValueShapingConfig or dict, got {type(config).__name__}")
 
 
+def make_lvs_vae_value_predictor(
+    config: LVSValueShapingConfig | dict,
+) -> PhaseGatedLVSValuePredictor:
+    """Create a reusable phase-gated LVS-VAE value predictor."""
+    return PhaseGatedLVSValuePredictor(_coerce_config(config))
+
+
+def smoke_check_lvs_vae_value_predictor(
+    config: LVSValueShapingConfig | dict,
+    state: np.ndarray | None = None,
+) -> dict[str, float]:
+    """Load the configured ensemble and verify values stay in [0, 1]."""
+    shaping_config = _coerce_config(config)
+    predictor = PhaseGatedLVSValuePredictor(shaping_config)
+    if state is None:
+        state = np.array([0] * 23 + [0, 0], dtype=np.float32)
+
+    early_value = predictor.predict(state, 0.0)
+    late_value = predictor.predict(state, 1.0)
+    for name, value in {
+        "early_value": early_value,
+        "late_value": late_value,
+    }.items():
+        if not 0.0 <= value <= 1.0:
+            raise AssertionError(f"{name} must be in [0, 1], got {value}")
+
+    return {
+        "early_value": early_value,
+        "late_value": late_value,
+    }
+
+
 def make_lvs_vae_reward_fn(
     base_reward_fn: RewardFn,
     config: LVSValueShapingConfig | dict,
 ) -> RewardFn:
     """Return an env-compatible reward function with LVS-VAE delta shaping."""
     shaping_config = _coerce_config(config)
-    value_model = _PhaseGatedLVSValue(shaping_config)
+    value_model = PhaseGatedLVSValuePredictor(shaping_config)
 
     def reward_fn(prev_obs, action, obs, terminated, truncated, info):
         sparse_reward = float(
