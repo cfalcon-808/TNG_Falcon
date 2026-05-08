@@ -118,7 +118,7 @@ OPP_GOAT_MODEL   = "goat_model"
 # ============================================================
 #  USER CONFIG - Opponent & Naming
 
-EXPERIMENT_NAME = "VAE_INTEGRATION_V2"
+EXPERIMENT_NAME = "VAE_ABLATION_ANALYSIS"
 LEARNER_ROLE    = GOAT_LEARNER                # GOAT_LEARNER | TIGER_LEARNER
 # Unified opponent selector (interpreted by learner role; used when MIX_PROB is None):
 #   - GOAT learner  : "tiger_greedy" | "tiger_smart"  (model tiger not yet supported)
@@ -141,7 +141,7 @@ GOAT_MODEL_PATH  = "stable_models\models\Goats\mppo_GvMixT_goat_GT_to_ST_to_mix_
 
 DEVICE_MODE = "gpu"
 DEBUG_MODE  = False                  # True or False
-TIMESTEPS   = 2_000_000 if DEBUG_MODE else 20_000_000
+TIMESTEPS   = 5_000_000
 NUM_CPU     = 16
 SEED        = 42
 
@@ -153,8 +153,8 @@ PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
 USE_LVS_VAE_SHAPING = True
 RUN_LVS_VAE_SMOKE_CHECK = True
 RUN_LVS_VAE_SMOKE_CHECK_ONLY = False
-LVS_VAE_SHAPING_COEF = 0.1
-LVS_VAE_PROGRESS_THRESHOLD = 0.3
+LVS_VAE_SHAPING_COEF = 0.5
+LVS_VAE_PROGRESS_THRESHOLD = 0.98
 LVS_VAE_ENDGAME_BLEND = 0.7
 LVS_VAE_PROGRESS_MODE = "turn_max_ratio"
 LVS_VAE_DEVICE = "cpu"
@@ -232,18 +232,62 @@ else:
 #     },
 # }
 
-LVS_VAE_SHAPED_VARIATIONS = {
-    "goat_vs_greedy_lvs_vae_shaping": {
+VAE_COARSE_ABLATION_VARIATIONS = {
+    "baseline_full_reward_no_vae": {
+        "timesteps": TIMESTEPS,
+        "opponent_ai": OPP_TIGER_GREEDY,
+        "mix_prob": None,
+        "use_lvs_vae_shaping": False,
+    },
+    "vae_full_reward": {
         "timesteps": TIMESTEPS,
         "opponent_ai": OPP_TIGER_GREEDY,
         "mix_prob": None,
         "use_lvs_vae_shaping": True,
     },
+    "vae_no_positional_helpers": {
+        "timesteps": TIMESTEPS,
+        "opponent_ai": OPP_TIGER_GREEDY,
+        "mix_prob": None,
+        "use_lvs_vae_shaping": True,
+        "NEAR_LOCK_BONUS": 0.0,
+        "REWARD_BLOCK_TIGER": 0.0,
+        "REWARD_BUBBLE_SPACE": 0.0,
+        "REWARD_CLUSTER_TIGERS": 0.0,
+        "REWARD_CENTER_GOAT": 0.0,
+        "REWARD_CENTER_TIGER": 0.0,
+    },
+    "vae_no_survival_pressure": {
+        "timesteps": TIMESTEPS,
+        "opponent_ai": OPP_TIGER_GREEDY,
+        "mix_prob": None,
+        "use_lvs_vae_shaping": True,
+        "REWARD_GOAT_EATEN": 0.0,
+        "REWARD_REPEAT_STATE": 0.0,
+        "MOVE_STEP_BASE": 0.0,
+        "MOVE_STEP_SLOPE": 0.0,
+        "MOVE_STEP_MIN": 0.0,
+    },
+    "vae_terminal_only": {
+        "timesteps": TIMESTEPS,
+        "opponent_ai": OPP_TIGER_GREEDY,
+        "mix_prob": None,
+        "use_lvs_vae_shaping": True,
+        "REWARD_STEP": 0.0,
+        "REWARD_GOAT_EATEN": 0.0,
+        "MOVE_STEP_BASE": 0.0,
+        "MOVE_STEP_SLOPE": 0.0,
+        "MOVE_STEP_MIN": 0.0,
+        "REWARD_REPEAT_STATE": 0.0,
+        "NEAR_LOCK_BONUS": 0.0,
+        "REWARD_BLOCK_TIGER": 0.0,
+        "REWARD_BUBBLE_SPACE": 0.0,
+        "REWARD_CLUSTER_TIGERS": 0.0,
+        "REWARD_CENTER_GOAT": 0.0,
+        "REWARD_CENTER_TIGER": 0.0,
+    },
 }
-VARIATIONS = LVS_VAE_SHAPED_VARIATIONS
-
-# To train only the shaped run, set:
-# VARIATIONS = LVS_VAE_SHAPED_VARIATIONS
+VARIATIONS = VAE_COARSE_ABLATION_VARIATIONS
 
 
 
