@@ -2,27 +2,10 @@
 #  Project    : Tigers & Goats
 #  Module     : Latent Value Shaping VAE Trainer
 #  File       : TRAIN_VAE.py
-#  Version    : lvs_vae_train1.0
 #
 #  Purpose / Goal:
-#    Train the offline LVS-VAE on generated state/value data so the frozen
-#    encoder + value head can later be used for PPO reward shaping.
-#
-#  Overview:
-#    - Loads VAE_DATA/lvs_vae/full_20k_40_40_20/states_labels.npz by default
-#    - Splits states/value labels into train and validation sets
-#    - Trains LVSVAE with reconstruction, KL, and value prediction losses
-#    - Saves best/final checkpoints, config, and per-epoch metrics
-#
-#  Quick Use:
-#    Full baseline: python VAE/TRAIN_FULL_LVS_VAE.py
-#    Endgame VAE : python VAE/TRAIN_END_LVS_VAE.py
-#    Direct edit : edit USER CONFIGS below, then run python VAE/TRAIN_VAE.py
-#
-#  Integration points:
-#    - VAE/DATASET_GENERATOR.ipynb
-#    - VAE/LVS_VAE.py
-#    - PPO reward shaping wrapper / callback
+#    Train the value-shaping LVS-VAE only. Placing-survival training lives in
+#    TRAIN_PLACING_SURVIVAL_LVS_VAE.py and LVS_VAE_PS.py.
 # ============================================================
 from __future__ import annotations
 
@@ -52,29 +35,24 @@ from LVS_VAE import (
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_DATA_PATH = PROJECT_ROOT / "VAE_DATA" / "full_20k_30_30_40" / "states_labels.npz"
+DEFAULT_DATA_PATH = PROJECT_ROOT / "VAE_DATA" / "full_20k_40_40_20" / "states_labels.npz"
 DEFAULT_ENDGAME_DATA_PATH = PROJECT_ROOT / "VAE_DATA" / "end06_20k_40_40_20" / "states_labels.npz"
 DEFAULT_OUTPUT_ROOT = PROJECT_ROOT / "artifacts" / "lvs_vae"
 
-
-# ============================================================
-#  USER CONFIGS
-#  Edit these values directly before running this script.
-# ============================================================
-
 DATA_PATH = DEFAULT_ENDGAME_DATA_PATH
 OUTPUT_ROOT = DEFAULT_OUTPUT_ROOT
-RUN_NAME = "end06_20k_lvsvae_v1"  # None creates run_YYYYMMDD_HHMMSS
+RUN_NAME = "end06_20k_lvsvae_v1"
+TRAIN_MODE = "joint"  # "joint", "reconstruction", or "value_head"
+INIT_CHECKPOINT_PATH = None
+BEST_MODEL_METRIC = "total"  # "total", "reconstruction", "kl", or "value"
 
 SEED = 42
-DEVICE = "auto"  # "auto", "cpu", or "cuda"
-
+DEVICE = "auto"
 EPOCHS = 100
 BATCH_SIZE = 64
 LEARNING_RATE = 1e-3
 WEIGHT_DECAY = 1e-5
 VALIDATION_RATIO = 0.2
-
 BETA = 0.001
 VALUE_WEIGHT = 1.0
 GRAD_CLIP_NORM = 5.0
@@ -83,20 +61,20 @@ INPUT_DIM = DEFAULT_INPUT_DIM
 LATENT_DIM = DEFAULT_LATENT_DIM
 HIDDEN_DIMS = DEFAULT_HIDDEN_DIMS
 VALUE_HIDDEN_DIM = DEFAULT_VALUE_HIDDEN_DIM
-
-# Set to zero for stability, no need parallelization since dataset is relatively small
 NUM_WORKERS = 0
-
-# Saves loss curve PNGs at the end of training when matplotlib is installed.
 PLOT_LOSS_CURVES = True
-
-# Print each epoch as a vertical metric block instead of one long line.
 PRINT_VERTICAL_METRICS = True
+
+VALID_TRAIN_MODES = {"joint", "reconstruction", "value_head"}
+VALID_LOSS_METRICS = {"total", "reconstruction", "kl", "value"}
 
 
 @dataclass(frozen=True)
 class TrainConfig:
     run_name: str
+    train_mode: str
+    init_checkpoint_path: str | None
+    best_model_metric: str
     data_path: str
     output_dir: str
     seed: int
@@ -119,12 +97,10 @@ class TrainConfig:
 
 
 def artifact_path(output_dir: Path, run_name: str, artifact_name: str) -> Path:
-    """Build a run-name-prefixed path for saved training artifacts."""
     return output_dir / f"{run_name}_{artifact_name}"
 
 
 def format_elapsed_time(seconds: float) -> str:
-    """Format elapsed seconds as HH:MM:SS."""
     total_seconds = int(round(seconds))
     hours, remainder = divmod(total_seconds, 3600)
     minutes, seconds = divmod(remainder, 60)
@@ -132,10 +108,8 @@ def format_elapsed_time(seconds: float) -> str:
 
 
 def resolve_device(device_arg: str) -> torch.device:
-    """Map device config value to a concrete torch device."""
     if device_arg == "auto":
         return torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
     device = torch.device(device_arg)
     if device.type == "cuda" and not torch.cuda.is_available():
         raise RuntimeError("CUDA was requested, but torch.cuda.is_available() is False.")
@@ -143,7 +117,6 @@ def resolve_device(device_arg: str) -> torch.device:
 
 
 def set_seed(seed: int) -> None:
-    """Seed Python, NumPy, and PyTorch for repeatable dataset splits."""
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
@@ -151,8 +124,82 @@ def set_seed(seed: int) -> None:
         torch.cuda.manual_seed_all(seed)
 
 
+def load_model_checkpoint(
+    model: LVSVAE,
+    checkpoint_path: Path,
+    device: torch.device,
+) -> dict[str, Any]:
+    if not checkpoint_path.exists():
+        raise FileNotFoundError(f"INIT_CHECKPOINT_PATH not found: {checkpoint_path}")
+    checkpoint = torch.load(checkpoint_path, map_location=device)
+    if "model_state_dict" not in checkpoint:
+        raise KeyError(f"Checkpoint missing model_state_dict: {checkpoint_path}")
+    missing_keys, unexpected_keys = model.load_state_dict(
+        checkpoint["model_state_dict"],
+        strict=False,
+    )
+    if missing_keys:
+        print(f"Checkpoint load missing keys: {missing_keys}")
+    if unexpected_keys:
+        print(f"Checkpoint load unexpected keys: {unexpected_keys}")
+    return checkpoint
+
+
+def set_module_trainable(module: torch.nn.Module, trainable: bool) -> None:
+    for parameter in module.parameters():
+        parameter.requires_grad = trainable
+
+
+def configure_trainable_parameters(
+    model: LVSVAE,
+    train_mode: str,
+) -> list[torch.nn.Parameter]:
+    set_module_trainable(model, False)
+    if train_mode == "joint":
+        set_module_trainable(model, True)
+    elif train_mode == "reconstruction":
+        for module in (
+            model.encoder,
+            model.mu,
+            model.logvar,
+            model.decoder,
+            model.reconstruction_head,
+        ):
+            set_module_trainable(module, True)
+    elif train_mode == "value_head":
+        set_module_trainable(model.value_head, True)
+    else:
+        raise ValueError(
+            f"TRAIN_MODE must be one of {sorted(VALID_TRAIN_MODES)}, got {train_mode!r}"
+        )
+    return [parameter for parameter in model.parameters() if parameter.requires_grad]
+
+
+def resolve_effective_loss_weights(
+    train_mode: str,
+    beta: float,
+    value_weight: float,
+) -> tuple[float, float]:
+    if train_mode == "reconstruction":
+        return beta, 0.0
+    if train_mode == "value_head":
+        return 0.0, value_weight
+    return beta, value_weight
+
+
 def validate_config(config: TrainConfig) -> None:
-    """Fail early when top-of-file training configs are invalid."""
+    if config.train_mode not in VALID_TRAIN_MODES:
+        raise ValueError(
+            f"TRAIN_MODE must be one of {sorted(VALID_TRAIN_MODES)}, "
+            f"got {config.train_mode!r}"
+        )
+    if config.best_model_metric not in VALID_LOSS_METRICS:
+        raise ValueError(
+            f"BEST_MODEL_METRIC must be one of {sorted(VALID_LOSS_METRICS)}, "
+            f"got {config.best_model_metric!r}"
+        )
+    if config.train_mode == "value_head" and not config.init_checkpoint_path:
+        raise ValueError("INIT_CHECKPOINT_PATH is required for TRAIN_MODE='value_head'.")
     if config.epochs <= 0:
         raise ValueError(f"EPOCHS must be positive, got {config.epochs}")
     if config.batch_size <= 0:
@@ -168,42 +215,36 @@ def validate_config(config: TrainConfig) -> None:
     if any(dim <= 0 for dim in config.hidden_dims):
         raise ValueError(f"HIDDEN_DIMS must all be positive, got {config.hidden_dims}")
     if config.value_hidden_dim <= 0:
-        raise ValueError(
-            f"VALUE_HIDDEN_DIM must be positive, got {config.value_hidden_dim}"
-        )
+        raise ValueError(f"VALUE_HIDDEN_DIM must be positive, got {config.value_hidden_dim}")
     if config.num_workers < 0:
         raise ValueError(f"NUM_WORKERS cannot be negative, got {config.num_workers}")
 
-# load the dataset and save them as tensors
+
 def load_dataset(data_path: Path, input_dim: int) -> tuple[Tensor, Tensor, list[str]]:
-    """Load compact state/value arrays saved by DATASET_GENERATOR.ipynb."""
     if not data_path.exists():
         raise FileNotFoundError(
             f"Dataset not found: {data_path}\n"
             "Run VAE/DATASET_GENERATOR.ipynb through the Save Dataset section first."
         )
-
     with np.load(data_path, allow_pickle=False) as data:
-        states = data["states"] # used for training VAE
-        labels = data["labels"] # used for training value head
+        states = data["states"]
+        labels = data["labels"]
         state_columns = (
             [str(col) for col in data["state_columns"]]
             if "state_columns" in data.files
             else []
         )
-
-    # verify data is compatible with current VAE architecture
     if states.ndim != 2:
         raise ValueError(f"states must be 2D, got shape {states.shape}")
     if states.shape[1] != input_dim:
         raise ValueError(f"expected {input_dim} state columns, got {states.shape[1]}")
     if len(states) != len(labels):
         raise ValueError(f"states/labels row mismatch: {len(states)} vs {len(labels)}")
-
-    # Convert the datasets to tensors
-    states_tensor = torch.as_tensor(states, dtype=torch.float32)
-    labels_tensor = torch.as_tensor(labels, dtype=torch.float32)
-    return states_tensor, labels_tensor, state_columns
+    return (
+        torch.as_tensor(states, dtype=torch.float32),
+        torch.as_tensor(labels, dtype=torch.float32),
+        state_columns,
+    )
 
 
 def split_dataset(
@@ -212,51 +253,37 @@ def split_dataset(
     validation_ratio: float,
     seed: int,
 ) -> tuple[TensorDataset, TensorDataset]:
-    """Create deterministic train/validation TensorDatasets."""
-    # ensure validation ratio in correct range
     if not 0.0 < validation_ratio < 1.0:
         raise ValueError(f"validation_ratio must be in (0, 1), got {validation_ratio}")
-
-    # ensure the row counts data contains at least 2 rows
     row_count = len(states)
     if row_count < 2:
         raise ValueError("dataset must contain at least two rows")
-
     generator = torch.Generator().manual_seed(seed)
     permutation = torch.randperm(row_count, generator=generator)
-
-    # Get the number of rows for the validation and training data sets
     validation_count = max(1, int(row_count * validation_ratio))
     train_count = row_count - validation_count
     if train_count <= 0:
         raise ValueError("validation_ratio leaves no rows for training")
-
-    # Create a random permutation list and slice the first {validation_count} elements for the validation set
-    # the rest go to the training dataset
     validation_idx = permutation[:validation_count]
     train_idx = permutation[validation_count:]
+    return TensorDataset(states[train_idx], labels[train_idx]), TensorDataset(
+        states[validation_idx],
+        labels[validation_idx],
+    )
 
-    train_dataset = TensorDataset(states[train_idx], labels[train_idx])
-    validation_dataset = TensorDataset(states[validation_idx], labels[validation_idx])
-    return train_dataset, validation_dataset
 
-
-# accumulates loss terms average per batch later to be averaged by total rows
 def update_loss_totals(
     loss_totals: dict[str, float],
     losses: LVSVAELoss,
     batch_size: int,
 ) -> None:
-    """Accumulate loss terms weighted by batch size."""
     loss_totals["total"] += losses.total.item() * batch_size
     loss_totals["reconstruction"] += losses.reconstruction.item() * batch_size
     loss_totals["kl"] += losses.kl.item() * batch_size
     loss_totals["value"] += losses.value.item() * batch_size
 
 
-    # average out the accumulated losses by the number of rows in the epoch
 def average_losses(loss_totals: dict[str, float], row_count: int) -> dict[str, float]:
-    """Convert accumulated batch-size-weighted loss totals to means."""
     return {name: total / row_count for name, total in loss_totals.items()}
 
 
@@ -266,40 +293,20 @@ def run_epoch(
     device: torch.device,
     beta: float,
     value_weight: float,
-    optimizer: torch.optim.Optimizer | None = None, # if provided function trains, if none function evaluates
+    optimizer: torch.optim.Optimizer | None = None,
     grad_clip_norm: float = 0.0,
 ) -> dict[str, float]:
-    """Run one train or validation epoch and return mean loss terms."""
-    # Trian mode when optimizer is provided
-    # evaluation mode otherwise
     is_training = optimizer is not None
     model.train(is_training)
-
-    # Initialize the losses and row counts for the epoch
-    loss_totals = {
-        "total": 0.0,
-        "reconstruction": 0.0,
-        "kl": 0.0,
-        "value": 0.0,
-    }
+    loss_totals = {"total": 0.0, "reconstruction": 0.0, "kl": 0.0, "value": 0.0}
     row_count = 0
-
-    # Iterate over every batch in the loader, and compute the losses.
-    # Gradients and weight updates only occur in training mode
     for states, value_labels in loader:
-        # move data to whatever device the machine is using
         states = states.to(device)
         value_labels = value_labels.to(device)
         batch_size = len(states)
-
-        # reset the gradient if in training mode
         if is_training:
             optimizer.zero_grad()
-        
-        # Calling the model runs the forward pass and returns everything needed
-        # for the loss calculation
         outputs = model(states)
-        # Calculate the losses after the forward pass
         losses = lvs_vae_loss(
             model=model,
             states=states,
@@ -308,26 +315,16 @@ def run_epoch(
             beta=beta,
             value_weight=value_weight,
         )
-
-        # Back propogate and update model weights only in the training mode
         if is_training:
-            # Compute gradients for trainable parameters from the total loss
             losses.total.backward()
-            # Clip gradients to prevent unusually large updates
             if grad_clip_norm > 0.0:
                 torch.nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)
-            # Update the model weights
             optimizer.step()
-
-        # Accumulate batch-size-weighted losses and count processed rows
         update_loss_totals(loss_totals, losses, batch_size)
         row_count += batch_size
-
-    # return the mean loss terms across the whole epoch
     return average_losses(loss_totals, row_count)
 
 
-# Validate will run the epoch without gradients
 @torch.no_grad()
 def validate(
     model: LVSVAE,
@@ -336,7 +333,6 @@ def validate(
     beta: float,
     value_weight: float,
 ) -> dict[str, float]:
-    """Run validation without gradient tracking."""
     return run_epoch(
         model=model,
         loader=loader,
@@ -349,14 +345,13 @@ def validate(
 
 def save_checkpoint(
     path: Path,
-    model: LVSVAE,
+    model: torch.nn.Module,
     optimizer: torch.optim.Optimizer,
-    config: TrainConfig,
+    config: Any,
     epoch: int,
     metrics: dict[str, Any],
     state_columns: list[str],
 ) -> None:
-    """Save a trainable checkpoint with model/optimizer state and metadata."""
     torch.save(
         {
             "epoch": epoch,
@@ -371,7 +366,6 @@ def save_checkpoint(
 
 
 def write_metrics_csv(path: Path, history: list[dict[str, Any]]) -> None:
-    """Write per-epoch metrics to CSV."""
     fieldnames = [
         "run_name",
         "epoch",
@@ -398,7 +392,6 @@ def write_loss_curves(
     run_name: str,
     history: list[dict[str, Any]],
 ) -> list[Path]:
-    """Save training/validation loss curves as PNG files."""
     try:
         import matplotlib.pyplot as plt
     except ImportError:
@@ -407,7 +400,6 @@ def write_loss_curves(
 
     epochs = [row["epoch"] for row in history]
     saved_paths: list[Path] = []
-
     total_path = artifact_path(output_dir, run_name, "loss_curve_total.png")
     plt.figure(figsize=(9, 5))
     plt.plot(epochs, [row["train_total"] for row in history], label="train total")
@@ -424,7 +416,7 @@ def write_loss_curves(
 
     components_path = artifact_path(output_dir, run_name, "loss_curve_components.png")
     loss_terms = ["reconstruction", "kl", "value"]
-    fig, axes = plt.subplots(len(loss_terms), 1, figsize=(9, 10), sharex=True)
+    fig, axes = plt.subplots(len(loss_terms), 1, figsize=(9, 8), sharex=True)
     for axis, loss_term in zip(axes, loss_terms):
         axis.plot(
             epochs,
@@ -440,18 +432,15 @@ def write_loss_curves(
         axis.set_title(f"{loss_term.title()} Loss: {run_name}")
         axis.legend()
         axis.grid(True, alpha=0.3)
-
     axes[-1].set_xlabel("Epoch")
     fig.tight_layout()
     fig.savefig(components_path, dpi=150)
     plt.close(fig)
     saved_paths.append(components_path)
-
     return saved_paths
 
 
 def print_epoch_metrics(metrics: dict[str, Any], vertical: bool) -> None:
-    """Print one epoch's losses in compact or vertical format."""
     if not vertical:
         print(
             f"epoch={metrics['epoch']:03d} "
@@ -467,7 +456,6 @@ def print_epoch_metrics(metrics: dict[str, Any], vertical: bool) -> None:
             f"val_value={metrics['val_value']:.6f}"
         )
         return
-
     print(
         f"================================================================\n"
         f"epoch={metrics['epoch']:03d}\n"
@@ -490,9 +478,16 @@ def print_epoch_metrics(metrics: dict[str, Any], vertical: bool) -> None:
 
 def main() -> None:
     set_seed(SEED)
-
     device = resolve_device(DEVICE)
     run_name = RUN_NAME or datetime.now().strftime("run_%Y%m%d_%H%M%S")
+    init_checkpoint_path = (
+        Path(INIT_CHECKPOINT_PATH) if INIT_CHECKPOINT_PATH is not None else None
+    )
+    beta, value_weight = resolve_effective_loss_weights(
+        train_mode=TRAIN_MODE,
+        beta=BETA,
+        value_weight=VALUE_WEIGHT,
+    )
     output_dir = OUTPUT_ROOT / run_name
     output_dir.mkdir(parents=True, exist_ok=True)
     config_path = artifact_path(output_dir, run_name, "config.json")
@@ -502,6 +497,11 @@ def main() -> None:
 
     config = TrainConfig(
         run_name=run_name,
+        train_mode=TRAIN_MODE,
+        init_checkpoint_path=(
+            str(init_checkpoint_path) if init_checkpoint_path is not None else None
+        ),
+        best_model_metric=BEST_MODEL_METRIC,
         data_path=str(DATA_PATH),
         output_dir=str(output_dir),
         seed=SEED,
@@ -511,8 +511,8 @@ def main() -> None:
         learning_rate=LEARNING_RATE,
         weight_decay=WEIGHT_DECAY,
         validation_ratio=VALIDATION_RATIO,
-        beta=BETA,
-        value_weight=VALUE_WEIGHT,
+        beta=beta,
+        value_weight=value_weight,
         grad_clip_norm=GRAD_CLIP_NORM,
         input_dim=INPUT_DIM,
         latent_dim=LATENT_DIM,
@@ -531,7 +531,6 @@ def main() -> None:
         validation_ratio=VALIDATION_RATIO,
         seed=SEED,
     )
-
     train_loader = DataLoader(
         train_dataset,
         batch_size=BATCH_SIZE,
@@ -552,8 +551,15 @@ def main() -> None:
         value_hidden_dim=VALUE_HIDDEN_DIM,
     ).to(device)
 
+    if init_checkpoint_path is not None:
+        load_model_checkpoint(model, init_checkpoint_path, device)
+        print(f"Initialized from checkpoint: {init_checkpoint_path}")
+
+    trainable_parameters = configure_trainable_parameters(model, TRAIN_MODE)
+    if not trainable_parameters:
+        raise RuntimeError(f"No trainable parameters for TRAIN_MODE={TRAIN_MODE!r}")
     optimizer = torch.optim.AdamW(
-        model.parameters(),
+        trainable_parameters,
         lr=LEARNING_RATE,
         weight_decay=WEIGHT_DECAY,
     )
@@ -561,12 +567,15 @@ def main() -> None:
     with config_path.open("w", encoding="utf-8") as handle:
         json.dump(asdict(config), handle, indent=2)
 
-    print(f"Training LVS-VAE on {device}")
+    print(f"Training value LVS-VAE on {device}")
+    print(f"Train mode: {TRAIN_MODE}")
+    print(f"Best model metric: validation {BEST_MODEL_METRIC}")
+    print(f"Trainable parameters: {sum(param.numel() for param in trainable_parameters)}")
     print(f"Dataset rows: train={len(train_dataset)} validation={len(validation_dataset)}")
     print(f"Output dir: {output_dir}")
 
     history: list[dict[str, Any]] = []
-    best_validation_total = float("inf")
+    best_validation_metric = float("inf")
     training_start_time = time.perf_counter()
 
     for epoch in range(1, EPOCHS + 1):
@@ -575,8 +584,8 @@ def main() -> None:
             model=model,
             loader=train_loader,
             device=device,
-            beta=BETA,
-            value_weight=VALUE_WEIGHT,
+            beta=beta,
+            value_weight=value_weight,
             optimizer=optimizer,
             grad_clip_norm=GRAD_CLIP_NORM,
         )
@@ -584,12 +593,11 @@ def main() -> None:
             model=model,
             loader=validation_loader,
             device=device,
-            beta=BETA,
-            value_weight=VALUE_WEIGHT,
+            beta=beta,
+            value_weight=value_weight,
         )
         epoch_seconds = time.perf_counter() - epoch_start_time
         elapsed_seconds = time.perf_counter() - training_start_time
-
         metrics = {
             "run_name": run_name,
             "epoch": epoch,
@@ -606,9 +614,9 @@ def main() -> None:
             "val_value": validation_losses["value"],
         }
         history.append(metrics)
-
-        if validation_losses["total"] < best_validation_total:
-            best_validation_total = validation_losses["total"]
+        validation_metric = validation_losses[BEST_MODEL_METRIC]
+        if validation_metric < best_validation_metric:
+            best_validation_metric = validation_metric
             save_checkpoint(
                 path=best_model_path,
                 model=model,
@@ -618,17 +626,15 @@ def main() -> None:
                 metrics=metrics,
                 state_columns=state_columns,
             )
-
         print_epoch_metrics(metrics, PRINT_VERTICAL_METRICS)
 
-    final_metrics = history[-1]
     save_checkpoint(
         path=final_model_path,
         model=model,
         optimizer=optimizer,
         config=config,
         epoch=EPOCHS,
-        metrics=final_metrics,
+        metrics=history[-1],
         state_columns=state_columns,
     )
     write_metrics_csv(metrics_path, history)
@@ -639,7 +645,7 @@ def main() -> None:
 
     print("Training complete")
     print(f"Elapsed time: {format_elapsed_time(time.perf_counter() - training_start_time)}")
-    print(f"Best validation total: {best_validation_total:.6f}")
+    print(f"Best validation {BEST_MODEL_METRIC}: {best_validation_metric:.6f}")
     print(f"Config: {config_path}")
     print(f"Best checkpoint: {best_model_path}")
     print(f"Final checkpoint: {final_model_path}")

@@ -1,0 +1,59 @@
+{
+  "timestamp": "2026-05-09T13:10:22",
+  "run_stamp": "20260509_131022",
+  "experiment_name": "VAE_ABLATION_ANALYSIS",
+  "variation_name": "vae_no_positional_helpers_2_no_vae",
+  "variation_slug": "vae_no_positional_helpers_2_no_vae",
+  "variation_core": "GvNT",
+  "algo_tag": "mppo",
+  "env_ver": "env6.0",
+  "model_ver": "mppo_train4.0",
+  "learner_role": "goat",
+  "num_cpu": 16,
+  "device_mode": "gpu",
+  "device": "cuda",
+  "seed": 42,
+  "lvs_vae_shaping": {
+    "default_enabled": true,
+    "enabled_in_any_phase": false,
+    "shaping_coef": 0.5,
+    "progress_threshold": 0.98,
+    "endgame_weight_after_threshold": 0.7,
+    "progress_mode": "turn_max_ratio",
+    "device": "cpu",
+    "full_checkpoint_paths": [
+      "C:\\Users\\chris\\OneDrive\\Documents\\GitHub\\TNG_Falcon\\artifacts\\lvs_vae\\full_40k_lvsvae_v1\\full_40k_lvsvae_v1_final_model.pt",
+      "C:\\Users\\chris\\OneDrive\\Documents\\GitHub\\TNG_Falcon\\artifacts\\lvs_vae\\full_20k_lvsvae_v1\\full_20k_lvsvae_v1_final_model.pt"
+    ],
+    "end_checkpoint_paths": [
+      "C:\\Users\\chris\\OneDrive\\Documents\\GitHub\\TNG_Falcon\\artifacts\\lvs_vae\\end_40k_lvsvae_v1\\end_40k_lvsvae_v1_final_model.pt",
+      "C:\\Users\\chris\\OneDrive\\Documents\\GitHub\\TNG_Falcon\\artifacts\\lvs_vae\\end_20k_lvsvae_v1\\end_20k_lvsvae_v1_final_model.pt",
+      "C:\\Users\\chris\\OneDrive\\Documents\\GitHub\\TNG_Falcon\\artifacts\\lvs_vae\\end06_20k_lvsvae_v1\\end06_20k_lvsvae_v1_final_model.pt"
+    ]
+  },
+  "phases": [
+    {
+      "timesteps": 5000000,
+      "opponent_ai": "tiger_greedy",
+      "mix_prob": null,
+      "checkpoints_per_run": 10,
+      "goat_model_path": "stable_models\\models\\Goats\\mppo_GvMixT_goat_GT_to_ST_to_mix_p2.zip",
+      "use_lvs_vae_shaping": false,
+      "knobs": {
+        "REWARD_BUBBLE_SPACE": 0.0,
+        "REWARD_CLUSTER_TIGERS": 0.0,
+        "REWARD_CENTER_GOAT": 0.0,
+        "REWARD_CENTER_TIGER": 0.0
+      }
+    }
+  ],
+  "layout": {
+    "experiment_dir": "artifacts\\VAE_ABLATION_ANALYSIS",
+    "meta_dir": "artifacts\\VAE_ABLATION_ANALYSIS\\meta",
+    "tb_dir": "artifacts\\VAE_ABLATION_ANALYSIS\\tb",
+    "checkpoints_dir": "artifacts\\VAE_ABLATION_ANALYSIS\\checkpoints",
+    "models_dir": "artifacts\\VAE_ABLATION_ANALYSIS\\models",
+    "eval_dir": "artifacts\\VAE_ABLATION_ANALYSIS\\eval",
+    "logs_dir": "artifacts\\VAE_ABLATION_ANALYSIS\\logs"
+  }
+}

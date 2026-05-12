@@ -154,6 +154,8 @@ USE_LVS_VAE_SHAPING = True
 RUN_LVS_VAE_SMOKE_CHECK = True
 RUN_LVS_VAE_SMOKE_CHECK_ONLY = False
 LVS_VAE_SHAPING_COEF = 0.5
+LVS_VAE_PLACING_SURVIVAL_SHAPING_COEF = 0.0
+LVS_VAE_PLACING_SURVIVAL_POSITIVE_DELTA_ONLY = True
 LVS_VAE_PROGRESS_THRESHOLD = 0.98
 LVS_VAE_ENDGAME_BLEND = 0.7
 LVS_VAE_PROGRESS_MODE = "turn_max_ratio"
@@ -198,6 +200,10 @@ LVS_VAE_END_CHECKPOINT_PATHS = [
         "end06_20k_lvsvae_v1_final_model.pt",
     ),
 ]
+LVS_VAE_PLACING_SURVIVAL_CHECKPOINT_PATHS = [
+    # Add LVS_VAE_PS checkpoints trained for placing survival here, then set
+    # LVS_VAE_PLACING_SURVIVAL_SHAPING_COEF above to enable this shaping term.
+]
 
 # ============================================================
 #  USER CONFIG - PPO Hyperparameters
@@ -233,59 +239,47 @@ else:
 # }
 
 VAE_COARSE_ABLATION_VARIATIONS = {
-    "baseline_full_reward_no_vae": {
+    "vae_no_positional_helpers_2_no_vae": {
         "timesteps": TIMESTEPS,
         "opponent_ai": OPP_TIGER_GREEDY,
         "mix_prob": None,
         "use_lvs_vae_shaping": False,
-    },
-    "vae_full_reward": {
-        "timesteps": TIMESTEPS,
-        "opponent_ai": OPP_TIGER_GREEDY,
-        "mix_prob": None,
-        "use_lvs_vae_shaping": True,
-    },
-    "vae_no_positional_helpers": {
-        "timesteps": TIMESTEPS,
-        "opponent_ai": OPP_TIGER_GREEDY,
-        "mix_prob": None,
-        "use_lvs_vae_shaping": True,
-        "NEAR_LOCK_BONUS": 0.0,
-        "REWARD_BLOCK_TIGER": 0.0,
         "REWARD_BUBBLE_SPACE": 0.0,
         "REWARD_CLUSTER_TIGERS": 0.0,
         "REWARD_CENTER_GOAT": 0.0,
         "REWARD_CENTER_TIGER": 0.0,
     },
-    "vae_no_survival_pressure": {
-        "timesteps": TIMESTEPS,
-        "opponent_ai": OPP_TIGER_GREEDY,
-        "mix_prob": None,
-        "use_lvs_vae_shaping": True,
-        "REWARD_GOAT_EATEN": 0.0,
-        "REWARD_REPEAT_STATE": 0.0,
-        "MOVE_STEP_BASE": 0.0,
-        "MOVE_STEP_SLOPE": 0.0,
-        "MOVE_STEP_MIN": 0.0,
-    },
-    "vae_terminal_only": {
-        "timesteps": TIMESTEPS,
-        "opponent_ai": OPP_TIGER_GREEDY,
-        "mix_prob": None,
-        "use_lvs_vae_shaping": True,
-        "REWARD_STEP": 0.0,
-        "REWARD_GOAT_EATEN": 0.0,
-        "MOVE_STEP_BASE": 0.0,
-        "MOVE_STEP_SLOPE": 0.0,
-        "MOVE_STEP_MIN": 0.0,
-        "REWARD_REPEAT_STATE": 0.0,
-        "NEAR_LOCK_BONUS": 0.0,
-        "REWARD_BLOCK_TIGER": 0.0,
-        "REWARD_BUBBLE_SPACE": 0.0,
-        "REWARD_CLUSTER_TIGERS": 0.0,
-        "REWARD_CENTER_GOAT": 0.0,
-        "REWARD_CENTER_TIGER": 0.0,
-    },
+    
+    # "vae_no_survival_pressure": {
+    #     "timesteps": TIMESTEPS,
+    #     "opponent_ai": OPP_TIGER_GREEDY,
+    #     "mix_prob": None,
+    #     "use_lvs_vae_shaping": True,
+    #     "REWARD_GOAT_EATEN": 0.0,
+    #     "REWARD_REPEAT_STATE": 0.0,
+    #     "MOVE_STEP_BASE": 0.0,
+    #     "MOVE_STEP_SLOPE": 0.0,
+    #     "MOVE_STEP_MIN": 0.0,
+    # },
+    # "vae_terminal_only": {
+    #     "timesteps": TIMESTEPS,
+    #     "opponent_ai": OPP_TIGER_GREEDY,
+    #     "mix_prob": None,
+    #     "use_lvs_vae_shaping": True,
+    #     "REWARD_STEP": 0.0,
+    #     "REWARD_GOAT_EATEN": 0.0,
+    #     "MOVE_STEP_BASE": 0.0,
+    #     "MOVE_STEP_SLOPE": 0.0,
+    #     "MOVE_STEP_MIN": 0.0,
+    #     "REWARD_REPEAT_STATE": 0.0,
+    #     "NEAR_LOCK_BONUS": 0.0,
+    #     "REWARD_BLOCK_TIGER": 0.0,
+    #     "REWARD_BUBBLE_SPACE": 0.0,
+    #     "REWARD_CLUSTER_TIGERS": 0.0,
+    #     "REWARD_CENTER_GOAT": 0.0,
+    #     "REWARD_CENTER_TIGER": 0.0,
+    # },
+    
 }
 VARIATIONS = VAE_COARSE_ABLATION_VARIATIONS
 
@@ -492,7 +486,10 @@ def build_lvs_vae_shaping_config(knobs: dict[str, Any] | None) -> LVSValueShapin
     return LVSValueShapingConfig(
         full_checkpoint_paths=tuple(LVS_VAE_FULL_CHECKPOINT_PATHS),
         end_checkpoint_paths=tuple(LVS_VAE_END_CHECKPOINT_PATHS),
+        placing_survival_checkpoint_paths=tuple(LVS_VAE_PLACING_SURVIVAL_CHECKPOINT_PATHS),
         shaping_coef=LVS_VAE_SHAPING_COEF,
+        placing_survival_shaping_coef=LVS_VAE_PLACING_SURVIVAL_SHAPING_COEF,
+        placing_survival_positive_delta_only=LVS_VAE_PLACING_SURVIVAL_POSITIVE_DELTA_ONLY,
         progress_threshold=LVS_VAE_PROGRESS_THRESHOLD,
         endgame_weight_after_threshold=LVS_VAE_ENDGAME_BLEND,
         progress_mode=LVS_VAE_PROGRESS_MODE,
@@ -613,11 +610,15 @@ class WinStatsCallback(BaseCallback):
             "reward_terminal_component",
             "reward_sparse_component",
             "reward_vae_component",
+            "reward_placing_survival_component",
             "reward_decay_mult",
             "reward_total",
             "lvs_value_before",
             "lvs_value_after",
             "lvs_value_delta",
+            "lvs_placing_survival_before",
+            "lvs_placing_survival_after",
+            "lvs_placing_survival_delta",
             "lvs_progress_ratio",
             "lvs_gate_active",
         ]
@@ -740,13 +741,17 @@ class WinStatsCallback(BaseCallback):
                 "reward_terminal_component": "9.terminal_mean",
                 "reward_sparse_component": "10.sparse_mean",
                 "reward_vae_component": "11.vae_mean",
-                "reward_decay_mult": "12.decay_mult_mean",
-                "reward_total": "13.total_reward_mean",
-                "lvs_value_before": "14.lvs_value_before_mean",
-                "lvs_value_after": "15.lvs_value_after_mean",
-                "lvs_value_delta": "16.lvs_value_delta_mean",
-                "lvs_progress_ratio": "17.lvs_progress_ratio_mean",
-                "lvs_gate_active": "18.lvs_gate_active_frac",
+                "reward_placing_survival_component": "12.placing_survival_mean",
+                "reward_decay_mult": "13.decay_mult_mean",
+                "reward_total": "14.total_reward_mean",
+                "lvs_value_before": "15.lvs_value_before_mean",
+                "lvs_value_after": "16.lvs_value_after_mean",
+                "lvs_value_delta": "17.lvs_value_delta_mean",
+                "lvs_placing_survival_before": "18.lvs_placing_survival_before_mean",
+                "lvs_placing_survival_after": "19.lvs_placing_survival_after_mean",
+                "lvs_placing_survival_delta": "20.lvs_placing_survival_delta_mean",
+                "lvs_progress_ratio": "21.lvs_progress_ratio_mean",
+                "lvs_gate_active": "22.lvs_gate_active_frac",
             }
             for name, label in reward_component_labels.items():
                 values = self.reward_component_windows[name]
@@ -967,12 +972,15 @@ def write_run_metadata(
             "default_enabled": USE_LVS_VAE_SHAPING,
             "enabled_in_any_phase": any(phase.use_lvs_vae_shaping for phase in phases),
             "shaping_coef": LVS_VAE_SHAPING_COEF,
+            "placing_survival_shaping_coef": LVS_VAE_PLACING_SURVIVAL_SHAPING_COEF,
+            "placing_survival_positive_delta_only": LVS_VAE_PLACING_SURVIVAL_POSITIVE_DELTA_ONLY,
             "progress_threshold": LVS_VAE_PROGRESS_THRESHOLD,
             "endgame_weight_after_threshold": LVS_VAE_ENDGAME_BLEND,
             "progress_mode": LVS_VAE_PROGRESS_MODE,
             "device": LVS_VAE_DEVICE,
             "full_checkpoint_paths": LVS_VAE_FULL_CHECKPOINT_PATHS,
             "end_checkpoint_paths": LVS_VAE_END_CHECKPOINT_PATHS,
+            "placing_survival_checkpoint_paths": LVS_VAE_PLACING_SURVIVAL_CHECKPOINT_PATHS,
         },
         "phases": [asdict(phase) for phase in phases],
         "layout": layout,

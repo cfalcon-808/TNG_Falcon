@@ -18,8 +18,10 @@ import torch
 
 try:
     from .LVS_VAE import LVSVAE
+    from .LVS_VAE_PS import LVSVAEPS
 except ImportError:  # Allows direct execution when VAE/ is on sys.path.
     from LVS_VAE import LVSVAE
+    from LVS_VAE_PS import LVSVAEPS
 
 
 RewardFn = Callable[[np.ndarray, int, np.ndarray, bool, bool, dict], float]
@@ -31,7 +33,10 @@ class LVSValueShapingConfig:
 
     full_checkpoint_paths: tuple[str | Path, ...]
     end_checkpoint_paths: tuple[str | Path, ...]
+    placing_survival_checkpoint_paths: tuple[str | Path, ...] = ()
     shaping_coef: float = 0.02
+    placing_survival_shaping_coef: float = 0.0
+    placing_survival_positive_delta_only: bool = True
     progress_threshold: float = 0.7
     endgame_weight_after_threshold: float = 0.7
     progress_mode: str = "turn_max_ratio"
@@ -61,7 +66,26 @@ def _load_lvs_model(checkpoint_path: str | Path, device: torch.device) -> LVSVAE
         hidden_dims=tuple(config.get("hidden_dims", (64, 64))),
         value_hidden_dim=int(config.get("value_hidden_dim", 32)),
     ).to(device)
-    model.load_state_dict(checkpoint["model_state_dict"])
+    model.load_state_dict(checkpoint["model_state_dict"], strict=False)
+    model.eval()
+    return model
+
+
+def _load_lvs_ps_model(checkpoint_path: str | Path, device: torch.device) -> LVSVAEPS:
+    path = Path(checkpoint_path)
+    if not path.exists():
+        raise FileNotFoundError(f"LVS-VAE-PS checkpoint not found: {path}")
+
+    checkpoint = _torch_load_checkpoint(path, device)
+    config = checkpoint.get("config", {})
+
+    model = LVSVAEPS(
+        input_dim=int(config.get("input_dim", 25)),
+        latent_dim=int(config.get("latent_dim", 8)),
+        hidden_dims=tuple(config.get("hidden_dims", (64, 64))),
+        value_hidden_dim=int(config.get("value_hidden_dim", 32)),
+    ).to(device)
+    model.load_state_dict(checkpoint["model_state_dict"], strict=False)
     model.eval()
     return model
 
@@ -69,6 +93,16 @@ def _load_lvs_model(checkpoint_path: str | Path, device: torch.device) -> LVSVAE
 def _mean_model_value(models: Sequence[LVSVAE], state: np.ndarray, device: torch.device) -> float:
     state_tensor = torch.as_tensor(state, dtype=torch.float32, device=device).view(1, -1)
     values = [model.predict_value(state_tensor).view(-1)[0] for model in models]
+    return float(torch.stack(values).mean().item())
+
+
+def _mean_model_placing_survival(
+    models: Sequence[LVSVAEPS],
+    state: np.ndarray,
+    device: torch.device,
+) -> float:
+    state_tensor = torch.as_tensor(state, dtype=torch.float32, device=device).view(1, -1)
+    values = [model.predict_placing_survival(state_tensor).view(-1)[0] for model in models]
     return float(torch.stack(values).mean().item())
 
 
@@ -92,9 +126,14 @@ class PhaseGatedLVSValuePredictor:
         self.device = torch.device(config.device)
         self._full_models: list[LVSVAE] | None = None
         self._end_models: list[LVSVAE] | None = None
+        self._placing_survival_models: list[LVSVAEPS] | None = None
 
     def _ensure_loaded(self) -> None:
-        if self._full_models is not None and self._end_models is not None:
+        if (
+            self._full_models is not None
+            and self._end_models is not None
+            and self._placing_survival_models is not None
+        ):
             return
 
         self._full_models = [
@@ -104,6 +143,10 @@ class PhaseGatedLVSValuePredictor:
         self._end_models = [
             _load_lvs_model(path, self.device)
             for path in self.config.end_checkpoint_paths
+        ]
+        self._placing_survival_models = [
+            _load_lvs_ps_model(path, self.device)
+            for path in self.config.placing_survival_checkpoint_paths
         ]
 
         if not self._full_models:
@@ -124,6 +167,23 @@ class PhaseGatedLVSValuePredictor:
         end_value = _mean_model_value(self._end_models, state, self.device)
         end_weight = float(self.config.endgame_weight_after_threshold)
         return (1.0 - end_weight) * full_value + end_weight * end_value
+
+    @torch.no_grad()
+    def predict_placing_survival(self, state: np.ndarray) -> float:
+        self._ensure_loaded()
+        assert self._placing_survival_models is not None
+
+        if not self._placing_survival_models:
+            raise ValueError(
+                "At least one placing-survival LVS-VAE checkpoint is required "
+                "when placing survival shaping is enabled."
+            )
+
+        return _mean_model_placing_survival(
+            self._placing_survival_models,
+            state,
+            self.device,
+        )
 
 
 def _coerce_config(config: LVSValueShapingConfig | dict) -> LVSValueShapingConfig:
@@ -153,6 +213,10 @@ def smoke_check_lvs_vae_value_predictor(
 
     early_value = predictor.predict(state, 0.0)
     late_value = predictor.predict(state, 1.0)
+    result = {
+        "early_value": early_value,
+        "late_value": late_value,
+    }
     for name, value in {
         "early_value": early_value,
         "late_value": late_value,
@@ -160,10 +224,15 @@ def smoke_check_lvs_vae_value_predictor(
         if not 0.0 <= value <= 1.0:
             raise AssertionError(f"{name} must be in [0, 1], got {value}")
 
-    return {
-        "early_value": early_value,
-        "late_value": late_value,
-    }
+    if shaping_config.placing_survival_checkpoint_paths:
+        placing_survival = predictor.predict_placing_survival(state)
+        if not 0.0 <= placing_survival <= 1.0:
+            raise AssertionError(
+                f"placing_survival must be in [0, 1], got {placing_survival}"
+            )
+        result["placing_survival"] = placing_survival
+
+    return result
 
 
 def make_lvs_vae_reward_fn(
@@ -193,16 +262,45 @@ def make_lvs_vae_reward_fn(
         value_after = value_model.predict(np.asarray(obs), progress_after)
         value_delta = value_after - value_before
         vae_component = float(shaping_config.shaping_coef) * value_delta
-        total_reward = sparse_reward + vae_component
+        placing_survival_component = 0.0
+        placing_survival_before = None
+        placing_survival_after = None
+        placing_survival_delta = None
+
+        placing_survival_enabled = (
+            bool(shaping_config.placing_survival_checkpoint_paths)
+            and float(shaping_config.placing_survival_shaping_coef) != 0.0
+        )
+        if placing_survival_enabled and int(np.asarray(prev_obs)[24]) == 0:
+            placing_survival_before = value_model.predict_placing_survival(
+                np.asarray(prev_obs)
+            )
+            placing_survival_after = value_model.predict_placing_survival(
+                np.asarray(obs)
+            )
+            placing_survival_delta = placing_survival_after - placing_survival_before
+            if shaping_config.placing_survival_positive_delta_only:
+                placing_survival_delta = max(placing_survival_delta, 0.0)
+            placing_survival_component = (
+                float(shaping_config.placing_survival_shaping_coef)
+                * placing_survival_delta
+            )
+
+        total_reward = sparse_reward + vae_component + placing_survival_component
 
         info["reward_sparse_component"] = sparse_reward
         info["reward_vae_component"] = vae_component
+        info["reward_placing_survival_component"] = placing_survival_component
         info["reward_total"] = total_reward
         info["lvs_value_before"] = value_before
         info["lvs_value_after"] = value_after
         info["lvs_value_delta"] = value_delta
         info["lvs_progress_ratio"] = progress_after
         info["lvs_gate_active"] = float(progress_after >= shaping_config.progress_threshold)
+        if placing_survival_before is not None:
+            info["lvs_placing_survival_before"] = placing_survival_before
+            info["lvs_placing_survival_after"] = placing_survival_after
+            info["lvs_placing_survival_delta"] = placing_survival_delta
 
         return total_reward
 

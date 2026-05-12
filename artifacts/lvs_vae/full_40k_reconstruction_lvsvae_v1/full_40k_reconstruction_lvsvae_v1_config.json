@@ -1,0 +1,29 @@
+{
+  "run_name": "full_40k_reconstruction_lvsvae_v1",
+  "train_mode": "reconstruction",
+  "init_checkpoint_path": null,
+  "best_model_metric": "reconstruction",
+  "data_path": "C:\\Users\\chris\\OneDrive\\Documents\\GitHub\\TNG_Falcon\\VAE_DATA\\full_40k_40_40_20\\states_labels.npz",
+  "output_dir": "C:\\Users\\chris\\OneDrive\\Documents\\GitHub\\TNG_Falcon\\artifacts\\lvs_vae\\full_40k_reconstruction_lvsvae_v1",
+  "seed": 42,
+  "device": "cpu",
+  "epochs": 100,
+  "batch_size": 64,
+  "learning_rate": 0.001,
+  "weight_decay": 1e-05,
+  "validation_ratio": 0.2,
+  "beta": 0.001,
+  "value_weight": 0.0,
+  "placing_survival_weight": 0.0,
+  "grad_clip_norm": 5.0,
+  "input_dim": 25,
+  "latent_dim": 8,
+  "hidden_dims": [
+    64,
+    64
+  ],
+  "value_hidden_dim": 32,
+  "num_workers": 0,
+  "plot_loss_curves": true,
+  "print_vertical_metrics": true
+}
