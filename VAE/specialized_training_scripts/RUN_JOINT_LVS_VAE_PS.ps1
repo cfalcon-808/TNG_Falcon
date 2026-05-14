@@ -5,10 +5,10 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-$RepoRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
+$RepoRoot = Resolve-Path (Join-Path $PSScriptRoot "..\..")
 Set-Location $RepoRoot
 
-$RunnerArgs = @("-u", "VAE/RUN_JOINT_LVS_VAE_PS.py")
+$RunnerArgs = @("-u", "VAE/specialized_training_scripts/RUN_JOINT_LVS_VAE_PS.py")
 if ($SkipExisting) {
     $RunnerArgs += "--skip-existing"
 }

@@ -7,7 +7,7 @@ Goal: train the VAE latent body on full 40k reconstruction first, then freeze it
 Run:
 
 ```powershell
-python VAE/TRAIN_RECONSTRUCTION_LVS_VAE.py
+python VAE/specialized_training_scripts/TRAIN_RECONSTRUCTION_LVS_VAE.py
 ```
 
 Uses:
@@ -22,7 +22,7 @@ Uses:
 Run:
 
 ```powershell
-python VAE/TRAIN_LVS_VAE_HEADS.py
+python VAE/specialized_training_scripts/TRAIN_LVS_VAE_HEADS.py
 ```
 
 Uses:
@@ -37,7 +37,7 @@ Uses:
 Run:
 
 ```powershell
-python VAE/TRAIN_PLACING_SURVIVAL_LVS_VAE.py
+python VAE/specialized_training_scripts/TRAIN_PLACING_SURVIVAL_LVS_VAE.py
 ```
 
 This freezes the full 40k reconstruction VAE and trains only the placing-survival head.
@@ -47,11 +47,11 @@ This freezes the full 40k reconstruction VAE and trains only the placing-surviva
 Train reconstruction, then both heads:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File VAE/RUN_FULL40_RECON_THEN_HEADS.ps1
+powershell -ExecutionPolicy Bypass -File VAE/specialized_training_scripts/RUN_FULL40_RECON_THEN_HEADS.ps1
 ```
 
 Train reconstruction, then survival head only:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File VAE/RUN_FULL40_RECON_THEN_HEADS.ps1 -SurvivalOnly
+powershell -ExecutionPolicy Bypass -File VAE/specialized_training_scripts/RUN_FULL40_RECON_THEN_HEADS.ps1 -SurvivalOnly
 ```
