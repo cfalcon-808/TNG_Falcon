@@ -154,9 +154,7 @@ USE_LVS_VAE_SHAPING = True
 RUN_LVS_VAE_SMOKE_CHECK = True
 RUN_LVS_VAE_SMOKE_CHECK_ONLY = False
 LVS_VAE_SHAPING_COEF = 0.5
-LVS_VAE_PLACING_SURVIVAL_SHAPING_COEF = 0.0
-LVS_VAE_PLACING_SURVIVAL_POSITIVE_DELTA_ONLY = True
-LVS_VAE_PROGRESS_THRESHOLD = 0.98
+LVS_VAE_PROGRESS_THRESHOLD = 0.7
 LVS_VAE_ENDGAME_BLEND = 0.7
 LVS_VAE_PROGRESS_MODE = "turn_max_ratio"
 LVS_VAE_DEVICE = "cpu"
@@ -199,10 +197,6 @@ LVS_VAE_END_CHECKPOINT_PATHS = [
         "end06_20k_lvsvae_v1",
         "end06_20k_lvsvae_v1_final_model.pt",
     ),
-]
-LVS_VAE_PLACING_SURVIVAL_CHECKPOINT_PATHS = [
-    # Add LVS_VAE_PS checkpoints trained for placing survival here, then set
-    # LVS_VAE_PLACING_SURVIVAL_SHAPING_COEF above to enable this shaping term.
 ]
 
 # ============================================================
@@ -486,10 +480,7 @@ def build_lvs_vae_shaping_config(knobs: dict[str, Any] | None) -> LVSValueShapin
     return LVSValueShapingConfig(
         full_checkpoint_paths=tuple(LVS_VAE_FULL_CHECKPOINT_PATHS),
         end_checkpoint_paths=tuple(LVS_VAE_END_CHECKPOINT_PATHS),
-        placing_survival_checkpoint_paths=tuple(LVS_VAE_PLACING_SURVIVAL_CHECKPOINT_PATHS),
         shaping_coef=LVS_VAE_SHAPING_COEF,
-        placing_survival_shaping_coef=LVS_VAE_PLACING_SURVIVAL_SHAPING_COEF,
-        placing_survival_positive_delta_only=LVS_VAE_PLACING_SURVIVAL_POSITIVE_DELTA_ONLY,
         progress_threshold=LVS_VAE_PROGRESS_THRESHOLD,
         endgame_weight_after_threshold=LVS_VAE_ENDGAME_BLEND,
         progress_mode=LVS_VAE_PROGRESS_MODE,
@@ -610,15 +601,11 @@ class WinStatsCallback(BaseCallback):
             "reward_terminal_component",
             "reward_sparse_component",
             "reward_vae_component",
-            "reward_placing_survival_component",
             "reward_decay_mult",
             "reward_total",
             "lvs_value_before",
             "lvs_value_after",
             "lvs_value_delta",
-            "lvs_placing_survival_before",
-            "lvs_placing_survival_after",
-            "lvs_placing_survival_delta",
             "lvs_progress_ratio",
             "lvs_gate_active",
         ]
@@ -741,17 +728,13 @@ class WinStatsCallback(BaseCallback):
                 "reward_terminal_component": "9.terminal_mean",
                 "reward_sparse_component": "10.sparse_mean",
                 "reward_vae_component": "11.vae_mean",
-                "reward_placing_survival_component": "12.placing_survival_mean",
-                "reward_decay_mult": "13.decay_mult_mean",
-                "reward_total": "14.total_reward_mean",
-                "lvs_value_before": "15.lvs_value_before_mean",
-                "lvs_value_after": "16.lvs_value_after_mean",
-                "lvs_value_delta": "17.lvs_value_delta_mean",
-                "lvs_placing_survival_before": "18.lvs_placing_survival_before_mean",
-                "lvs_placing_survival_after": "19.lvs_placing_survival_after_mean",
-                "lvs_placing_survival_delta": "20.lvs_placing_survival_delta_mean",
-                "lvs_progress_ratio": "21.lvs_progress_ratio_mean",
-                "lvs_gate_active": "22.lvs_gate_active_frac",
+                "reward_decay_mult": "12.decay_mult_mean",
+                "reward_total": "13.total_reward_mean",
+                "lvs_value_before": "14.lvs_value_before_mean",
+                "lvs_value_after": "15.lvs_value_after_mean",
+                "lvs_value_delta": "16.lvs_value_delta_mean",
+                "lvs_progress_ratio": "17.lvs_progress_ratio_mean",
+                "lvs_gate_active": "18.lvs_gate_active_frac",
             }
             for name, label in reward_component_labels.items():
                 values = self.reward_component_windows[name]
@@ -972,15 +955,12 @@ def write_run_metadata(
             "default_enabled": USE_LVS_VAE_SHAPING,
             "enabled_in_any_phase": any(phase.use_lvs_vae_shaping for phase in phases),
             "shaping_coef": LVS_VAE_SHAPING_COEF,
-            "placing_survival_shaping_coef": LVS_VAE_PLACING_SURVIVAL_SHAPING_COEF,
-            "placing_survival_positive_delta_only": LVS_VAE_PLACING_SURVIVAL_POSITIVE_DELTA_ONLY,
             "progress_threshold": LVS_VAE_PROGRESS_THRESHOLD,
             "endgame_weight_after_threshold": LVS_VAE_ENDGAME_BLEND,
             "progress_mode": LVS_VAE_PROGRESS_MODE,
             "device": LVS_VAE_DEVICE,
             "full_checkpoint_paths": LVS_VAE_FULL_CHECKPOINT_PATHS,
             "end_checkpoint_paths": LVS_VAE_END_CHECKPOINT_PATHS,
-            "placing_survival_checkpoint_paths": LVS_VAE_PLACING_SURVIVAL_CHECKPOINT_PATHS,
         },
         "phases": [asdict(phase) for phase in phases],
         "layout": layout,

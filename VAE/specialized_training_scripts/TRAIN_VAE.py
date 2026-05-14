@@ -4,8 +4,7 @@
 #  File       : TRAIN_VAE.py
 #
 #  Purpose / Goal:
-#    Train the value-shaping LVS-VAE only. Placing-survival training lives in
-#    TRAIN_PLACING_SURVIVAL_LVS_VAE.py and LVS_VAE_PS.py.
+#    Train the value-shaping LVS-VAE used by the final deliverable.
 # ============================================================
 from __future__ import annotations
 

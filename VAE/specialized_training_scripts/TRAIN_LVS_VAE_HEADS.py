@@ -4,9 +4,8 @@
 #  File       : TRAIN_LVS_VAE_HEADS.py
 #
 #  Purpose / Goal:
-#    Load a reconstruction-only value LVS-VAE body, freeze the latent space,
-#    and train only the outcome value head. Placing-survival training now lives
-#    in TRAIN_PLACING_SURVIVAL_LVS_VAE.py with LVS_VAE_PS.py.
+#    Load a reconstruction-only LVS-VAE body, freeze the latent space,
+#    and train only the outcome value head.
 # ============================================================
 from __future__ import annotations
 

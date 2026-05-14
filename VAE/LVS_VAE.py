@@ -36,8 +36,6 @@
 #    - VAE/specialized_training_scripts/TRAIN_VAE.py
 #    - PPO reward shaping wrapper / callback
 #
-#  Note:
-#    Placing-survival models live in LVS_VAE_PS.py.
 # ============================================================
 from __future__ import annotations
 

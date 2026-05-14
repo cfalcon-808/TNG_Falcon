@@ -80,16 +80,16 @@ vae_reward = coefficient * (value_after - value_before)
 
 **Speaker note:** The endgame signal may not activate often in short games, so tracking episode length and gate activity matters.
 
-## Slide 8: Placing-Survival VAE
+## Slide 8: Value-Head Scope
 
-**Title:** Opening-Phase Survival Head
+**Title:** Final Learned Signal
 
-- Separate `LVS_VAE_PS` model focuses only on placing-phase survival.
-- Trained on placing-phase states.
-- Ties are blended with wins against losing states.
-- Intended to learn early structures that prevent collapse.
+- The final deliverable uses the goat-favorable outcome value head.
+- Full-game models provide broad state-value estimates.
+- Endgame models provide later-state value estimates.
+- The reward wrapper uses only the value delta between consecutive states.
 
-**Speaker note:** This model is separated from the value VAE so the opening signal does not need endgame-only data.
+**Speaker note:** This keeps the final implementation focused and avoids mixing unfinished specialized-head experiments into the submitted branch.
 
 ## Slide 9: Experiments
 
@@ -98,7 +98,6 @@ vae_reward = coefficient * (value_after - value_before)
 - Baseline PPO without VAE shaping.
 - PPO with LVS-VAE value shaping.
 - PPO with grouped manual rewards removed.
-- PPO with placing-survival shaping enabled.
 - Compare fast ballpark results before deeper tuning.
 
 **Speaker note:** The goal is not just higher training win rate; it is whether the agent becomes more robust across opponents.
@@ -111,7 +110,6 @@ vae_reward = coefficient * (value_after - value_before)
 - Episode length.
 - Sparse reward vs VAE reward contribution.
 - `lvs_value_delta` and `reward_vae_component`.
-- Placing-survival delta when opening shaping is enabled.
 - Generalization against multiple tiger opponents.
 
 **Speaker note:** The VAE reward should be a useful hint, not the dominant objective.
@@ -121,11 +119,10 @@ vae_reward = coefficient * (value_after - value_before)
 **Title:** Design Decisions
 
 - Keep `LVS_VAE` as value-shaping only.
-- Use separate `LVS_VAE_PS` for placing survival.
-- Train value and survival models separately for simpler analysis.
-- Use future state-action VAE heads for move-specific opening quality.
+- Use full/endgame phase-gated value models for PPO shaping.
+- Leave specialized opening or state-action heads as future work.
 
-**Speaker note:** Separating the VAEs makes the deadline workflow simpler and keeps each model's purpose clearer.
+**Speaker note:** The final branch reports the implemented value-head path without unfinished auxiliary heads.
 
 ## Slide 12: Conclusion
 
