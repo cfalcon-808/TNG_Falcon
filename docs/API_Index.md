@@ -147,9 +147,9 @@ Evaluation runner for both single-matchup debug/eval flows and full goat-model v
   Supports the legacy convenience CLI patterns:
   `python eval.py`
   `python eval.py model.zip`
-  `python eval.py normal`
-  `python eval.py battle`
-  `python eval.py battle model.zip`
+  `python eval.py greedy`
+  `python eval.py smart`
+  `python eval.py smart model.zip`
 - `EVAL_MODE`
   `"single"` or `"sweep"`.
 - `SINGLE_CONFIG`
@@ -256,7 +256,7 @@ MaskablePPO training runner for experiment suites made of one or more variations
 ### Matchup and naming helpers
 
 - `core_tag(learner_role, opponent_ai, mix=False, goat_opponent_ai=None) -> str`
-  Builds tags like `GvNT`, `GvST`, `GvMixT`, `TvRG`, or `TvMG`.
+  Builds tags like `GvGT`, `GvST`, `GvMixT`, `TvRG`, or `TvMG`.
 - `resolve_opponent_or_exit(learner_role, opponent_ai) -> tuple[str, str]`
   Converts the unified opponent selector into `(tiger_ai_mode, goat_opponent_ai)`.
 - `resolve_variation_core(phases) -> str`
@@ -331,10 +331,10 @@ Tkinter GUI for live play, model-assisted play, tiger-play mode, PvP mode, repla
 
 ### CLI
 
-- `python gui.py --env {normal|battle} [--model path/to/model.zip]`
-- `--env normal`
+- `python gui.py --env {greedy|smart} [--model path/to/model.zip]`
+- `--env greedy`
   Starts with greedy tiger defaults.
-- `--env battle`
+- `--env smart`
   Starts with smart tiger defaults.
 - `--model`
   Optional goat model to preload at startup.

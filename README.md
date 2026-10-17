@@ -24,15 +24,55 @@ Follow the [quickstart](Important_Docs/QUICKSTART.md) to install dependencies, p
 | `eval.py` | Evaluation and matchup sweeps |
 | `gui.py` | Tkinter game and replay viewer |
 | `model_summary.py` | Policy architecture inspection |
-| `stable_models/models/` | Pretrained goat and tiger policies |
-| `artifacts/` | Generated training and evaluation outputs |
+| `requirements.txt` | Python dependencies needed to run the project |
+| `.gitignore` | Shared rules that keep generated outputs and local files out of Git |
+| `Important_Docs/` | Student setup, training guides, and the shared progress notebook |
+| `docs/` | Technical references for the code and policy architecture |
+| `stable_models/` | Saved reference policies and historical training logs |
+| `artifacts/` | Local training and evaluation outputs; ignored by Git |
 
-## Documentation
+## Important_Docs: guides and progress
 
-- [Quickstart](Important_Docs/QUICKSTART.md)
-- [Training guide](Important_Docs/TRAIN_SCRIPT_DETAILED_GUIDE.md)
-- [Variations and curricula](Important_Docs/VARIATION_CONFIGS.md)
-- [Reward reference](Important_Docs/REWARD_REFERENCE.md)
-- [Network architecture](docs/NETWORK_ARCHITECTURE_AND_MODEL_COMBINER.md)
+Start here when setting up the project or planning a training experiment.
+
+| Document | What it covers |
+| --- | --- |
+| [Quickstart](Important_Docs/QUICKSTART.md) | Installation, playing the game, evaluating models, and starting training |
+| [Training guide](Important_Docs/TRAIN_SCRIPT_DETAILED_GUIDE.md) | Training settings, opponents, logging, checkpoints, and the training workflow |
+| [Variations and curricula](Important_Docs/VARIATION_CONFIGS.md) | Configuring experiment variations and training across multiple phases |
+| [Reward reference](Important_Docs/REWARD_REFERENCE.md) | Reward components and settings for designing experiments |
+| [Robust goat training strategy](Important_Docs/ROBUST_GOAT_TRAINING_STRATEGY.txt) | Experiment notes on continued training and mixing Greedy and Smart Tiger opponents |
+| [Versions and progress](Important_Docs/VERSIONS_AND_PROGRESS.ipynb) | Shared version history and a simple template for students to record changes, results, and next steps |
+
+## docs: technical references
+
+Use these when you want to understand how the code and models work.
+
+- [API index](docs/API_Index.md): reference to the main scripts, classes, functions, and command-line entry points.
+- [Network architecture and model combiner](docs/NETWORK_ARCHITECTURE_AND_MODEL_COMBINER.md): explanations of the policy network and discussion of combining models.
+
+## stable_models: reference models and logs
+
+This folder contains existing policies students can evaluate, use in the GUI, or use as starting points for continued training.
+
+| Folder | Contents |
+| --- | --- |
+| `stable_models/models/Goats/` | Saved goat policies in `.zip` format |
+| `stable_models/models/Tigers/` | Saved tiger policies in `.zip` format |
+| `stable_models/Logging/` | Historical TensorBoard logs from benchmark goat and tiger training |
+
+Existing model filenames retain their original names, including older labels such as `NormalGoat`. The current scripted tiger opponents are called **Greedy** and **Smart**.
+
+To view the historical logs, run this from the repository root:
+
+```powershell
+tensorboard --logdir stable_models/Logging --port 6006
+```
+
+## artifacts: your experiment outputs
+
+New training runs save their configuration metadata, TensorBoard logs, checkpoints, and models under `artifacts/<experiment_name>/`. Evaluation also writes results under `artifacts/`.
+
+Give each experiment a distinct name so you can identify its results. This folder is ignored by Git, so your outputs stay on your computer and are not included in commits. Record a short summary in the progress notebook and share model files separately when teammates need them.
 
 The original ECE445 research deliverable is preserved on branch `445`.

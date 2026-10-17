@@ -501,7 +501,7 @@ tensorboard --logdir artifacts --port 6006
 Evaluate a resulting model in single mode:
 
 ```powershell
-python eval.py battle path\to\model.zip
+python eval.py smart path\to\model.zip
 ```
 
 Important:

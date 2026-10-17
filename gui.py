@@ -2,7 +2,8 @@
 #  Project    : Tigers & Goats
 #  Module     : Tkinter GUI
 #  File       : gui.py
-#  Last Update: 2026-04-01
+#  Version    : 1.0
+#  Last Update: 2026-10-17
 #
 #  Overview:
 #    Tkinter GUI for live play, model-assisted play, and replay viewing.
@@ -15,9 +16,9 @@
 #
 #  Current CLI:
 #    python gui.py
-#    python gui.py --env normal
-#    python gui.py --env battle
-#    python gui.py --env battle --model path\\to\\model.zip
+#    python gui.py --env greedy
+#    python gui.py --env smart
+#    python gui.py --env smart --model path\\to\\model.zip
 #
 #  Notes:
 #    - The GUI uses the native flat Discrete action space from env_tng.py
@@ -179,7 +180,7 @@ class TigersGoatsGUI:
         self.tiger_ai = tiger_ai
         self.model_path = model_path
         self.tiger_model_path = None
-        self.goat_play_tiger_mode = "smart" if tiger_ai == TIGER_AI_SMART else "normal"
+        self.goat_play_tiger_mode = "smart" if tiger_ai == TIGER_AI_SMART else "greedy"
         self.input_locked = False
 
         self.root = tk.Tk()
@@ -811,7 +812,7 @@ class TigersGoatsGUI:
             if self.game_mode == "goat_play" and self.goat_play_tiger_mode == "model":
                 mode_label = "model"
             else:
-                mode_label = "battle/smart" if self.tiger_ai == TIGER_AI_SMART else "normal/greedy"
+                mode_label = "smart" if self.tiger_ai == TIGER_AI_SMART else "greedy"
             self.status_var.set(f"Live mode ({mode_label} tiger): click a node to place/move goats.")
         self.move_var.set("Last move: -")
 
@@ -1498,14 +1499,14 @@ class TigersGoatsGUI:
 
     def _update_tiger_button_text(self):
         if self.game_mode == "goat_play":
-            if self.goat_play_tiger_mode == "normal":
-                label = "Tiger Opponent: NORMAL (click -> SMART)"
+            if self.goat_play_tiger_mode == "greedy":
+                label = "Tiger Opponent: GREEDY (click -> SMART)"
             elif self.goat_play_tiger_mode == "smart":
                 label = "Tiger Opponent: SMART (click -> MODEL)"
             else:
-                label = "Tiger Opponent: MODEL (click -> NORMAL)"
+                label = "Tiger Opponent: MODEL (click -> GREEDY)"
         else:
-            label = "Tiger: SMART (click -> NORMAL)" if self.tiger_ai == TIGER_AI_SMART else "Tiger: NORMAL (click -> SMART)"
+            label = "Tiger: SMART (click -> GREEDY)" if self.tiger_ai == TIGER_AI_SMART else "Tiger: GREEDY (click -> SMART)"
         self.btn_toggle_tiger["text"] = label
 
     def _set_goat_play_tiger_model_controls_visible(self, visible: bool):
@@ -1537,12 +1538,12 @@ class TigersGoatsGUI:
         # Switch tiger AI and reset into live mode (clears replay)
         if self.game_mode != "goat_play":
             return
-        if self.goat_play_tiger_mode == "normal":
+        if self.goat_play_tiger_mode == "greedy":
             self.goat_play_tiger_mode = "smart"
         elif self.goat_play_tiger_mode == "smart":
             self.goat_play_tiger_mode = "model"
         else:
-            self.goat_play_tiger_mode = "normal"
+            self.goat_play_tiger_mode = "greedy"
         self.reset_env()
 
     def _install_goat_play_tiger_model_controller(self):
@@ -2394,12 +2395,12 @@ class TigersGoatsGUI:
 
 def main():
     parser = argparse.ArgumentParser(description="Tkinter GUI for Tigers & Goats (unified env).")
-    parser.add_argument("--env", choices=["normal", "battle"], default="normal",
-                        help="Opponent mode: normal=greedy tiger, battle=smart tiger.")
+    parser.add_argument("--env", choices=["greedy", "smart", "normal", "battle"], default="greedy",
+                        help="Opponent mode: greedy or smart tiger (legacy aliases: normal=greedy, battle=smart).")
     parser.add_argument("--model", type=str, default=None, help="Optional MaskablePPO goat model path (.zip).")
     args = parser.parse_args()
 
-    tiger_ai = TIGER_AI_GREEDY if args.env == "normal" else TIGER_AI_SMART
+    tiger_ai = TIGER_AI_GREEDY if args.env in {"greedy", "normal"} else TIGER_AI_SMART
 
     gui = TigersGoatsGUI(
         tiger_ai=tiger_ai,

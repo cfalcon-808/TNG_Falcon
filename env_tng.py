@@ -2,7 +2,8 @@
 #  Project    : Tigers & Goats
 #  Module     : Maskable PPO Environment
 #  File       : env_tng.py
-#  Last Update: 2026-04-01
+#  Version    : 1.0
+#  Last Update: 2026-10-17
 #
 #  Purpose / Goal:
 #    Provide a stable Gymnasium environment for training robust goat/tiger

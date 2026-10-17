@@ -26,14 +26,14 @@ Choose a player mode or open the replay viewer. Pretrained models are in `stable
 Set `EVAL_MODE = "single"` in `eval.py`, then run:
 
 ```powershell
-python eval.py normal stable_models/models/Goats/mppo_RobustGoat030726.zip
+python eval.py greedy stable_models/models/Goats/mppo_RobustGoat030726.zip
 ```
 
-Use `battle` instead of `normal` for smart tigers. Results go under `artifacts/logging/eval_debug/`. Set `EVAL_MODE = "sweep"` and review `SWEEP_CONFIG` to compare model matchups.
+Use `smart` instead of `greedy` for smart tigers. Results go under `artifacts/logging/eval_debug/`. Set `EVAL_MODE = "sweep"` and review `SWEEP_CONFIG` to compare model matchups.
 
 ## 4. Train
 
-For a short CPU run, change these settings in `train.py` first:
+For a custom short CPU run, change these settings in `train.py` first:
 
 ```python
 EXPERIMENT_NAME = "first_training"

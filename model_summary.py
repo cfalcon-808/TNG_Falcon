@@ -2,6 +2,8 @@
 #  Project    : Tigers & Goats
 #  Module     : Model Summary Utility
 #  File       : model_summary.py
+#  Version    : 1.0
+#  Last Update: 2026-10-17
 #
 #  What this file does:
 #    Prints a torchsummary report for a MaskablePPO model. It can inspect

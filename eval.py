@@ -2,8 +2,8 @@
 #  Project    : Tigers & Goats - Falcon
 #  Module     : Unified Evaluation Runner (Single + Sweep)
 #  File       : eval.py
-#  Version    : eval3.0
-#  Last Update: 2026-03-08
+#  Version    : 1.0
+#  Last Update: 2026-10-17
 #
 #  Purpose / Goal:
 #    Evaluate trained goat or tiger policies in two modes:
@@ -77,10 +77,10 @@ def parse_cli_args():
     Supported patterns:
         python eval.py
         python eval.py model.zip
-        python eval.py normal
-        python eval.py normal model.zip
-        python eval.py battle
-        python eval.py battle model.zip
+        python eval.py greedy
+        python eval.py greedy model.zip
+        python eval.py smart
+        python eval.py smart model.zip
 
     Returns:
         tiger_ai_mode (str)
@@ -89,6 +89,7 @@ def parse_cli_args():
     tiger_ai_mode = TIGER_AI_GREEDY  # default = greedy tiger
     model_path = None
 
+    # Keep legacy normal/battle aliases for existing commands.
     def resolve_mode(token: str) -> Optional[str]:
         t = token.lower()
         if t.startswith("norm") or t == "greedy":
