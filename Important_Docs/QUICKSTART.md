@@ -1,116 +1,68 @@
 # Quickstart
 
-Practical setup and first-run workflow for the final LVS-VAE reward-shaping deliverable.
+Run commands from the repository root. The source uses Python 3.10+ syntax.
 
 ## 1. Install
-
-From the repo root:
 
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
-pip install --upgrade pip
-pip install -r requirements.txt
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
 ```
 
-If you want GPU training, install the PyTorch build that matches your CUDA version after the base install.
+The GUI requires Tkinter, included with standard Windows Python installations.
 
-## 2. Main Files
+## 2. Play
 
-| File | Purpose |
-| --- | --- |
-| `VAE/LVS_VAE.py` | Value-head LVS-VAE model and loss |
-| `VAE/LVS_VALUE_SHAPING.py` | Frozen full/endgame value predictor and reward wrapper |
-| `VAE/notebooks/DATASET_GENERATOR.ipynb` | Generates gameplay state datasets |
-| `VAE/notebooks/VAE_DATASET_ANALYSIS.ipynb` | Reviews dataset balance and state metadata |
-| `VAE/notebooks/VAE_HEAD_ANALYSIS.ipynb` | Reviews VAE training curves and value-head behavior |
-| `env_tng_abc.py` | Tigers and Goats Gymnasium environment |
-| `train_abc.py` | Maskable PPO experiment runner |
-| `eval_abc.py` | Model evaluation runner |
-| `gui_abc.py` | Tkinter board GUI |
+```powershell
+python gui.py
+```
 
-## 3. Smoke Test VAE Reward Shaping
+Choose a player mode or open the replay viewer. Pretrained models are in `stable_models/models/Goats/` and `stable_models/models/Tigers/`.
 
-`train_abc.py` can load the frozen VAE ensemble and test one shaped environment transition before PPO training.
+## 3. Evaluate
 
-For a smoke-check-only run, set:
+Set `EVAL_MODE = "single"` in `eval.py`, then run:
+
+```powershell
+python eval.py normal stable_models/models/Goats/mppo_RobustGoat030726.zip
+```
+
+Use `battle` instead of `normal` for smart tigers. Results go under `artifacts/logging/eval_debug/`. Set `EVAL_MODE = "sweep"` and review `SWEEP_CONFIG` to compare model matchups.
+
+## 4. Train
+
+For a short CPU run, change these settings in `train.py` first:
 
 ```python
-RUN_LVS_VAE_SMOKE_CHECK = True
-RUN_LVS_VAE_SMOKE_CHECK_ONLY = True
+EXPERIMENT_NAME = "first_training"
+DEVICE_MODE = "cpu"
+TIMESTEPS = 2_048
+NUM_CPU = 1
+CHECKPOINTS_PER_RUN = 2
 ```
 
-Then run:
+The script retains full-scale GPU/multiple-worker defaults, so apply these small settings before running on a CPU machine. The default `VARIATIONS = {"baseline": None}` uses the global settings and the environment's handcrafted rewards.
 
 ```powershell
-python train_abc.py
-```
-
-Set `RUN_LVS_VAE_SMOKE_CHECK_ONLY = False` when you want training to continue after the check.
-
-## 4. Run PPO Training
-
-Review these values near the top of `train_abc.py`:
-
-```python
-EXPERIMENT_NAME = "VAE_ABLATION_ANALYSIS"
-USE_LVS_VAE_SHAPING = True
-LVS_VAE_SHAPING_COEF = 0.5
-LVS_VAE_PROGRESS_THRESHOLD = 0.7
-LVS_VAE_ENDGAME_BLEND = 0.7
-```
-
-Run training:
-
-```powershell
-python train_abc.py
-```
-
-Outputs are written under:
-
-```text
-artifacts/<experiment_name>/
-```
-
-## 5. Monitor Training
-
-```powershell
+python train.py
 tensorboard --logdir artifacts --port 6006
 ```
 
-Useful VAE-related TensorBoard fields include:
+Outputs go under `artifacts/<experiment_name>/`. A short run verifies the workflow; training a strong policy takes longer.
 
-- `reward_vae_component`
-- `reward_total`
-- `lvs_value_before`
-- `lvs_value_after`
-- `lvs_value_delta`
-- `lvs_progress_ratio`
-- `lvs_gate_active`
+## 5. Experiment
 
-## 6. Work With VAE Data
+- Change reward knobs in a variation to compare reward settings.
+- Use a list of phase dictionaries for a curriculum.
+- Set `RESUME_MODEL_PATH` to a saved policy to continue training.
+- For tiger training, select `TIGER_LEARNER` and `OPP_GOAT_RANDOM` or `OPP_GOAT_MODEL`. For model opponents, set `GOAT_MODEL_PATH` to an existing file under `stable_models/models/Goats/`.
 
-Open the notebooks:
+See [variations](VARIATION_CONFIGS.md), the [training guide](TRAIN_SCRIPT_DETAILED_GUIDE.md), and [rewards](REWARD_REFERENCE.md).
 
-```powershell
-jupyter notebook VAE/notebooks/DATASET_GENERATOR.ipynb
-jupyter notebook VAE/notebooks/VAE_DATASET_ANALYSIS.ipynb
-jupyter notebook VAE/notebooks/VAE_HEAD_ANALYSIS.ipynb
-```
-
-The checked-in datasets are under `VAE_DATA/`. Each dataset folder contains:
-
-- `states_labels.npz`
-- `dataset.csv`
-- `metadata.csv`
-- `dataset_summary.json`
-
-## 7. Evaluate or Inspect PPO Models
+Inspect a policy:
 
 ```powershell
-python eval_abc.py
-python gui_abc.py
-python model_summary_abc.py --model-path stable_models/models/Goats/mppo_RobustGoat030726.zip
+python model_summary.py --model-path stable_models/models/Goats/mppo_RobustGoat030726.zip
 ```
-
-`stable_models/` contains the stable PPO models kept for reproducible environment and dataset workflows.

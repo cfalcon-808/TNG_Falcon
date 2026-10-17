@@ -4,6 +4,5 @@ torch
 numpy
 pandas
 matplotlib
-jupyter
 torchsummary
 tensorboard

@@ -1,14 +1,13 @@
 # Reward Reference
 ### `If using vscode use ctrl+shift+V to view this as compiled mardown`  
-Current reward structure, tuning knobs, and implementation notes for the live `env_tng_abc.py` environment.
+Current reward structure, tuning knobs, and implementation notes for the live `env_tng.py` environment.
 
 ## Scope
 
 This document describes the reward logic currently implemented in:
 
-- `env_tng_abc.py`
-- `train_abc.py` for reward-component logging in TensorBoard
-- `VAE/LVS_VALUE_SHAPING.py` for optional learned value-delta reward shaping
+- `env_tng.py`
+- `train.py` for reward-component logging in TensorBoard
 
 It is based on the current `DEFAULT_KNOBS` and the live goat/tiger reward paths in code.
 
@@ -20,12 +19,6 @@ There are two reward paths in the environment:
 - tiger learner reward
 
 Both share the same environment state and many of the same tuning knobs, but they do not use those knobs in the same way.
-
-For the final VAE deliverable, goat training can also wrap the goat reward with an LVS-VAE value-delta term:
-
-```text
-reward_total = reward_sparse + LVS_VAE_SHAPING_COEF * (V_LVS(s_next) - V_LVS(s))
-```
 
 At a high level:
 
@@ -42,7 +35,6 @@ These details are current behavior in code and are easy to miss when tuning:
 - `LATE_GAME_START_TURN` is currently computed into `info["late"]`, but it is not directly used in the current reward formulas.
 - Tiger center shaping currently uses `abs(REWARD_CENTER_GOAT)` as its magnitude, not `REWARD_CENTER_TIGER`.
 - Tiger `invalid_hard` reward currently returns `abs(REWARD_INVALID_HARD)`, which is positive with the current default of `-1.0`.
-- LVS-VAE shaping is applied in `train_abc.py` by replacing the environment reward function with a wrapper. The base environment rules remain unchanged.
 
 ## Default Knobs
 
@@ -227,37 +219,6 @@ That means:
 
 Repeat tracking currently matters only on the goat-learner path.
 
-## LVS-VAE Reward Shaping
-
-The learned reward path is optional and goat-facing. It is implemented outside the core environment in `VAE/LVS_VALUE_SHAPING.py`.
-
-The wrapper first calls the normal environment reward:
-
-```text
-reward_sparse = sparse_reward(prev_obs, action, obs, terminated, truncated, info)
-```
-
-It then predicts the previous and next state values using a frozen full/endgame LVS-VAE ensemble:
-
-```text
-value_delta = V_LVS(obs) - V_LVS(prev_obs)
-reward_vae_component = LVS_VAE_SHAPING_COEF * value_delta
-reward_total = reward_sparse + reward_vae_component
-```
-
-Logged fields:
-
-| Field | Meaning |
-| --- | --- |
-| `reward_sparse_component` | Base handcrafted/terminal reward |
-| `reward_vae_component` | Learned value-delta reward |
-| `reward_total` | Final reward returned to PPO |
-| `lvs_value_before` | VAE value before the action |
-| `lvs_value_after` | VAE value after the action |
-| `lvs_value_delta` | Difference between after and before values |
-| `lvs_progress_ratio` | `turn_counter / MAX_TURNS` |
-| `lvs_gate_active` | Whether the endgame blend is active |
-
 Current goat behavior:
 
 - repeated non-terminal states incur `REWARD_REPEAT_STATE * repeat_prev_count^2`
@@ -287,7 +248,7 @@ With the current defaults, that means:
 
 ## Reward Components Logged to TensorBoard
 
-`train_abc.py` logs these goat-side reward components when present in `info`:
+`train.py` logs these goat-side reward components when present in `info`:
 
 - `reward_step_component`
 - `reward_near_lock_component`

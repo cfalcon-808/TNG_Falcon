@@ -1,8 +1,8 @@
 # API Index
 
-This index reflects the current repo-root `*_abc.py` files. Older `*_falcon.py` names still appear in some comments and historical docs, but they are not the active entry points.
+This index describes the repository entry points: `env_tng.py`, `train.py`, `eval.py`, `gui.py`, and `model_summary.py`.
 
-# `env_tng_abc.py`
+# `env_tng.py`
 
 Unified Gymnasium environment for Tigers and Goats with native `Discrete(115)` actions, role-aware masking, and configurable scripted or model-driven opponents.
 
@@ -137,7 +137,7 @@ Full environment with:
 - `_w(key) -> float`
   Strict knob lookup helper.
 
-# `eval_abc.py`
+# `eval.py`
 
 Evaluation runner for both single-matchup debug/eval flows and full goat-model versus tiger-model sweeps.
 
@@ -145,11 +145,11 @@ Evaluation runner for both single-matchup debug/eval flows and full goat-model v
 
 - `parse_cli_args()`
   Supports the legacy convenience CLI patterns:
-  `python eval_abc.py`
-  `python eval_abc.py model.zip`
-  `python eval_abc.py normal`
-  `python eval_abc.py battle`
-  `python eval_abc.py battle model.zip`
+  `python eval.py`
+  `python eval.py model.zip`
+  `python eval.py normal`
+  `python eval.py battle`
+  `python eval.py battle model.zip`
 - `EVAL_MODE`
   `"single"` or `"sweep"`.
 - `SINGLE_CONFIG`
@@ -212,7 +212,7 @@ Evaluation runner for both single-matchup debug/eval flows and full goat-model v
   `artifacts/eval_sweeps/sweep_results_<timestamp>.json`
   `artifacts/eval_sweeps/sweep_results_<timestamp>.csv`
 
-# `train_abc.py`
+# `train.py`
 
 MaskablePPO training runner for experiment suites made of one or more variations, where each variation can be a single phase or a multi-phase curriculum.
 
@@ -325,13 +325,13 @@ MaskablePPO training runner for experiment suites made of one or more variations
 - Iterates `VARIATIONS.items()`.
 - Prints a final per-variation result table.
 
-# `gui_abc.py`
+# `gui.py`
 
 Tkinter GUI for live play, model-assisted play, tiger-play mode, PvP mode, replay browsing, and replay recording.
 
 ### CLI
 
-- `python gui_abc.py --env {normal|battle} [--model path/to/model.zip]`
+- `python gui.py --env {normal|battle} [--model path/to/model.zip]`
 - `--env normal`
   Starts with greedy tiger defaults.
 - `--env battle`
@@ -491,7 +491,7 @@ Primary window/controller class. The home screen switches between:
 - `run()`
   Starts the Tk main loop.
 
-# `model_summary_abc.py`
+# `model_summary.py`
 
 Utility script for printing `torchsummary` reports for a fresh or saved `MaskablePPO` model.
 
