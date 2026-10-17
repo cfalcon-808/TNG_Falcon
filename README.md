@@ -6,6 +6,8 @@ A reinforcement learning project using Maskable PPO. Play the game, evaluate pre
 
 Follow the [quickstart](Important_Docs/QUICKSTART.md) to install dependencies, play, evaluate a model, and run a short training experiment.
 
+For Colab or Jupyter, open the standalone [training and evaluation notebook](TnG_Notebook.ipynb). Edit the configuration cell near the top, then run the notebook in order. It includes the environment, training, and a separate final evaluation section; no repository clone is required.
+
 ## Capabilities
 
 - Placement and movement phases with legal-action masking.

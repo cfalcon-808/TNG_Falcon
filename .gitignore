@@ -1,6 +1,7 @@
 # Project artifacts and legacy files
 /artifacts/
 /cleaned_student_version_test.py
+tests/
 OldFiles/
 
 # Byte-compiled / optimized / DLL files
