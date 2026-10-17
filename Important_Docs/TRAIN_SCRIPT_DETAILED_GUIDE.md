@@ -1,14 +1,14 @@
 # Train Detailed Guide
 ### `If using vscode use ctrl+shift+V to view this as compiled mardown`  
 
-Version context: `train_abc.py` (`mppo_train3.0`) + `env_tng_abc.py` (`env6.0`)  
+Version context: `train.py` (`mppo_train3.0`) + `env_tng.py` (`env6.0`)
 Last updated: 2026-04-01
 
-This keeps the same section structure as the older Falcon guide, but it documents the current repo entry point: `train_abc.py`.
+This keeps the same section structure as the older Falcon guide, but it documents the current repo entry point: `train.py`.
 
-## 1. Purpose of `train_abc.py`
+## 1. Purpose of `train.py`
 
-`train_abc.py` is the main MaskablePPO training runner for this repo.
+`train.py` is the main MaskablePPO training runner for this repo.
 
 It runs an experiment suite made of one or more named variations. Each variation can be:
 
@@ -28,7 +28,7 @@ Core pipeline per phase:
 
 ## 2. What You Must Configure at the Top of the File
 
-Edit these sections in `train_abc.py` before running.
+Edit these sections in `train.py` before running.
 
 ### A. Identity and matchup config
 
@@ -90,7 +90,7 @@ This is the main experiment-design surface for the script.
 
 ## 3. How Matchups Are Resolved
 
-`train_abc.py` uses one unified `OPPONENT_AI` setting, then resolves it by learner role through `resolve_opponent_or_exit(...)`.
+`train.py` uses one unified `OPPONENT_AI` setting, then resolves it by learner role through `resolve_opponent_or_exit(...)`.
 
 ### Goat learner
 
@@ -113,7 +113,7 @@ Important current behavior:
 Command:
 
 ```powershell
-python train_abc.py
+python train.py
 ```
 
 ### Startup behavior
@@ -302,7 +302,7 @@ These keys are consumed as phase controls, not environment knobs:
 - `checkpoints_per_run`
 - `goat_model_path`
 
-Anything else is treated as a direct knob override into `env_tng_abc.py`.
+Anything else is treated as a direct knob override into `env_tng.py`.
 
 Important current behavior:
 
@@ -313,7 +313,7 @@ Use flat direct keys instead.
 
 ### 7.3 Reward override keys you can use
 
-These map to `env_tng_abc.py` `DEFAULT_KNOBS`:
+These map to `env_tng.py` `DEFAULT_KNOBS`:
 
 - `REWARD_GOAT_WIN`
 - `REWARD_TIGER_WIN`
@@ -489,7 +489,7 @@ VARIATIONS = {
 Train:
 
 ```powershell
-python train_abc.py
+python train.py
 ```
 
 Monitor TensorBoard:
@@ -501,12 +501,12 @@ tensorboard --logdir artifacts --port 6006
 Evaluate a resulting model in single mode:
 
 ```powershell
-python eval_abc.py battle path\to\model.zip
+python eval.py smart path\to\model.zip
 ```
 
 Important:
 
-- `eval_abc.py` currently defaults to `EVAL_MODE = "sweep"` as committed
+- `eval.py` currently defaults to `EVAL_MODE = "sweep"` as committed
 - for single-model evaluation, switch that file to `EVAL_MODE = "single"` first
 
 ## End of Guide

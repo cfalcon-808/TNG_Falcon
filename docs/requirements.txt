@@ -1,5 +1,0 @@
-stable-baselines3[extra]
-sb3-contrib
-
-# If you need a specific CUDA-enabled PyTorch build, install it separately:
-#   pip install --index-url https://download.pytorch.org/whl/cu121 torch torchvision torchaudio

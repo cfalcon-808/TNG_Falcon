@@ -1,13 +1,13 @@
 # Reward Reference
 ### `If using vscode use ctrl+shift+V to view this as compiled mardown`  
-Current reward structure, tuning knobs, and implementation notes for the live `env_tng_abc.py` environment.
+Current reward structure, tuning knobs, and implementation notes for the live `env_tng.py` environment.
 
 ## Scope
 
 This document describes the reward logic currently implemented in:
 
-- `env_tng_abc.py`
-- `train_abc.py` for reward-component logging in TensorBoard
+- `env_tng.py`
+- `train.py` for reward-component logging in TensorBoard
 
 It is based on the current `DEFAULT_KNOBS` and the live goat/tiger reward paths in code.
 
@@ -248,7 +248,7 @@ With the current defaults, that means:
 
 ## Reward Components Logged to TensorBoard
 
-`train_abc.py` logs these goat-side reward components when present in `info`:
+`train.py` logs these goat-side reward components when present in `info`:
 
 - `reward_step_component`
 - `reward_near_lock_component`

@@ -1,258 +1,78 @@
-# Tigers & Goats - Falcon Branch
-### `If using vscode use ctrl+shift+V to view this as compiled mardown`  
+# Tigers and Goats
 
-Reinforcement learning environment, training runner, evaluation tools, and GUI utilities for the Tigers & Goats (Bagh-Chal) board game.
+A reinforcement learning project using Maskable PPO. Play the game, evaluate pretrained policies, and train goat and tiger agents.
 
-Read [`Important_Docs/QUICKSTART.md`](Important_Docs/QUICKSTART.md) for the full setup workflow. Python dependencies live in [`docs/requirements.txt`](docs/requirements.txt).
+## Start here
 
-## Overview
+Follow the [quickstart](Important_Docs/QUICKSTART.md) to install dependencies, play, evaluate a model, and run a short training experiment.
 
-This repository is built around a single unified Gymnasium environment and a small set of workflow scripts:
+## Capabilities
 
-- `env_tng_abc.py` defines the game environment, reward knobs, legal-action masking, and opponent behavior.
-- `train_abc.py` runs experiment suites made of one or more training variations, including multi-phase curricula.
-- `eval_abc.py` evaluates trained models in either single-run or sweep mode.
-- `gui_abc.py` provides a Tkinter GUI for live play, model smoke tests, and replay inspection.
-- `model_summary_abc.py` prints `torchsummary` reports for fresh or saved MaskablePPO models.
+- Placement and movement phases with legal-action masking.
+- Goat and tiger training, scripted and model opponents, and opponent mixing.
+- Configurable handcrafted rewards, experiment variations, and curricula.
+- Checkpoints, resumed training, TensorBoard metrics, and run metadata.
+- Single-model evaluation and matchup sweeps with CSV/JSON exports.
+- GUI play as either side, player versus player, model assistance, and replays.
 
-The current codebase uses the `*_abc.py` files as the active entry points. Older `*_falcon.py` names still appear in some comments and docs, but they are not the current scripts at the repo root.
+## Project files
 
-## Core Concepts
-
-| Term | Meaning |
+| Path | Purpose |
 | --- | --- |
-| Experiment | A named suite of related training runs, grouped under one artifact directory. |
-| Variation | A single training configuration inside an experiment. A variation can be one phase or multiple phases. |
-| Phase | One contiguous training segment within a variation. Multi-phase variations continue the same model across phases. |
-| Core tag | Matchup shorthand such as `GvNT`, `GvST`, `GvMixT`, or `TvRG`. |
-| Action masking | Legal actions are exposed through `get_action_mask()` so MaskablePPO never samples invalid moves. |
+| `env_tng.py` | Game rules, environment, action masks, and rewards |
+| `train.py` | PPO training and experiment runner |
+| `eval.py` | Evaluation and matchup sweeps |
+| `gui.py` | Tkinter game and replay viewer |
+| `model_summary.py` | Policy architecture inspection |
+| `requirements.txt` | Python dependencies needed to run the project |
+| `.gitignore` | Shared rules that keep generated outputs and local files out of Git |
+| `Important_Docs/` | Student setup, training guides, and the shared progress notebook |
+| `docs/` | Technical references for the code and policy architecture |
+| `stable_models/` | Saved reference policies and historical training logs |
+| `artifacts/` | Local training and evaluation outputs; ignored by Git |
 
-## Active Files
+## Important_Docs: guides and progress
 
-| File | Purpose |
+Start here when setting up the project or planning a training experiment.
+
+| Document | What it covers |
 | --- | --- |
-| `env_tng_abc.py` | Unified Tigers & Goats environment with `Discrete(115)` action space, sparse/shaped rewards, repetition tracking, and greedy/smart/model opponent support. |
-| `train_abc.py` | Experiment runner using `sb3_contrib.MaskablePPO`, `SubprocVecEnv`, checkpointing, TensorBoard logging, resume support, and per-phase curricula. |
-| `eval_abc.py` | Single-model debug/evaluation runner plus full goat-model x tiger-model sweep evaluation. |
-| `gui_abc.py` | Tkinter board UI for manual play, model-assisted play, and replay browsing. |
-| `model_summary_abc.py` | Utility for printing model or module summaries with `torchsummary`. |
+| [Quickstart](Important_Docs/QUICKSTART.md) | Installation, playing the game, evaluating models, and starting training |
+| [Training guide](Important_Docs/TRAIN_SCRIPT_DETAILED_GUIDE.md) | Training settings, opponents, logging, checkpoints, and the training workflow |
+| [Variations and curricula](Important_Docs/VARIATION_CONFIGS.md) | Configuring experiment variations and training across multiple phases |
+| [Reward reference](Important_Docs/REWARD_REFERENCE.md) | Reward components and settings for designing experiments |
+| [Robust goat training strategy](Important_Docs/ROBUST_GOAT_TRAINING_STRATEGY.txt) | Experiment notes on continued training and mixing Greedy and Smart Tiger opponents |
+| [Versions and progress](Important_Docs/VERSIONS_AND_PROGRESS.ipynb) | Shared version history and a simple template for students to record changes, results, and next steps |
 
-## Project Layout
+## docs: technical references
 
-```text
-.
-|-- env_tng_abc.py
-|-- train_abc.py
-|-- eval_abc.py
-|-- gui_abc.py
-|-- model_summary_abc.py
-|-- Important_Docs/
-|   |-- QUICKSTART.md
-|   |-- REWARD_REFERENCE.md
-|   |-- ROBUST_GOAT_TRAINING_STRATEGY.txt
-|   `-- VariationConfigs.md
-|-- docs/
-|   |-- requirements.txt
-|   |-- API_Index.txt
-|   |-- HyperparameterGuide.txt
-|   |-- RewardStructureOverview.txt
-|   `-- TRAIN_FALCON_DETAILED_GUIDE.txt
-|-- artifacts/
-|   `-- <experiment_name>/
-|       |-- meta/
-|       |-- tb/
-|       |-- checkpoints/
-|       |-- models/
-|       |-- eval/
-|       `-- logs/
-`-- stable_models/
-    `-- models/
-```
+Use these when you want to understand how the code and models work.
 
-## Environment
+- [API index](docs/API_Index.md): reference to the main scripts, classes, functions, and command-line entry points.
+- [Network architecture and model combiner](docs/NETWORK_ARCHITECTURE_AND_MODEL_COMBINER.md): explanations of the policy network and discussion of combining models.
 
-`env_tng_abc.py` is the shared environment used by training, evaluation, and the GUI.
+## stable_models: reference models and logs
 
-Current environment capabilities:
+This folder contains existing policies students can evaluate, use in the GUI, or use as starting points for continued training.
 
-- Full game flow: goat placement phase and movement phase.
-- Native `Discrete(115)` action space.
-- Legal-action masking compatible with MaskablePPO.
-- Goat learner and tiger learner modes.
-- Greedy tiger, smart tiger, and model-driven tiger support.
-- Random goat and model-driven goat opponent support.
-- Reward shaping via configurable knob overrides.
-- Repeat-state detection and timeout handling.
-
-The default observation shape is 25 values:
-
-- 23 board positions
-- goats eaten
-- phase indicator
-
-## Quick Start
-
-### 1. Create a virtual environment
-
-```powershell
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-pip install --upgrade pip
-pip install -r docs/requirements.txt
-```
-
-If you want GPU training, install the correct PyTorch build for your CUDA version separately.
-
-### 2. Run training
-
-Edit `train_abc.py` first, then run:
-
-```powershell
-python train_abc.py
-```
-
-Monitor TensorBoard with:
-
-```powershell
-tensorboard --logdir artifacts --port 6006
-```
-
-### 3. Evaluate a model
-
-Single-run evaluation is configured inside `eval_abc.py`. The script also accepts the older convenience CLI style for greedy vs smart tiger mode:
-
-```powershell
-python eval_abc.py
-python eval_abc.py normal
-python eval_abc.py battle
-python eval_abc.py battle path\to\model.zip
-```
-
-### 4. Launch the GUI
-
-```powershell
-python gui_abc.py
-python gui_abc.py --env normal
-python gui_abc.py --env battle
-python gui_abc.py --env battle --model path\to\model.zip
-```
-
-### 5. Print a model summary
-
-```powershell
-python model_summary_abc.py --model-path path\to\model.zip
-python model_summary_abc.py --module policy.mlp_extractor.policy_net
-```
-
-## Training Workflow
-
-`train_abc.py` treats one run as an experiment suite containing one or more variations.
-
-Each variation can be:
-
-- `None` for default environment settings.
-- A single flat `dict` for one training phase.
-- A `list[dict]` for a multi-phase curriculum that keeps training the same model across phases.
-
-Typical controls in a variation:
-
-- `timesteps`
-- `opponent_ai`
-- `mix_prob`
-- reward knob overrides such as `REWARD_BUBBLE_SPACE`, `REWARD_BLOCK_TIGER`, or `MAX_TURNS`
-
-Example:
-
-```python
-VARIATIONS = {
-    "defaultSettings": None,
-    "no_bubble": {
-        "timesteps": 20_000_000,
-        "opponent_ai": OPP_TIGER_SMART,
-        "REWARD_BUBBLE_SPACE": 0.0,
-    },
-    "greedy_to_smart_mix": [
-        {"timesteps": 10_000_000, "opponent_ai": OPP_TIGER_GREEDY},
-        {"timesteps": 10_000_000, "opponent_ai": OPP_TIGER_SMART},
-        {"timesteps": 30_000_000, "opponent_ai": OPP_TIGER_SMART, "mix_prob": 0.3},
-    ],
-}
-```
-
-## Current Checked-In Defaults
-
-As currently committed, `train_abc.py` defaults to:
-
-- `EXPERIMENT_NAME = "baselineGoatTrainingV3"`
-- goat learner mode
-- smart tiger opponent
-- `DEVICE_MODE = "gpu"`
-- `NUM_CPU = 16`
-- `TIMESTEPS = 20_000_000` when `DEBUG_MODE = False`
-- checkpoint resume enabled through `RESUME_MODEL_PATH`
-
-As currently committed, `eval_abc.py` defaults to:
-
-- `EVAL_MODE = "sweep"`
-- `DEBUG_MODE = True`
-- `100` evaluation games per configured sweep pairing
-- stable model comparisons from `stable_models/models/Goats` and `stable_models/models/Tigers`
-
-Those values are configuration defaults, not fixed project requirements. Change them in the script before running if they do not match your target experiment.
-
-## Artifacts
-
-Training artifacts are written under:
-
-```text
-artifacts/<experiment_name>/
-```
-
-The active training runner creates:
-
-- `meta/` for saved config snapshots, commit hashes, and notes
-- `tb/` for TensorBoard logs
-- `checkpoints/` for periodic phase checkpoints
-- `models/` for final and best model exports
-- `eval/` for experiment-local evaluation outputs
-- `logs/` for auxiliary logs
-
-Evaluation sweep outputs are written to:
-
-```text
-artifacts/eval_sweeps/
-```
-
-Single-run debug logs are written to:
-
-```text
-artifacts/logging/eval_debug/
-```
-
-## Matchup Tags
-
-| Tag | Meaning |
+| Folder | Contents |
 | --- | --- |
-| `GvNT` | Goat learner vs normal/greedy tiger |
-| `GvST` | Goat learner vs smart tiger |
-| `GvMixT` | Goat learner vs mixed tiger sampling |
-| `TvRG` | Tiger learner vs random goat |
+| `stable_models/models/Goats/` | Saved goat policies in `.zip` format |
+| `stable_models/models/Tigers/` | Saved tiger policies in `.zip` format |
+| `stable_models/Logging/` | Historical TensorBoard logs from benchmark goat and tiger training |
 
-Additional `Tv*` tags may appear depending on opponent configuration.
+Existing model filenames retain their original names, including older labels such as `NormalGoat`. The current scripted tiger opponents are called **Greedy** and **Smart**.
 
-## Notes
+To view the historical logs, run this from the repository root:
 
-- The environment and tooling are built around `sb3_contrib.MaskablePPO`.
-- `docs/requirements.txt` lists the core Python packages, but PyTorch GPU wheels should be installed separately when needed.
-- Some internal file headers still mention older Falcon-era filenames. The repo-root script names in this README are the current ones to use.
+```powershell
+tensorboard --logdir stable_models/Logging --port 6006
+```
 
-## Reference Docs
+## artifacts: your experiment outputs
 
-- [`Important_Docs/QUICKSTART.md`](Important_Docs/QUICKSTART.md)
-- [`Important_Docs/REWARD_REFERENCE.md`](Important_Docs/REWARD_REFERENCE.md)
-- [`Important_Docs/ROBUST_GOAT_TRAINING_STRATEGY.txt`](Important_Docs/ROBUST_GOAT_TRAINING_STRATEGY.txt)
-- [`Important_Docs/VariationConfigs.md`](Important_Docs/VariationConfigs.md)
-- [`docs/API_Index.txt`](docs/API_Index.txt)
-- [`docs/HyperparameterGuide.txt`](docs/HyperparameterGuide.txt)
-- [`docs/RewardStructureOverview.txt`](docs/RewardStructureOverview.txt)
-- [`docs/TRAIN_FALCON_DETAILED_GUIDE.txt`](docs/TRAIN_FALCON_DETAILED_GUIDE.txt)
+New training runs save their configuration metadata, TensorBoard logs, checkpoints, and models under `artifacts/<experiment_name>/`. Evaluation also writes results under `artifacts/`.
+
+Give each experiment a distinct name so you can identify its results. This folder is ignored by Git, so your outputs stay on your computer and are not included in commits. Record a short summary in the progress notebook and share model files separately when teammates need them.
+
+The original ECE445 research deliverable is preserved on branch `445`.

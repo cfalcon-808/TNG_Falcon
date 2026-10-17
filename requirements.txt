@@ -1,0 +1,8 @@
+stable-baselines3[extra]
+sb3-contrib
+torch
+numpy
+pandas
+matplotlib
+torchsummary
+tensorboard

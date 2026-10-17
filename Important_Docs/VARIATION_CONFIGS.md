@@ -1,6 +1,6 @@
 # Variation Config Reference
 ### `If using vscode use ctrl+shift+V to view this as compiled mardown`  
-Reference for the `VARIATIONS` structure used by `train_abc.py`.
+Reference for the `VARIATIONS` structure used by `train.py`.
 
 ## Overview
 
@@ -14,7 +14,7 @@ A variation can be one of three shapes:
 
 What each shape means:
 
-- `None` means one default single-phase run using the global settings already defined in `train_abc.py`
+- `None` means one default single-phase run using the global settings already defined in `train.py`
 - a single `dict` means one explicit training phase
 - a `list[dict]` means a multi-phase curriculum that continues the same model across phases
 
@@ -28,7 +28,7 @@ VARIATIONS = {
 }
 ```
 
-This inherits defaults from the current top-level `train_abc.py` settings such as:
+This inherits defaults from the current top-level `train.py` settings such as:
 
 - `TIMESTEPS`
 - `OPPONENT_AI`
@@ -76,7 +76,7 @@ These keys are treated as runner controls, not environment reward knobs.
 | `checkpoints_per_run` | `int` | Number of checkpoints to save during this phase. If omitted, falls back to `CHECKPOINTS_PER_RUN`. |
 | `goat_model_path` | `str \| None` | Path to a goat model `.zip` file. Relevant for tiger-learner runs that use goat model opponents. |
 
-Any other key is treated as a direct override into `env_tng_abc.py` `DEFAULT_KNOBS`.
+Any other key is treated as a direct override into `env_tng.py` `DEFAULT_KNOBS`.
 
 ## Allowed `opponent_ai` Values
 
@@ -133,7 +133,7 @@ If you use goat-model opponents, `goat_model_path` should point to a valid saved
 
 ## Environment Knob Overrides
 
-All non-control keys are passed directly into `env_tng_abc.py` as knob overrides.
+All non-control keys are passed directly into `env_tng.py` as knob overrides.
 
 Examples:
 
@@ -156,7 +156,7 @@ Put these keys directly in the variation or phase dict.
 
 ## Current Template
 
-This is a complete current template aligned with the live knobs in `env_tng_abc.py`.
+This is a complete current template aligned with the live knobs in `env_tng.py`.
 
 ```python
 VARIATIONS = {
@@ -272,7 +272,7 @@ With current runner behavior, that means:
 
 ## What Is Not Supported
 
-These older keys are explicitly rejected by `train_abc.py`:
+These older keys are explicitly rejected by `train.py`:
 
 - `tiger_ai`
 - nested `reward_weights`
