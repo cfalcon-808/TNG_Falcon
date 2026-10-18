@@ -1693,7 +1693,7 @@ class TnGEnv(gym.Env):
                 if self.board[neigh] != 1:
                     continue
 
-                # Hub constraint from Andre's rules:
+                # Hub constraint from the original x96_TnG.ipynb rules:
                 # row-1 nodes (b1..e1) cannot capture "up" through b0.
                 if i in (2, 3, 4, 5) and dir_code == 1:
                     continue

@@ -13,6 +13,8 @@ python -m pip install -r requirements.txt
 
 The GUI requires Tkinter, included with standard Windows Python installations.
 
+For a standalone Colab or Jupyter workflow, open [TnG_Notebook.ipynb](../TnG_Notebook.ipynb), edit its configuration cell, and run it from top to bottom. It includes the environment, training, evaluation, and interactive play.
+
 ## 2. Play
 
 ```powershell

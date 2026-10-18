@@ -22,6 +22,7 @@ For Colab or Jupyter, open the standalone [training and evaluation notebook](TnG
 | Path | Purpose |
 | --- | --- |
 | `env_tng.py` | Game rules, environment, action masks, and rewards |
+| [`TnG_Notebook.ipynb`](TnG_Notebook.ipynb) | Standalone Colab/Jupyter environment, training, evaluation, and interactive play |
 | `train.py` | PPO training and experiment runner |
 | `eval.py` | Evaluation and matchup sweeps |
 | `gui.py` | Tkinter game and replay viewer |
