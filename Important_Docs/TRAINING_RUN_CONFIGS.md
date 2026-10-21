@@ -1,12 +1,24 @@
-# Variation Config Reference
+# Training Run Config Reference
 ### `If using vscode use ctrl+shift+V to view this as compiled mardown`  
-Reference for the `VARIATIONS` structure used by `train.py`.
+Reference for the `TRAINING_RUNS` structure used by `train.py`.
+
+**Version 1.0 final preparation:** 2026-10-20
+
+## Terms and notebook/script differences
+
+An **experiment** groups named **training runs**. In `TRAINING_RUNS = {run_name: run_config}`, each run config defines an independent training job. A **phase config** defines one stage; successive phases continue the same model. These are training stages, separate from the game’s placement and movement phases.
+
+- **Script:** `TRAINING_RUNS` is a dictionary. Each run config is `None`, one flat phase config, or a list of phase configs. Omitted controls use global script settings; omitted environment knobs use `DEFAULT_KNOBS`. Each phase starts from those defaults, without inheriting the preceding phase. Reward/game keys sit directly in phase configs.
+- **Notebook:** `TRAINING_RUNS = None` means one baseline run. A dictionary supports the same three entry shapes plus a run config with shared settings and a `phases` list. Reward/game keys belong inside `reward_overrides`; the opponent key is `opponent` rather than the script’s `opponent_ai`.
+- **Notebook precedence:** environment defaults → global `REWARD_OVERRIDES` → run config `reward_overrides` → phase config `reward_overrides`. Other phase settings override run defaults, which override global settings. Phases do not inherit from the previous phase.
+
+Examples below target `train.py`; use the notebook configuration cell for notebook examples.
 
 ## Overview
 
-Each entry in `VARIATIONS` defines one named training run inside the current experiment.
+Each entry in `TRAINING_RUNS` defines one named training run inside the current experiment.
 
-A variation can be one of three shapes:
+A training run can be one of three shapes:
 
 1. `None`
 2. a single `dict`
@@ -20,10 +32,10 @@ What each shape means:
 
 ## Accepted Shapes
 
-### 1. Default single-phase variation
+### 1. Default single-phase training run
 
 ```python
-VARIATIONS = {
+TRAINING_RUNS = {
     "defaultSettings": None,
 }
 ```
@@ -36,10 +48,10 @@ This inherits defaults from the current top-level `train.py` settings such as:
 - `CHECKPOINTS_PER_RUN`
 - `GOAT_MODEL_PATH`
 
-### 2. Single-phase variation
+### 2. Single-phase training run
 
 ```python
-VARIATIONS = {
+TRAINING_RUNS = {
     "goat_vs_smart": {
         "timesteps": 20_000_000,
         "opponent_ai": OPP_TIGER_SMART,
@@ -52,7 +64,7 @@ VARIATIONS = {
 ### 3. Multi-phase curriculum
 
 ```python
-VARIATIONS = {
+TRAINING_RUNS = {
     "greedy_to_smart_mix": [
         {"timesteps": 10_000_000, "opponent_ai": OPP_TIGER_GREEDY},
         {"timesteps": 10_000_000, "opponent_ai": OPP_TIGER_SMART},
@@ -62,7 +74,7 @@ VARIATIONS = {
 }
 ```
 
-In a multi-phase variation, the runner keeps training the same model across all listed phases.
+In a multi-phase training run, the runner keeps training the same model across all listed phases.
 
 ## Supported Control Keys
 
@@ -152,14 +164,14 @@ Examples:
 - `REWARD_REPEAT_STATE`
 - `BASE_TIGER_CAPTURE_BIAS`
 
-Put these keys directly in the variation or phase dict.
+Put these keys directly in the training run or phase dict.
 
 ## Current Template
 
 This is a complete current template aligned with the live knobs in `env_tng.py`.
 
 ```python
-VARIATIONS = {
+TRAINING_RUNS = {
     "blank_template": {
         "timesteps": 50_000_000,
         "opponent_ai": None,
@@ -219,7 +231,7 @@ VARIATIONS = {
 ### Minimal ablation
 
 ```python
-VARIATIONS = {
+TRAINING_RUNS = {
     "no_bubble": {
         "REWARD_BUBBLE_SPACE": 0.0,
     },
@@ -231,7 +243,7 @@ This inherits global training defaults and only overrides one knob.
 ### Fixed smart-tiger goat run
 
 ```python
-VARIATIONS = {
+TRAINING_RUNS = {
     "goat_vs_ST": {
         "timesteps": 50_000_000,
         "opponent_ai": OPP_TIGER_SMART,
@@ -242,7 +254,7 @@ VARIATIONS = {
 ### Goat curriculum
 
 ```python
-VARIATIONS = {
+TRAINING_RUNS = {
     "goat_GT_to_ST_to_mix": [
         {"timesteps": 50_000_000, "opponent_ai": OPP_TIGER_GREEDY},
         {"timesteps": 30_000_000, "opponent_ai": OPP_TIGER_SMART},
@@ -255,7 +267,7 @@ VARIATIONS = {
 ### Tiger learner against mixed goat opponents
 
 ```python
-VARIATIONS = {
+TRAINING_RUNS = {
     "tiger_vs_mixed_goats": {
         "timesteps": 20_000_000,
         "opponent_ai": OPP_GOAT_MODEL,
@@ -285,7 +297,7 @@ Use this instead:
 Example of the current correct style:
 
 ```python
-VARIATIONS = {
+TRAINING_RUNS = {
     "direct_override": {
         "opponent_ai": OPP_TIGER_SMART,
         "REWARD_BLOCK_TIGER": 0.12,
@@ -304,12 +316,16 @@ If a key is omitted from a phase dict:
 - `checkpoints_per_run` falls back to global `CHECKPOINTS_PER_RUN`
 - `goat_model_path` falls back to global `GOAT_MODEL_PATH`
 
-If a variation is `None`, all of those defaults apply automatically.
+If a training run is `None`, all of those defaults apply automatically.
 
 ## Short Takeaways
 
-- Keep variation dicts flat.
+- Keep training run dicts flat.
 - Use `opponent_ai`, not `tiger_ai`.
 - Put reward knobs directly in the phase dict.
 - Use `list[dict]` when you want a curriculum that continues the same model.
 - `mix_prob` changes meaning depending on the learner role.
+
+## Output naming in Version 1.0 final preparation
+
+New script metadata uses `run_name`, `run_slug`, and `run_core`. Notebook metadata and results use `run_name` for the configured name and `run_folder_name` for the unique output folder (for example, `baseline_2` on a repeated execution). Notebook timing summaries use `training_runs`, keyed by unique folder name. Training result tables and evaluation exports use `run_name`. Existing saved artifacts are unchanged; old custom analysis code must use the new field names when reading new outputs. Saved model and phase-settings loading formats are unchanged.

@@ -214,7 +214,7 @@ Evaluation runner for both single-matchup debug/eval flows and full goat-model v
 
 # `train.py`
 
-MaskablePPO training runner for experiment suites made of one or more variations, where each variation can be a single phase or a multi-phase curriculum.
+MaskablePPO training runner for experiment suites made of one or more training runs, where each training run can be a single phase or a multi-phase curriculum.
 
 ### Core user config
 
@@ -237,12 +237,10 @@ MaskablePPO training runner for experiment suites made of one or more variations
 - PPO hyperparameters:
   `GAMMA`, `LEARNING_RATE`, `ENT_COEF`, `N_STEPS`, `BATCH_SIZE`, `N_EPOCHS`.
 
-### Variation schema
+### Training run schema
 
 - `CONTROL_KEYS`
   Phase-level control keys: `timesteps`, `opponent_ai`, `mix_prob`, `checkpoints_per_run`, `goat_model_path`.
-- `LEGACY_VARIATION_KEYS`
-  Explicitly rejected older keys: `tiger_ai`, `reward_weights`.
 - `@dataclass(frozen=True) PhaseConfig`
   Fields:
   `timesteps`, `opponent_ai`, `mix_prob`, `checkpoints_per_run`, `goat_model_path`, `knobs`.
@@ -250,7 +248,7 @@ MaskablePPO training runner for experiment suites made of one or more variations
   Builds a `PhaseConfig` from the global script defaults.
 - `normalize_phase_dict(...)`
   Validates a phase dict and splits control keys from reward knobs.
-- `normalize_variation_config(...)`
+- `normalize_run_config(...)`
   Accepts `None`, a single dict, or a list of dict phases.
 
 ### Matchup and naming helpers
@@ -259,10 +257,10 @@ MaskablePPO training runner for experiment suites made of one or more variations
   Builds tags like `GvGT`, `GvST`, `GvMixT`, `TvRG`, or `TvMG`.
 - `resolve_opponent_or_exit(learner_role, opponent_ai) -> tuple[str, str]`
   Converts the unified opponent selector into `(tiger_ai_mode, goat_opponent_ai)`.
-- `resolve_variation_core(phases) -> str`
-  Chooses the variation-level matchup tag across one or more phases.
+- `resolve_run_core(phases) -> str`
+  Chooses the training run-level matchup tag across one or more phases.
 - `_slugify(text)`
-  Filesystem-safe experiment and variation naming helper.
+  Filesystem-safe experiment and training run naming helper.
 
 ### Model and mask helpers
 
@@ -303,7 +301,7 @@ MaskablePPO training runner for experiment suites made of one or more variations
   `meta/`, `tb/`, `checkpoints/`, `models/`, `eval/`, `logs/`
 - `_git_commit_or_unknown()`
   Best-effort git hash capture for reproducibility.
-- `write_run_metadata(layout, variation_name, variation_core, phases, run_stamp)`
+- `write_run_metadata(layout, run_name, run_core, phases, run_stamp)`
   Writes config, git commit, and notes files under `meta/`.
 - `log_matchup_info(model_obj, learner_role, tiger_ai, resolved_goat_ai, mix_prob)`
   Records matchup scalars into TensorBoard.
@@ -312,18 +310,18 @@ MaskablePPO training runner for experiment suites made of one or more variations
 
 ### Core runner
 
-- `run_single_variation(variation_name, variation_config)`
-  Main training entry point for one variation.
+- `run_single_training_run(run_name, run_config)`
+  Main training entry point for one training run.
 - Per phase it:
   resolves the matchup, builds `SubprocVecEnv`, installs callbacks, configures or resumes the model, trains, saves checkpoints, saves phase finals, and tracks the best phase model.
 - Final return payload includes:
-  variation name, episode count, goat and tiger rates, timeout rates, and the final saved model path.
+  training run name, episode count, goat and tiger rates, timeout rates, and the final saved model path.
 
 ### Main flow
 
-- Prints the experiment header and resolved matchup tags for every variation.
-- Iterates `VARIATIONS.items()`.
-- Prints a final per-variation result table.
+- Prints the experiment header and resolved matchup tags for every training run.
+- Iterates `TRAINING_RUNS.items()`.
+- Prints a final per-training run result table.
 
 # `gui.py`
 

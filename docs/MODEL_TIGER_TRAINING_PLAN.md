@@ -24,7 +24,7 @@ The current Version 1 notebook will be published separately. This document is a 
 - Add `TIGER_MODEL_PATH = None` beside the existing Goat model path.
 - Allow notebook settings `LEARNER_ROLE = "goat"` and `OPPONENT = "model"`.
 - Add `OPP_TIGER_MODEL = "tiger_model"` to the script's opponent selector.
-- Support `tiger_model_path` overrides in variations and curriculum phases; inherit the global path when omitted.
+- Support `tiger_model_path` overrides in training runs and curriculum phases; inherit the global path when omitted.
 - Require `MIX_PROB = None` for Model Tiger phases. Reject Model Tiger plus mixing explicitly, while preserving existing scripted Tiger and Random/Model Goat mixing.
 - Preserve current default matchups and keep notebook settings in its single configuration cell, with basic settings first.
 

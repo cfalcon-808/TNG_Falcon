@@ -8,11 +8,17 @@ Follow the [quickstart](Important_Docs/QUICKSTART.md) to install dependencies, p
 
 For Colab or Jupyter, open the standalone [training and evaluation notebook](TnG_Notebook.ipynb). Edit the configuration cell near the top, then run the notebook in order. It includes the environment, training, and a separate final evaluation section; no repository clone is required.
 
+**Version 1.0 · Final preparation: October 20, 2026**
+
+An experiment contains named `TRAINING_RUNS`. Each run config defines an independent training job; phase configs continue the same model through stages. See the [run config reference](Important_Docs/TRAINING_RUN_CONFIGS.md) for notebook/script differences.
+
+[Future Plans](Important_Docs/FUTURE_PLANS.ipynb) covers proposed saved Tiger training, opponent pools, sticky sampling, and randomized starts. These are planned features, not current training options.
+
 ## Capabilities
 
 - Placement and movement phases with legal-action masking.
 - Goat and tiger training, scripted and model opponents, and opponent mixing.
-- Configurable handcrafted rewards, experiment variations, and curricula.
+- Configurable handcrafted rewards, experiment training runs, and curricula.
 - Checkpoints, resumed training, TensorBoard metrics, and run metadata.
 - Single-model evaluation and matchup sweeps with CSV/JSON exports.
 - GUI play as either side, player versus player, model assistance, and replays.
@@ -42,10 +48,11 @@ Start here when setting up the project or planning a training experiment.
 | --- | --- |
 | [Quickstart](Important_Docs/QUICKSTART.md) | Installation, playing the game, evaluating models, and starting training |
 | [Training guide](Important_Docs/TRAIN_SCRIPT_DETAILED_GUIDE.md) | Training settings, opponents, logging, checkpoints, and the training workflow |
-| [Variations and curricula](Important_Docs/VARIATION_CONFIGS.md) | Configuring experiment variations and training across multiple phases |
+| [Training runs and curricula](Important_Docs/TRAINING_RUN_CONFIGS.md) | Configuring experiment training runs and training across multiple phases |
 | [Reward reference](Important_Docs/REWARD_REFERENCE.md) | Reward components and settings for designing experiments |
 | [Robust goat training strategy](Important_Docs/ROBUST_GOAT_TRAINING_STRATEGY.txt) | Experiment notes on continued training and mixing Greedy and Smart Tiger opponents |
 | [Versions and progress](Important_Docs/VERSIONS_AND_PROGRESS.ipynb) | Shared version history and a simple template for students to record changes, results, and next steps |
+| [Future plans](Important_Docs/FUTURE_PLANS.ipynb) | Proposed opponent pools, sticky opponent sampling, and randomized starting states, with complexity and success checks |
 
 ## docs: technical references
 

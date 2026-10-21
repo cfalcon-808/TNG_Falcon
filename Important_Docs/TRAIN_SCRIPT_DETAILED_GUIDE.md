@@ -1,8 +1,8 @@
 # Train Detailed Guide
 ### `If using vscode use ctrl+shift+V to view this as compiled mardown`  
 
-Version context: `train.py` (`mppo_train3.0`) + `env_tng.py` (`env6.0`)
-Last updated: 2026-04-01
+Version context: `train.py` (`mppo_train4.0`) + `env_tng.py` (`env6.0`)
+Last updated: 2026-10-20
 
 This keeps the same section structure as the older Falcon guide, but it documents the current repo entry point: `train.py`.
 
@@ -10,7 +10,7 @@ This keeps the same section structure as the older Falcon guide, but it document
 
 `train.py` is the main MaskablePPO training runner for this repo.
 
-It runs an experiment suite made of one or more named variations. Each variation can be:
+It runs an experiment suite made of one or more named training runs. Each training run can be:
 
 - a baseline/default run
 - a single-phase run with config overrides
@@ -82,9 +82,9 @@ The current file selects `N_STEPS`, `BATCH_SIZE`, and `N_EPOCHS` from the `DEVIC
 
 `GOAT_MODEL_PATH` is only relevant when tiger-learner runs use goat-model opponents.
 
-### F. Variation definitions
+### F. Training run definitions
 
-- `VARIATIONS`
+- `TRAINING_RUNS`
 
 This is the main experiment-design surface for the script.
 
@@ -118,12 +118,12 @@ python train.py
 
 ### Startup behavior
 
-1. Prints experiment summary and one core tag per variation
-2. Iterates through all entries in `VARIATIONS`
-3. For each variation:
-   - `normalize_variation_config(...)` converts the config into a phase list
-   - `resolve_variation_core(...)` computes the matchup/core tag
-   - `run_single_variation(...)` executes the training flow one phase at a time
+1. Prints experiment summary and one core tag per training run
+2. Iterates through all entries in `TRAINING_RUNS`
+3. For each training run:
+   - `normalize_run_config(...)` converts the config into a phase list
+   - `resolve_run_core(...)` computes the matchup/core tag
+   - `run_single_training_run(...)` executes the training flow one phase at a time
 
 ### Per-phase behavior
 
@@ -140,9 +140,9 @@ python train.py
 7. Track the best phase model by win-rate score
 8. Close the vectorized env
 
-### End of variation
+### End of training run
 
-At the end of a variation, the runner:
+At the end of a training run, the runner:
 
 - aggregates goat/tiger/max-timeout/repeat-timeout rates
 - saves a `best_*` model copy if a best phase was found
@@ -181,19 +181,19 @@ Per-experiment folders:
 Checkpoints:
 
 ```text
-cp_<ALGO>_<CORE>_<variation_slug>_<run_stamp>_*.zip
+cp_<ALGO>_<CORE>_<run_slug>_<run_stamp>_*.zip
 ```
 
 Phase-final models:
 
 ```text
-final_<variation_slug>_<run_stamp>_phase_XX.zip
+final_<run_slug>_<run_stamp>_phase_XX.zip
 ```
 
 Best model copies:
 
 ```text
-best_<variation_slug>_<run_stamp>.zip
+best_<run_slug>_<run_stamp>.zip
 ```
 
 Usually best == final
@@ -226,21 +226,23 @@ The runner logs three main groups of custom metrics.
 
 For actual training interpretation, read outcome metrics first and optimizer-health metrics second.
 
-## 7. Detailed Variation Guide
+## 7. Detailed Training run Guide
 
 This is the most important section for experiment design.
 
-A variation is one key-value entry in `VARIATIONS`.
+A training run is one key-value entry in `TRAINING_RUNS`.
 
-- the key is the variation name
-- the value controls how it runs
+- the key is the training run name
+- the value is its run config: defaults, a single phase config, or a list of phase configs
 
-### 7.1 Variation formats
+An experiment groups independent training runs. Within a run, successive phase configs continue the same model. Training phases differ from game placement/movement phases. Script phase configs inherit omitted controls from global settings and omitted knobs from environment defaults, never from the previous phase. See the [run config reference](TRAINING_RUN_CONFIGS.md) for notebook-only shared run defaults and `phases` syntax.
+
+### 7.1 Training run formats
 
 #### Format A: `None` baseline
 
 ```python
-VARIATIONS = {
+TRAINING_RUNS = {
     "baseline": None,
 }
 ```
@@ -257,7 +259,7 @@ Meaning:
 #### Format B: single-phase dict
 
 ```python
-VARIATIONS = {
+TRAINING_RUNS = {
     "no_bubble": {
         "timesteps": 30_000_000,
         "opponent_ai": OPP_TIGER_SMART,
@@ -277,7 +279,7 @@ Meaning:
 #### Format C: multi-phase curriculum
 
 ```python
-VARIATIONS = {
+TRAINING_RUNS = {
     "goat_GT_to_ST_to_mix": [
         {"timesteps": 20_000_000, "opponent_ai": OPP_TIGER_GREEDY},
         {"timesteps": 20_000_000, "opponent_ai": OPP_TIGER_SMART},
@@ -346,12 +348,12 @@ These map to `env_tng.py` `DEFAULT_KNOBS`:
 
 Unknown keys are warned by the environment constructor and ignored.
 
-### 7.4 Practical variation patterns
+### 7.4 Practical training run patterns
 
 #### Pattern 1: baseline plus single ablations
 
 ```python
-VARIATIONS = {
+TRAINING_RUNS = {
     "baseline": None,
     "no_bubble": {"REWARD_BUBBLE_SPACE": 0.0},
     "no_block": {"REWARD_BLOCK_TIGER": 0.0},
@@ -365,7 +367,7 @@ VARIATIONS = {
 #### Pattern 2: magnitude sweep
 
 ```python
-VARIATIONS = {
+TRAINING_RUNS = {
     "bubble_025": {"REWARD_BUBBLE_SPACE": 0.25},
     "bubble_050": {"REWARD_BUBBLE_SPACE": 0.50},
     "bubble_100": {"REWARD_BUBBLE_SPACE": 1.00},
@@ -376,7 +378,7 @@ VARIATIONS = {
 #### Pattern 3: robustness curriculum for goat learner
 
 ```python
-VARIATIONS = {
+TRAINING_RUNS = {
     "robust_goat_curriculum": [
         {"timesteps": 30_000_000, "opponent_ai": OPP_TIGER_GREEDY},
         {"timesteps": 20_000_000, "opponent_ai": OPP_TIGER_SMART},
@@ -389,7 +391,7 @@ VARIATIONS = {
 #### Pattern 4: tiger learner with mixed goat opponents
 
 ```python
-VARIATIONS = {
+TRAINING_RUNS = {
     "tiger_vs_mixed_goats": [
         {
             "timesteps": 30_000_000,
@@ -406,11 +408,11 @@ With current runner behavior, that means:
 - 40% goat-model opponent
 - 60% random-goat opponent
 
-### 7.5 How to add a new variation safely
+### 7.5 How to add a new training run safely
 
 Checklist:
 
-1. Pick a unique variation name
+1. Pick a unique training run name
 2. Decide single-phase vs multi-phase
 3. Set timesteps per phase
 4. Set `opponent_ai` and optional `mix_prob`
@@ -423,7 +425,7 @@ Recommended debug pass:
 - `DEBUG_MODE = True`
 - smaller `TIMESTEPS`
 - lower `NUM_CPU` if startup or memory is unstable
-- start with one variation before launching a large sweep
+- start with one training run before launching a large sweep
 
 ### 7.6 Common mistakes
 
@@ -460,13 +462,13 @@ This is useful for:
 ```python
 LEARNER_ROLE = GOAT_LEARNER
 OPPONENT_AI = OPP_TIGER_GREEDY
-VARIATIONS = {"baseline": None}
+TRAINING_RUNS = {"baseline": None}
 ```
 
-### Example B: two-variation ablation run
+### Example B: two-training run ablation run
 
 ```python
-VARIATIONS = {
+TRAINING_RUNS = {
     "baseline": None,
     "ablate_repeat_penalty": {"REWARD_REPEAT_STATE": 0.0},
 }
@@ -475,7 +477,7 @@ VARIATIONS = {
 ### Example C: short curriculum run
 
 ```python
-VARIATIONS = {
+TRAINING_RUNS = {
     "GT_ST_MIX": [
         {"timesteps": 10_000_000, "opponent_ai": OPP_TIGER_GREEDY},
         {"timesteps": 10_000_000, "opponent_ai": OPP_TIGER_SMART},

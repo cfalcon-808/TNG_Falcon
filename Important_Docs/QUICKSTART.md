@@ -45,7 +45,7 @@ NUM_CPU = 1
 CHECKPOINTS_PER_RUN = 2
 ```
 
-The script retains full-scale GPU/multiple-worker defaults, so apply these small settings before running on a CPU machine. The default `VARIATIONS = {"baseline": None}` uses the global settings and the environment's handcrafted rewards.
+The script uses full-scale CPU/multiple-worker defaults, so apply these small settings before running on a CPU machine. The default `TRAINING_RUNS = {"baseline": None}` uses the global settings and the environment's handcrafted rewards.
 
 ```powershell
 python train.py
@@ -56,12 +56,12 @@ Outputs go under `artifacts/<experiment_name>/`. A short run verifies the workfl
 
 ## 5. Experiment
 
-- Change reward knobs in a variation to compare reward settings.
+- Change reward knobs in a training run to compare reward settings.
 - Use a list of phase dictionaries for a curriculum.
 - Set `RESUME_MODEL_PATH` to a saved policy to continue training.
 - For tiger training, select `TIGER_LEARNER` and `OPP_GOAT_RANDOM` or `OPP_GOAT_MODEL`. For model opponents, set `GOAT_MODEL_PATH` to an existing file under `stable_models/models/Goats/`.
 
-See [variations](VARIATION_CONFIGS.md), the [training guide](TRAIN_SCRIPT_DETAILED_GUIDE.md), and [rewards](REWARD_REFERENCE.md).
+See [training runs](TRAINING_RUN_CONFIGS.md), the [training guide](TRAIN_SCRIPT_DETAILED_GUIDE.md), and [rewards](REWARD_REFERENCE.md).
 
 Inspect a policy:
 

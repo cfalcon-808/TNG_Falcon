@@ -8,7 +8,7 @@
 #  Purpose / Goal:
 #    Evaluate trained goat or tiger policies in two modes:
 #      1) Single-mode debug + evaluation for one configured matchup
-#      2) Sweep-mode permutation matrix across goat-model and tiger-model sets
+#      2) Sweep-mode matrix of goat models against scripted and model Tigers
 #
 #  Overview:
 #    - Uses env_tng.TnGEnv with action masking (MaskablePPO-compatible)
@@ -16,7 +16,7 @@
 #    - Supports scripted and model-driven opponents:
 #        tiger_ai: greedy | smart | model
 #        goat_opponent_ai: random | model
-#    - Sweep mode runs full goat-model x tiger-model permutations and exports:
+#    - Sweep mode runs goat models against configured Tiger opponents and exports:
 #        artifacts/eval_sweeps/sweep_results_<timestamp>.json
 #        artifacts/eval_sweeps/sweep_results_<timestamp>.csv
 #
@@ -33,7 +33,7 @@
 #
 #    3) For sweep mode:
 #         - Set EVAL_MODE = "sweep"
-#         - Fill SWEEP_CONFIG["goat_models"] and SWEEP_CONFIG["tiger_models"]
+#         - Fill SWEEP_CONFIG["goat_models"], ["tiger_opponents"], and ["tiger_models"]
 #         - Run:
 #             python eval.py
 #
@@ -171,13 +171,14 @@ PRINT_DEBUG_TO_CONSOLE: bool = False
 DEBUG_MODE: bool = True
 
 # "single": evaluate one learner model against one opponent setup
-# "sweep" : evaluate all tiger-model x goat-model permutations
+# "sweep" : evaluate goat models against scripted Tigers and saved Tiger models
 EVAL_MODE: str = "sweep"  # "single" | "sweep"
 
 # SINGLE MODE CONFIG
+# Final model from L1_Robust_Goat_01. Run python eval.py smart for Smart Tiger.
 SINGLE_CONFIG = {
     # learner model to evaluate; None -> EXPLICIT_MODEL_PATH (CLI) -> latest in MODELS_DIR
-    "model_path": None,
+    "model_path": "artifacts/L1_Robust_Goat_01/GvsMixT/models/phase_03_final.zip",
     # "goat" or "tiger"
     "learner_role": GOAT_LEARNER,
     # used when learner_role == goat
@@ -193,23 +194,18 @@ SINGLE_CONFIG = {
 }
 
 # SWEEP MODE CONFIG
+# Scripted opponents and saved Tiger models can both be included in a sweep.
 SWEEP_CONFIG = {
-    "n_eval_games": 100,
+    "n_eval_games": 100,  # Per opponent: 200 games total for this experiment
     "deterministic": True,
     "save_results": True,
-    "results_dir": "artifacts/eval_sweeps",
-    "tiger_models": {
-        "robust_tiger_030726": r"stable_models\models\Tigers\mppo_RobustTiger030726.zip",
-        "best_tiger_vs_normal_goat_10M": r"stable_models\models\Tigers\best_tiger_vs_normal_goat_10M_20260307_220408.zip",
-        "best_tiger_vs_smart_goat_10M": r"stable_models\models\Tigers\best_tiger_vs_smart_goat_10M_20260307_225859.zip",
-    },
+    "results_dir": "artifacts/L1_Robust_Goat_01/GvsMixT/eval",
+    "tiger_opponents": [TIGER_AI_GREEDY, TIGER_AI_SMART],
+    "tiger_models": {},  # Optional: {"tiger_name": "path/to/tiger_model.zip"}
     "goat_models": {
-        "normal_goat_030726": r"stable_models\models\Goats\mppo_NormalGoat030726.zip",
-        "smart_goat_030726": r"stable_models\models\Goats\mppo_SmartGoat030726.zip",
-        "robust_goat_030726": r"stable_models\models\Goats\mppo_RobustGoat030726.zip",
+        "L1_Robust_Goat_02_GvsMixT": "artifacts\L1_Robust_Goat_02\GvsMixT\checkpoints\phase_03_9200896_steps.zip",
     },
 }
-
 
 # ============================================================
 #  LOGGING / TEE
@@ -863,22 +859,27 @@ def run_sweep_mode() -> List[dict]:
     n_games = int(SWEEP_CONFIG.get("n_eval_games", N_EVAL_GAMES))
     deterministic = bool(SWEEP_CONFIG.get("deterministic", True))
 
-    if not tiger_models:
-        print("[SWEEP] No tiger models configured in SWEEP_CONFIG['tiger_models'].")
+    scripted_opponents = SWEEP_CONFIG.get("tiger_opponents", [])
+    if any(mode not in {TIGER_AI_GREEDY, TIGER_AI_SMART} for mode in scripted_opponents):
+        raise ValueError("SWEEP_CONFIG['tiger_opponents'] must contain only 'greedy' or 'smart'.")
+    opponents = [(mode, mode, None) for mode in scripted_opponents]
+    opponents.extend((name, TIGER_AI_MODEL, path) for name, path in tiger_models.items())
+    if not opponents:
+        print("[SWEEP] No scripted Tiger opponents or Tiger models configured.")
         return []
     if not goat_models:
         print("[SWEEP] No goat models configured in SWEEP_CONFIG['goat_models'].")
         return []
 
     print("\n" + "=" * 70)
-    print(f"[SWEEP] Starting permutation sweep: {len(goat_models)} goat x {len(tiger_models)} tiger")
+    print(f"[SWEEP] Starting permutation sweep: {len(goat_models)} goat x {len(opponents)} tiger opponents")
     print(f"[SWEEP] Games per matchup: {n_games} | Deterministic: {deterministic}")
     print("=" * 70)
 
     results: List[dict] = []
 
     for goat_name, goat_path in goat_models.items():
-        for tiger_name, tiger_path in tiger_models.items():
+        for tiger_name, tiger_ai, tiger_path in opponents:
             label = f"{goat_name} vs {tiger_name}"
             print(f"\n[SWEEP] Matchup: {label}")
             res = run_batch_evaluation(
@@ -886,7 +887,7 @@ def run_sweep_mode() -> List[dict]:
                 n_games=n_games,
                 deterministic=deterministic,
                 learner_role=GOAT_LEARNER,
-                tiger_ai=TIGER_AI_MODEL,
+                tiger_ai=tiger_ai,
                 goat_opponent_ai=GOAT_AI_RANDOM,
                 tiger_model_path=tiger_path,
                 summary_label=label,
