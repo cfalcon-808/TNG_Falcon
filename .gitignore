@@ -3,6 +3,7 @@
 /cleaned_student_version_test.py
 tests/
 OldFiles/
+Masking_Artifacts/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

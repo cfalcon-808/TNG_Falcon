@@ -2,8 +2,8 @@
 #  Project    : Tigers & Goats
 #  Module     : Maskable PPO Environment
 #  File       : env_tng.py
-#  Version    : 1.0
-#  Last Update: 2026-10-17
+#  Version    : 1.1
+#  Last Update: 2026-10-25
 #
 #  Purpose / Goal:
 #    Provide a stable Gymnasium environment for training robust goat/tiger
@@ -192,6 +192,7 @@ class TnGEnv(gym.Env):
             tiger_model_predict_fn=None,
             reward_fn=None,
             max_turns: int | None = None,
+            truncate_on_invalid: bool = True,
             ):
         """Initialize environment state, tuning knobs, spaces, and board topology."""
         super(TnGEnv, self).__init__()
@@ -204,6 +205,7 @@ class TnGEnv(gym.Env):
         self._goat_model_predict_fn = goat_model_predict_fn  # callable(obs, mask)->flat action
         self._tiger_model_predict_fn = tiger_model_predict_fn  # callable(obs, mask)->flat action
         self.reward_fn = reward_fn or self.sparse_reward
+        self.truncate_on_invalid = truncate_on_invalid
 
         # Load any tuning values passed to this function.
         if reward_weights is not None:
@@ -384,6 +386,14 @@ class TnGEnv(gym.Env):
             result = self._step_tiger_transition(action)
         else:
             result = self._step_goat_transition(action)
+        if not self.truncate_on_invalid and result[4].get("invalid_action", False):
+            # Illegal attempts consume a turn but leave the board and opponent idle.
+            obs, reward, terminated, truncated, info = result
+            self.terminate = self.turns >= self.max_turns
+            if self.terminate:
+                info["invalid_reason"] = info["reason"]
+                info.update(reason="max_timeout", winner="MaxTimeout")
+            result = obs, reward, False, self.terminate, info
         return self._apply_reward_fn(prev_obs, action, result)
 
     def get_state(self):
@@ -808,8 +818,8 @@ class TnGEnv(gym.Env):
             return self._w("REWARD_INVALID_SOFT")
 
         if reason == "invalid_hard":
-            # Large penalty for a serious invalid action that terminates the episode
-            return abs(self._w("REWARD_INVALID_HARD"))
+            # Illegal tiger actions must be penalized, including when play continues.
+            return -abs(self._w("REWARD_INVALID_HARD"))
 
         # --------------------------------------------------------
         # 2. Base step penalty
