@@ -1333,6 +1333,10 @@ class TnGEnv(gym.Env):
         for dir_code, neigh in self.move_map.get(t_from, {}).items():
             if neigh is None:
                 continue
+            # Same hub constraint as _tiger_moves: row-1 nodes (b1..e1) cannot capture "up" through b0.
+            # Without it, 4 -> 0 -> 2 is mistaken for the capture 4 -> 3 -> 2.
+            if t_from in (2, 3, 4, 5) and dir_code == 1:
+                continue
             jump = self.move_map.get(neigh, {}).get(dir_code, None)
             if jump == t_to:
                 return neigh
