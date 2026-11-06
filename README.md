@@ -8,6 +8,8 @@ Follow the [quickstart](Important_Docs/QUICKSTART.md) to install dependencies, p
 
 For Colab or Jupyter, open the standalone [general PPO notebook](TnG_PPO_Notebook.ipynb) for optional learner masking and masked/unmasked evaluation, or the [MPPO notebook](TnG_MPPO_Notebook.ipynb) for masked training and evaluation. Both use MaskablePPO. Edit the configuration cell near the top, then run the chosen notebook in order. Each includes the environment, training, and a separate final evaluation section; no repository clone is required.
 
+The [control-center notebook](TnG_Notebook.ipynb) combines both workflows with the older control hub in one place. Tick the features to run in its first cell, then set the grouped options in the second. It adds model listing, diagnostics, a GUI launcher, and plain PPO with a configurable loss (clip, KL penalty or SPO policy losses, MSE or Huber value loss, and an optional legality loss).
+
 **Version 1.1 · Notebook update: October 25, 2026**
 
 An experiment contains named `TRAINING_RUNS`. Each run config defines an independent training job; phase configs continue the same model through stages. See the [run config reference](Important_Docs/TRAINING_RUN_CONFIGS.md) for notebook/script differences.
@@ -31,6 +33,7 @@ An experiment contains named `TRAINING_RUNS`. Each run config defines an indepen
 | `env_tng.py` | Game rules, environment, action masks, and rewards |
 | [`TnG_MPPO_Notebook.ipynb`](TnG_MPPO_Notebook.ipynb) | Standalone masked training, evaluation, and interactive play |
 | [`TnG_PPO_Notebook.ipynb`](TnG_PPO_Notebook.ipynb) | General PPO with optional masking, seeded comparisons, and masked/unmasked evaluation |
+| [`TnG_Notebook.ipynb`](TnG_Notebook.ipynb) | Control center: selectable features for the environment, models, training (Maskable PPO or plain PPO with a configurable loss), evaluation, diagnostics, and play |
 | `train.py` | PPO training and experiment runner |
 | `eval.py` | Evaluation and matchup sweeps |
 | `gui.py` | Tkinter game and replay viewer |
@@ -62,6 +65,7 @@ Use these when you want to understand how the code and models work.
 
 - [API index](docs/API_Index.md): reference to the main scripts, classes, functions, and command-line entry points.
 - [Network architecture and model combiner](docs/NETWORK_ARCHITECTURE_AND_MODEL_COMBINER.md): explanations of the policy network and discussion of combining models.
+- [Training mathematics](docs/TRAINING_MATHEMATICS.md): the environment and rewards as equations, every training objective (Maskable PPO, plain PPO loss variants, legality loss), how each model was trained, and the verification tests and legality study.
 
 ## stable_models: reference models and logs
 
