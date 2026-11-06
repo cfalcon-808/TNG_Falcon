@@ -1,0 +1,110 @@
+{
+  "sampled_minimax_check": {
+    "positions": 126000,
+    "mismatches": 0
+  },
+  "self_play": {
+    "goat_first_avoid_repeats_False": {
+      "table_value": "draw",
+      "result": "draw by threefold repetition",
+      "plies": 44,
+      "repeated_plies": 5,
+      "longest_repeat_run": 5,
+      "longest_shuffle": 7,
+      "first_cycle": [
+        35,
+        4
+      ],
+      "max_occurrences": 3
+    },
+    "goat_first_avoid_repeats_True": {
+      "table_value": "draw",
+      "result": "draw (no result in 400 plies)",
+      "plies": 400,
+      "repeated_plies": 2,
+      "longest_repeat_run": 1,
+      "longest_shuffle": 2,
+      "first_cycle": [
+        263,
+        32
+      ],
+      "max_occurrences": 2
+    },
+    "tiger_first_avoid_repeats_False": {
+      "table_value": "draw",
+      "result": "draw by threefold repetition",
+      "plies": 43,
+      "repeated_plies": 5,
+      "longest_repeat_run": 5,
+      "longest_shuffle": 7,
+      "first_cycle": [
+        34,
+        4
+      ],
+      "max_occurrences": 3
+    },
+    "tiger_first_avoid_repeats_True": {
+      "table_value": "draw",
+      "result": "draw (no result in 400 plies)",
+      "plies": 400,
+      "repeated_plies": 0,
+      "longest_repeat_run": 0,
+      "longest_shuffle": 1,
+      "first_cycle": null,
+      "max_occurrences": 1
+    }
+  },
+  "env_games": {
+    "perfect_goat_vs_greedy": {
+      "MaxTimeout: theoretical draw": 52,
+      "RepeatTimeout: theoretical draw": 70,
+      "Goat win": 78,
+      "mean_plies": 104.29,
+      "mean_repeated_plies": 14.57,
+      "mean_longest_repeat_run": 3.575,
+      "mean_longest_shuffle": 2.96,
+      "games_with_a_repeat": 122
+    },
+    "perfect_goat_vs_smart": {
+      "RepeatTimeout: theoretical draw": 200,
+      "mean_plies": 79.91,
+      "mean_repeated_plies": 15.48,
+      "mean_longest_repeat_run": 6.99,
+      "mean_longest_shuffle": 5.55,
+      "games_with_a_repeat": 200
+    },
+    "perfect_tiger_vs_random": {
+      "Tiger win": 193,
+      "MaxTimeout: theoretical draw": 7,
+      "mean_plies": 99.2,
+      "mean_repeated_plies": 4.78,
+      "mean_longest_repeat_run": 2.075,
+      "mean_longest_shuffle": 2.645,
+      "games_with_a_repeat": 147
+    },
+    "perfect_tiger_vs_ppo_clip_nll05_s42": {
+      "MaxTimeout: theoretical draw": 200,
+      "mean_plies": 199.0,
+      "mean_repeated_plies": 161.0,
+      "mean_longest_repeat_run": 161.0,
+      "mean_longest_shuffle": 163.0,
+      "games_with_a_repeat": 200
+    },
+    "perfect_tiger_vs_relu_maskable_s42": {
+      "MaxTimeout: theoretical draw": 200,
+      "mean_plies": 199.0,
+      "mean_repeated_plies": 148.0,
+      "mean_longest_repeat_run": 148.0,
+      "mean_longest_shuffle": 1.0,
+      "games_with_a_repeat": 200
+    },
+    "perfect_tiger_vs_stable_models": {
+      "MaxTimeout: theoretical draw": 200,
+      "mean_plies": 199.0,
+      "mean_repeated_plies": 161.0,
+      "mean_longest_repeat_run": 161.0,
+      "mean_longest_shuffle": 163.0,
+      "games_with_a_repeat": 200
+    }
+  }
+}

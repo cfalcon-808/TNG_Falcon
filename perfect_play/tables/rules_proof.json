@@ -1,0 +1,505 @@
+{
+  "local_patterns": {
+    "patterns": 433127,
+    "legality_mismatches": 0,
+    "capture_effect_mismatches": 0,
+    "discrepancies": {},
+    "seconds": 18.2,
+    "squares_read_per_piece": {
+      "tiger": {
+        "0": [
+          2,
+          3,
+          4,
+          5,
+          8,
+          9,
+          10,
+          11
+        ],
+        "1": [
+          2,
+          3,
+          7,
+          13
+        ],
+        "2": [
+          0,
+          1,
+          3,
+          4,
+          8,
+          14
+        ],
+        "3": [
+          0,
+          1,
+          2,
+          4,
+          5,
+          9,
+          15
+        ],
+        "4": [
+          0,
+          2,
+          3,
+          5,
+          6,
+          10,
+          16
+        ],
+        "5": [
+          0,
+          3,
+          4,
+          6,
+          11,
+          17
+        ],
+        "6": [
+          4,
+          5,
+          12,
+          18
+        ],
+        "7": [
+          1,
+          8,
+          9,
+          13
+        ],
+        "8": [
+          0,
+          2,
+          7,
+          9,
+          10,
+          14,
+          19
+        ],
+        "9": [
+          0,
+          3,
+          7,
+          8,
+          10,
+          11,
+          15,
+          20
+        ],
+        "10": [
+          0,
+          4,
+          8,
+          9,
+          11,
+          12,
+          16,
+          21
+        ],
+        "11": [
+          0,
+          5,
+          9,
+          10,
+          12,
+          17,
+          22
+        ],
+        "12": [
+          6,
+          10,
+          11,
+          18
+        ],
+        "13": [
+          1,
+          7,
+          14,
+          15
+        ],
+        "14": [
+          2,
+          8,
+          13,
+          15,
+          16,
+          19
+        ],
+        "15": [
+          3,
+          9,
+          13,
+          14,
+          16,
+          17,
+          20
+        ],
+        "16": [
+          4,
+          10,
+          14,
+          15,
+          17,
+          18,
+          21
+        ],
+        "17": [
+          5,
+          11,
+          15,
+          16,
+          18,
+          22
+        ],
+        "18": [
+          6,
+          12,
+          16,
+          17
+        ],
+        "19": [
+          8,
+          14,
+          20,
+          21
+        ],
+        "20": [
+          9,
+          15,
+          19,
+          21,
+          22
+        ],
+        "21": [
+          10,
+          16,
+          19,
+          20,
+          22
+        ],
+        "22": [
+          11,
+          17,
+          20,
+          21
+        ]
+      },
+      "goat_slide": {
+        "0": [
+          2,
+          3,
+          4,
+          5
+        ],
+        "1": [
+          2,
+          7
+        ],
+        "2": [
+          0,
+          1,
+          3,
+          8
+        ],
+        "3": [
+          0,
+          2,
+          4,
+          9
+        ],
+        "4": [
+          0,
+          3,
+          5,
+          10
+        ],
+        "5": [
+          0,
+          4,
+          6,
+          11
+        ],
+        "6": [
+          5,
+          12
+        ],
+        "7": [
+          1,
+          8,
+          13
+        ],
+        "8": [
+          2,
+          7,
+          9,
+          14
+        ],
+        "9": [
+          3,
+          8,
+          10,
+          15
+        ],
+        "10": [
+          4,
+          9,
+          11,
+          16
+        ],
+        "11": [
+          5,
+          10,
+          12,
+          17
+        ],
+        "12": [
+          6,
+          11,
+          18
+        ],
+        "13": [
+          7,
+          14
+        ],
+        "14": [
+          8,
+          13,
+          15,
+          19
+        ],
+        "15": [
+          9,
+          14,
+          16,
+          20
+        ],
+        "16": [
+          10,
+          15,
+          17,
+          21
+        ],
+        "17": [
+          11,
+          16,
+          18,
+          22
+        ],
+        "18": [
+          12,
+          17
+        ],
+        "19": [
+          14,
+          20
+        ],
+        "20": [
+          15,
+          19,
+          21
+        ],
+        "21": [
+          16,
+          20,
+          22
+        ],
+        "22": [
+          17,
+          21
+        ]
+      },
+      "goat_place": {
+        "0": [],
+        "1": [],
+        "2": [],
+        "3": [],
+        "4": [],
+        "5": [],
+        "6": [],
+        "7": [],
+        "8": [],
+        "9": [],
+        "10": [],
+        "11": [],
+        "12": [],
+        "13": [],
+        "14": [],
+        "15": [],
+        "16": [],
+        "17": [],
+        "18": [],
+        "19": [],
+        "20": [],
+        "21": [],
+        "22": []
+      }
+    }
+  },
+  "state_writes": [
+    "__init__ line 254: self.eaten = 0",
+    "__init__ line 255: self.phase = 0",
+    "__init__ line 256: self.goats_placed = 0",
+    "__init__ line 252: self.board[idx] = 2",
+    "reset line 348: self.board[:] = 0",
+    "reset line 352: self.eaten = 0",
+    "reset line 353: self.phase = 0",
+    "reset line 354: self.goats_placed = 0",
+    "reset line 350: self.board[idx] = 2",
+    "_step_goat_transition line 1071: self.board[t_to] = 2",
+    "_step_goat_transition line 1072: self.board[t_from] = 0",
+    "_step_goat_transition line 968: self.board[pos] = 1",
+    "_step_goat_transition line 969: self.goats_placed += 1",
+    "_step_goat_transition line 990: self.board[pos] = 0",
+    "_step_goat_transition line 991: self.board[dest] = 1",
+    "_step_goat_transition line 973: self.phase = 1",
+    "_step_goat_transition line 1067: self.board[jumped_goat_pos] = 0",
+    "_step_goat_transition line 1068: self.eaten += 1",
+    "_step_tiger_transition line 1187: self.board[dest] = 2",
+    "_step_tiger_transition line 1188: self.board[pos] = 0",
+    "_step_tiger_transition line 1193: self.board[jumped_goat_pos] = 0",
+    "_step_tiger_transition line 1194: self.eaten += 1",
+    "_step_tiger_transition line 1287: self.board[g_pos] = 1",
+    "_step_tiger_transition line 1288: self.goats_placed += 1",
+    "_step_tiger_transition line 1294: self.board[g_pos] = 0",
+    "_step_tiger_transition line 1295: self.board[g_dest] = 1",
+    "_step_tiger_transition line 1290: self.phase = 1"
+  ],
+  "transition_and_terminal_rules": [
+    "goat placement (both learner paths): board[pos] = 1, goats_placed += 1, phase = 1 once goats_placed >= 15 -> rules: gm | 1 << p, placed + 1 (placing while placed < 15)",
+    "goat slide: dest = move_map[pos][dir]; board[pos] = 0, board[dest] = 1 -> rules: gm ^ 1 << p ^ 1 << N[p, d]",
+    "tiger move: (dest, capture) from _tiger_moves keyed by (from, dir); capture removes _find_jumped_goat(from, dest) (checked above to be the goat the rules remove) and eaten += 1",
+    "tigers win when eaten >= 6 right after the capture (both paths) -> rules: the 6th capture wins at once",
+    "goats win when the tigers have no legal move on their turn (goat path: after the goat move; tiger path: after the goat reply) -> rules: a mover with no legal move loses",
+    "tigers win when the goats have no legal move (tiger path: goat_random_action returns None) -> same rule; the goat-learner path has no such check (its mask is empty and any action is invalid)",
+    "not in the solved game: the turn limit (MaxTimeout after max_turns) and RepeatTimeout (goat path, 4th occurrence of a board after the tiger reply); see README for how ply counts handle the turn limit",
+    "observation -> position: placed = 15 in the movement phase, else goats on board + eaten, because the only writes (listed) keep goats_placed = goats on board + eaten during placement"
+  ],
+  "indexing": {
+    "blocks": {
+      "0": 1771,
+      "1": 35420,
+      "2": 336490,
+      "3": 2018940,
+      "4": 8580495,
+      "5": 27457584,
+      "6": 68643960,
+      "7": 137287920,
+      "8": 223092870,
+      "9": 297457160,
+      "10": 327202876,
+      "11": 297457160,
+      "12": 223092870,
+      "13": 137287920,
+      "14": 68643960,
+      "15": 27457584
+    },
+    "indices_checked": 1846054980,
+    "failures": 0,
+    "seconds": 16.6
+  },
+  "checker_vs_rules_every_board": {
+    "blocks": {
+      "0": {
+        "boards": 1771,
+        "index_mismatches": 0,
+        "tiger_move_mismatches": 0,
+        "goat_move_mismatches": 0
+      },
+      "1": {
+        "boards": 35420,
+        "index_mismatches": 0,
+        "tiger_move_mismatches": 0,
+        "goat_move_mismatches": 0
+      },
+      "2": {
+        "boards": 336490,
+        "index_mismatches": 0,
+        "tiger_move_mismatches": 0,
+        "goat_move_mismatches": 0
+      },
+      "3": {
+        "boards": 2018940,
+        "index_mismatches": 0,
+        "tiger_move_mismatches": 0,
+        "goat_move_mismatches": 0
+      },
+      "4": {
+        "boards": 8580495,
+        "index_mismatches": 0,
+        "tiger_move_mismatches": 0,
+        "goat_move_mismatches": 0
+      },
+      "5": {
+        "boards": 27457584,
+        "index_mismatches": 0,
+        "tiger_move_mismatches": 0,
+        "goat_move_mismatches": 0
+      },
+      "6": {
+        "boards": 68643960,
+        "index_mismatches": 0,
+        "tiger_move_mismatches": 0,
+        "goat_move_mismatches": 0
+      },
+      "7": {
+        "boards": 137287920,
+        "index_mismatches": 0,
+        "tiger_move_mismatches": 0,
+        "goat_move_mismatches": 0
+      },
+      "8": {
+        "boards": 223092870,
+        "index_mismatches": 0,
+        "tiger_move_mismatches": 0,
+        "goat_move_mismatches": 0
+      },
+      "9": {
+        "boards": 297457160,
+        "index_mismatches": 0,
+        "tiger_move_mismatches": 0,
+        "goat_move_mismatches": 0
+      },
+      "10": {
+        "boards": 327202876,
+        "index_mismatches": 0,
+        "tiger_move_mismatches": 0,
+        "goat_move_mismatches": 0
+      },
+      "11": {
+        "boards": 297457160,
+        "index_mismatches": 0,
+        "tiger_move_mismatches": 0,
+        "goat_move_mismatches": 0
+      },
+      "12": {
+        "boards": 223092870,
+        "index_mismatches": 0,
+        "tiger_move_mismatches": 0,
+        "goat_move_mismatches": 0
+      },
+      "13": {
+        "boards": 137287920,
+        "index_mismatches": 0,
+        "tiger_move_mismatches": 0,
+        "goat_move_mismatches": 0
+      },
+      "14": {
+        "boards": 68643960,
+        "index_mismatches": 0,
+        "tiger_move_mismatches": 0,
+        "goat_move_mismatches": 0
+      },
+      "15": {
+        "boards": 27457584,
+        "index_mismatches": 0,
+        "tiger_move_mismatches": 0,
+        "goat_move_mismatches": 0
+      }
+    },
+    "boards": 1846054980,
+    "mismatches": 0,
+    "seconds": 614.3
+  }
+}

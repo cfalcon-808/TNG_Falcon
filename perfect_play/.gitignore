@@ -1,0 +1,6 @@
+tables/*
+!tables/metadata.json
+!tables/verification.json
+!tables/solve_log.txt
+!tables/rules_proof.json
+!tables/check_all.json

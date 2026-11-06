@@ -1,0 +1,41 @@
+[15:19:34] GPU NVIDIA GeForce RTX 5070 Ti; output /home/optimalcooke/PYTHONPROJECTS/TNG/TNG_Falcon/perfect_play/tables
+[15:19:47] movement k=10 (c=5): 327,202,876 boards, 114 levels, check OK, 13s | goats-to-move W/L/D 450,632/197,613,059/129,139,185 | tigers-to-move W/L/D 295,026,345/75,908/32,100,623 | max DTM 113
+[15:19:51] movement k=11 (c=4): 297,457,160 boards, 115 levels, check OK, 3s | goats-to-move W/L/D 2,510,150/26,456,978/268,490,032 | tigers-to-move W/L/D 144,753,122/500,662/152,203,376 | max DTM 113
+[15:19:53] movement k=12 (c=3): 223,092,870 boards, 115 levels, check OK, 2s | goats-to-move W/L/D 5,470,178/169,495/217,453,197 | tigers-to-move W/L/D 15,930,856/1,246,621/205,915,393 | max DTM 113
+[15:19:55] movement k=13 (c=2): 137,287,920 boards, 184 levels, check OK, 2s | goats-to-move W/L/D 14,122,466/0/123,165,454 | tigers-to-move W/L/D 84,228/3,372,130/133,831,562 | max DTM 183
+[15:19:56] movement k=14 (c=1): 68,643,960 boards, 210 levels, check OK, 1s | goats-to-move W/L/D 25,314,185/0/43,329,775 | tigers-to-move W/L/D 0/8,326,221/60,317,739 | max DTM 209
+[15:19:56] movement k=15 (c=0): 27,457,584 boards, 211 levels, check OK, 0s | goats-to-move W/L/D 18,982,070/0/8,475,514 | tigers-to-move W/L/D 0/9,823,816/17,633,768 | max DTM 210
+[15:20:01] placement n=14: 1,351,141,946 positions per side, 5s | goats-to-move W/L/D 122,449,438/233,212,215/995,480,293 | tigers-to-move W/L/D 472,917,124/42,011,121/836,213,701
+[15:20:03] placement n=13: 1,505,590,856 positions per side, 2s | goats-to-move W/L/D 187,871,549/194,247,876/1,123,471,431 | tigers-to-move W/L/D 408,942,677/64,824,212/1,031,823,967
+[15:20:04] placement n=12: 1,505,590,856 positions per side, 2s | goats-to-move W/L/D 248,764,443/125,676,949/1,131,149,464 | tigers-to-move W/L/D 287,659,573/85,490,468/1,132,440,815
+[15:20:06] placement n=11: 1,351,141,946 positions per side, 1s | goats-to-move W/L/D 282,405,385/63,183,403/1,005,553,158 | tigers-to-move W/L/D 161,783,427/95,264,619/1,094,093,900
+[15:20:07] placement n=10: 1,081,142,370 positions per side, 1s | goats-to-move W/L/D 272,326,356/24,475,836/784,340,178 | tigers-to-move W/L/D 71,565,148/89,295,383/920,281,839
+[15:20:08] placement n=9: 762,519,989 positions per side, 1s | goats-to-move W/L/D 221,699,880/7,032,279/533,787,830 | tigers-to-move W/L/D 23,982,872/70,212,585/668,324,532
+[15:20:08] placement n=8: 467,081,769 positions per side, 0s | goats-to-move W/L/D 151,373,142/1,395,895/314,312,732 | tigers-to-move W/L/D 5,690,928/46,090,267/415,300,574
+[15:20:08] placement n=7: 244,325,389 positions per side, 0s | goats-to-move W/L/D 85,818,757/167,187/158,339,445 | tigers-to-move W/L/D 840,742/25,070,439/218,414,208
+[15:20:08] placement n=6: 107,072,889 positions per side, 0s | goats-to-move W/L/D 39,868,955/8,713/67,195,221 | tigers-to-move W/L/D 56,564/11,197,943/95,818,382
+[15:20:08] placement n=5: 38,430,700 positions per side, 0s | goats-to-move W/L/D 14,908,084/0/23,522,616 | tigers-to-move W/L/D 0/4,046,849/34,383,851
+[15:20:08] placement n=4: 10,973,116 positions per side, 0s | goats-to-move W/L/D 4,382,758/0/6,590,358 | tigers-to-move W/L/D 0/1,164,702/9,808,414
+[15:20:08] placement n=3: 2,392,621 positions per side, 0s | goats-to-move W/L/D 978,090/0/1,414,531 | tigers-to-move W/L/D 0/261,118/2,131,503
+[15:20:08] placement n=2: 373,681 positions per side, 0s | goats-to-move W/L/D 157,067/0/216,614 | tigers-to-move W/L/D 0/44,258/329,423
+[15:20:08] placement n=1: 37,191 positions per side, 0s | goats-to-move W/L/D 16,432/0/20,759 | tigers-to-move W/L/D 0/5,220/31,971
+[15:20:08] placement n=0: 1,771 positions per side, 0s | goats-to-move W/L/D 854/0/917 | tigers-to-move W/L/D 0/327/1,444
+[15:20:08] done in 0.6 min; opening: {'goats_to_move': 'draw', 'tigers_to_move': 'draw'}
+[18:42:08] placement ply counts: start
+[18:42:14] movement tables: win/loss parity rule holds for every entry
+[18:42:19] placement n=14: 1,351,141,946 positions per side, 4s, 2-bit check OK | max plies goats-to-move 209, tigers-to-move 210
+[18:42:21] placement n=13: 1,505,590,856 positions per side, 3s, 2-bit check OK | max plies goats-to-move 211, tigers-to-move 210
+[18:42:25] placement n=12: 1,505,590,856 positions per side, 4s, 2-bit check OK | max plies goats-to-move 211, tigers-to-move 210
+[18:42:28] placement n=11: 1,351,141,946 positions per side, 3s, 2-bit check OK | max plies goats-to-move 211, tigers-to-move 210
+[18:42:31] placement n=10: 1,081,142,370 positions per side, 2s, 2-bit check OK | max plies goats-to-move 211, tigers-to-move 210
+[18:42:32] placement n=9: 762,519,989 positions per side, 1s, 2-bit check OK | max plies goats-to-move 211, tigers-to-move 212
+[18:42:33] placement n=8: 467,081,769 positions per side, 1s, 2-bit check OK | max plies goats-to-move 213, tigers-to-move 212
+[18:42:34] placement n=7: 244,325,389 positions per side, 0s, 2-bit check OK | max plies goats-to-move 213, tigers-to-move 214
+[18:42:34] placement n=6: 107,072,889 positions per side, 0s, 2-bit check OK | max plies goats-to-move 213, tigers-to-move 214
+[18:42:34] placement n=5: 38,430,700 positions per side, 0s, 2-bit check OK | max plies goats-to-move 215, tigers-to-move 214
+[18:42:34] placement n=4: 10,973,116 positions per side, 0s, 2-bit check OK | max plies goats-to-move 215, tigers-to-move 206
+[18:42:34] placement n=3: 2,392,621 positions per side, 0s, 2-bit check OK | max plies goats-to-move 207, tigers-to-move 208
+[18:42:34] placement n=2: 373,681 positions per side, 0s, 2-bit check OK | max plies goats-to-move 209, tigers-to-move 210
+[18:42:34] placement n=1: 37,191 positions per side, 0s, 2-bit check OK | max plies goats-to-move 199, tigers-to-move 200
+[18:42:34] placement n=0: 1,771 positions per side, 0s, 2-bit check OK | max plies goats-to-move 201, tigers-to-move 202
+[18:42:34] placement ply counts done in 27s; longest {'plies': 215, 'placed': 5, 'mover': 'goats'}; opening codes {'goats_to_move': 0, 'tigers_to_move': 0}

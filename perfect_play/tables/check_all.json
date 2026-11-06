@@ -1,0 +1,2443 @@
+{
+ "checker": "/home/optimalcooke/PYTHONPROJECTS/TNG/TNG_Falcon/perfect_play/check_all.py",
+ "tables": "/home/optimalcooke/PYTHONPROJECTS/TNG/TNG_Falcon/perfect_play/tables",
+ "rules_file": "/home/optimalcooke/PYTHONPROJECTS/TNG/TNG_Falcon/env_tng.py",
+ "started": "2026-11-05 18:59:49",
+ "threads": 16,
+ "threading_layer": "tbb",
+ "metadata_block_offsets_match": true,
+ "env_step_capture_divergences": [],
+ "layers_requested": "all",
+ "results": [
+  {
+   "layer": "mv15_G",
+   "mode": "u16 (value+distance)",
+   "positions": 27457584,
+   "mismatches": 0,
+   "aux_mismatches": 0,
+   "counts": {
+    "draw": 8475514,
+    "win": 18982070,
+    "loss": 0,
+    "invalid": 0
+   },
+   "max_d": 205,
+   "examples": [],
+   "blocks": [
+    {
+     "c": 0,
+     "k": 15,
+     "positions": 27457584,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 4.19
+    }
+   ],
+   "seconds": 4.19,
+   "positions_per_second": 6549895,
+   "metadata_counts_match": true
+  },
+  {
+   "layer": "mv15_T",
+   "mode": "u16 (value+distance)",
+   "positions": 27457584,
+   "mismatches": 0,
+   "aux_mismatches": 0,
+   "counts": {
+    "draw": 17633768,
+    "win": 0,
+    "loss": 9823816,
+    "invalid": 0
+   },
+   "max_d": 210,
+   "examples": [],
+   "blocks": [
+    {
+     "c": 0,
+     "k": 15,
+     "positions": 27457584,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 0.25
+    }
+   ],
+   "seconds": 0.25,
+   "positions_per_second": 108206378,
+   "metadata_counts_match": true
+  },
+  {
+   "layer": "mv14_G",
+   "mode": "u16 (value+distance)",
+   "positions": 68643960,
+   "mismatches": 0,
+   "aux_mismatches": 0,
+   "counts": {
+    "draw": 43329775,
+    "win": 25314185,
+    "loss": 0,
+    "invalid": 0
+   },
+   "max_d": 209,
+   "examples": [],
+   "blocks": [
+    {
+     "c": 1,
+     "k": 14,
+     "positions": 68643960,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 1.05
+    }
+   ],
+   "seconds": 1.05,
+   "positions_per_second": 65230597,
+   "metadata_counts_match": true
+  },
+  {
+   "layer": "mv14_T",
+   "mode": "u16 (value+distance)",
+   "positions": 68643960,
+   "mismatches": 0,
+   "aux_mismatches": 0,
+   "counts": {
+    "draw": 60317739,
+    "win": 0,
+    "loss": 8326221,
+    "invalid": 0
+   },
+   "max_d": 208,
+   "examples": [],
+   "blocks": [
+    {
+     "c": 1,
+     "k": 14,
+     "positions": 68643960,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 0.63
+    }
+   ],
+   "seconds": 0.63,
+   "positions_per_second": 109692584,
+   "metadata_counts_match": true
+  },
+  {
+   "layer": "mv13_G",
+   "mode": "u16 (value+distance)",
+   "positions": 137287920,
+   "mismatches": 0,
+   "aux_mismatches": 0,
+   "counts": {
+    "draw": 123165454,
+    "win": 14122466,
+    "loss": 0,
+    "invalid": 0
+   },
+   "max_d": 183,
+   "examples": [],
+   "blocks": [
+    {
+     "c": 2,
+     "k": 13,
+     "positions": 137287920,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 2.02
+    }
+   ],
+   "seconds": 2.02,
+   "positions_per_second": 68086314,
+   "metadata_counts_match": true
+  },
+  {
+   "layer": "mv13_T",
+   "mode": "u16 (value+distance)",
+   "positions": 137287920,
+   "mismatches": 0,
+   "aux_mismatches": 0,
+   "counts": {
+    "draw": 133831562,
+    "win": 84228,
+    "loss": 3372130,
+    "invalid": 0
+   },
+   "max_d": 182,
+   "examples": [],
+   "blocks": [
+    {
+     "c": 2,
+     "k": 13,
+     "positions": 137287920,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 1.18
+    }
+   ],
+   "seconds": 1.18,
+   "positions_per_second": 116195622,
+   "metadata_counts_match": true
+  },
+  {
+   "layer": "mv12_G",
+   "mode": "u16 (value+distance)",
+   "positions": 223092870,
+   "mismatches": 0,
+   "aux_mismatches": 0,
+   "counts": {
+    "draw": 217453197,
+    "win": 5470178,
+    "loss": 169495,
+    "invalid": 0
+   },
+   "max_d": 113,
+   "examples": [],
+   "blocks": [
+    {
+     "c": 3,
+     "k": 12,
+     "positions": 223092870,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 3.22
+    }
+   ],
+   "seconds": 3.22,
+   "positions_per_second": 69195479,
+   "metadata_counts_match": true
+  },
+  {
+   "layer": "mv12_T",
+   "mode": "u16 (value+distance)",
+   "positions": 223092870,
+   "mismatches": 0,
+   "aux_mismatches": 0,
+   "counts": {
+    "draw": 205915393,
+    "win": 15930856,
+    "loss": 1246621,
+    "invalid": 0
+   },
+   "max_d": 112,
+   "examples": [],
+   "blocks": [
+    {
+     "c": 3,
+     "k": 12,
+     "positions": 223092870,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 1.79
+    }
+   ],
+   "seconds": 1.79,
+   "positions_per_second": 124561981,
+   "metadata_counts_match": true
+  },
+  {
+   "layer": "mv11_G",
+   "mode": "u16 (value+distance)",
+   "positions": 297457160,
+   "mismatches": 0,
+   "aux_mismatches": 0,
+   "counts": {
+    "draw": 268490032,
+    "win": 2510150,
+    "loss": 26456978,
+    "invalid": 0
+   },
+   "max_d": 113,
+   "examples": [],
+   "blocks": [
+    {
+     "c": 4,
+     "k": 11,
+     "positions": 297457160,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 4.45
+    }
+   ],
+   "seconds": 4.45,
+   "positions_per_second": 66861557,
+   "metadata_counts_match": true
+  },
+  {
+   "layer": "mv11_T",
+   "mode": "u16 (value+distance)",
+   "positions": 297457160,
+   "mismatches": 0,
+   "aux_mismatches": 0,
+   "counts": {
+    "draw": 152203376,
+    "win": 144753122,
+    "loss": 500662,
+    "invalid": 0
+   },
+   "max_d": 112,
+   "examples": [],
+   "blocks": [
+    {
+     "c": 4,
+     "k": 11,
+     "positions": 297457160,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 2.95
+    }
+   ],
+   "seconds": 2.95,
+   "positions_per_second": 100845534,
+   "metadata_counts_match": true
+  },
+  {
+   "layer": "mv10_G",
+   "mode": "u16 (value+distance)",
+   "positions": 327202876,
+   "mismatches": 0,
+   "aux_mismatches": 0,
+   "counts": {
+    "draw": 129139185,
+    "win": 450632,
+    "loss": 197613059,
+    "invalid": 0
+   },
+   "max_d": 113,
+   "examples": [],
+   "blocks": [
+    {
+     "c": 5,
+     "k": 10,
+     "positions": 327202876,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 4.46
+    }
+   ],
+   "seconds": 4.46,
+   "positions_per_second": 73285614,
+   "metadata_counts_match": true
+  },
+  {
+   "layer": "mv10_T",
+   "mode": "u16 (value+distance)",
+   "positions": 327202876,
+   "mismatches": 0,
+   "aux_mismatches": 0,
+   "counts": {
+    "draw": 32100623,
+    "win": 295026345,
+    "loss": 75908,
+    "invalid": 0
+   },
+   "max_d": 112,
+   "examples": [],
+   "blocks": [
+    {
+     "c": 5,
+     "k": 10,
+     "positions": 327202876,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 3.16
+    }
+   ],
+   "seconds": 3.16,
+   "positions_per_second": 103489726,
+   "metadata_counts_match": true
+  },
+  {
+   "layer": "pl14_G",
+   "mode": "u8 (value+distance) + u2 consistency",
+   "positions": 1351141946,
+   "mismatches": 0,
+   "aux_mismatches": 0,
+   "counts": {
+    "draw": 995480293,
+    "win": 122449438,
+    "loss": 233212215,
+    "invalid": 0
+   },
+   "max_d": 209,
+   "examples": [],
+   "blocks": [
+    {
+     "c": 0,
+     "k": 14,
+     "positions": 68643960,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 0.34
+    },
+    {
+     "c": 1,
+     "k": 13,
+     "positions": 137287920,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 0.74
+    },
+    {
+     "c": 2,
+     "k": 12,
+     "positions": 223092870,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 1.27
+    },
+    {
+     "c": 3,
+     "k": 11,
+     "positions": 297457160,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 1.76
+    },
+    {
+     "c": 4,
+     "k": 10,
+     "positions": 327202876,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 2.19
+    },
+    {
+     "c": 5,
+     "k": 9,
+     "positions": 297457160,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 1.95
+    }
+   ],
+   "seconds": 8.24,
+   "positions_per_second": 163920919,
+   "metadata_counts_match": true
+  },
+  {
+   "layer": "pl14_T",
+   "mode": "u8 (value+distance) + u2 consistency",
+   "positions": 1351141946,
+   "mismatches": 0,
+   "aux_mismatches": 0,
+   "counts": {
+    "draw": 836213701,
+    "win": 472917124,
+    "loss": 42011121,
+    "invalid": 0
+   },
+   "max_d": 210,
+   "examples": [],
+   "blocks": [
+    {
+     "c": 0,
+     "k": 14,
+     "positions": 68643960,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 0.62
+    },
+    {
+     "c": 1,
+     "k": 13,
+     "positions": 137287920,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 1.19
+    },
+    {
+     "c": 2,
+     "k": 12,
+     "positions": 223092870,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 2.08
+    },
+    {
+     "c": 3,
+     "k": 11,
+     "positions": 297457160,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 2.72
+    },
+    {
+     "c": 4,
+     "k": 10,
+     "positions": 327202876,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 3.02
+    },
+    {
+     "c": 5,
+     "k": 9,
+     "positions": 297457160,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 3.21
+    }
+   ],
+   "seconds": 12.85,
+   "positions_per_second": 105177704,
+   "metadata_counts_match": true
+  },
+  {
+   "layer": "pl13_G",
+   "mode": "u8 (value+distance) + u2 consistency",
+   "positions": 1505590856,
+   "mismatches": 0,
+   "aux_mismatches": 0,
+   "counts": {
+    "draw": 1123471431,
+    "win": 187871549,
+    "loss": 194247876,
+    "invalid": 0
+   },
+   "max_d": 211,
+   "examples": [],
+   "blocks": [
+    {
+     "c": 0,
+     "k": 13,
+     "positions": 137287920,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 0.71
+    },
+    {
+     "c": 1,
+     "k": 12,
+     "positions": 223092870,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 1.28
+    },
+    {
+     "c": 2,
+     "k": 11,
+     "positions": 297457160,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 1.82
+    },
+    {
+     "c": 3,
+     "k": 10,
+     "positions": 327202876,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 2.02
+    },
+    {
+     "c": 4,
+     "k": 9,
+     "positions": 297457160,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 2.13
+    },
+    {
+     "c": 5,
+     "k": 8,
+     "positions": 223092870,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 1.56
+    }
+   ],
+   "seconds": 9.52,
+   "positions_per_second": 158192889,
+   "metadata_counts_match": true
+  },
+  {
+   "layer": "pl13_T",
+   "mode": "u8 (value+distance) + u2 consistency",
+   "positions": 1505590856,
+   "mismatches": 0,
+   "aux_mismatches": 0,
+   "counts": {
+    "draw": 1031823967,
+    "win": 408942677,
+    "loss": 64824212,
+    "invalid": 0
+   },
+   "max_d": 210,
+   "examples": [],
+   "blocks": [
+    {
+     "c": 0,
+     "k": 13,
+     "positions": 137287920,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 1.24
+    },
+    {
+     "c": 1,
+     "k": 12,
+     "positions": 223092870,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 2.18
+    },
+    {
+     "c": 2,
+     "k": 11,
+     "positions": 297457160,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 2.8
+    },
+    {
+     "c": 3,
+     "k": 10,
+     "positions": 327202876,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 2.96
+    },
+    {
+     "c": 4,
+     "k": 9,
+     "positions": 297457160,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 3.04
+    },
+    {
+     "c": 5,
+     "k": 8,
+     "positions": 223092870,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 2.22
+    }
+   ],
+   "seconds": 14.44,
+   "positions_per_second": 104262791,
+   "metadata_counts_match": true
+  },
+  {
+   "layer": "pl12_G",
+   "mode": "u8 (value+distance) + u2 consistency",
+   "positions": 1505590856,
+   "mismatches": 0,
+   "aux_mismatches": 0,
+   "counts": {
+    "draw": 1131149464,
+    "win": 248764443,
+    "loss": 125676949,
+    "invalid": 0
+   },
+   "max_d": 211,
+   "examples": [],
+   "blocks": [
+    {
+     "c": 0,
+     "k": 12,
+     "positions": 223092870,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 1.2
+    },
+    {
+     "c": 1,
+     "k": 11,
+     "positions": 297457160,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 1.57
+    },
+    {
+     "c": 2,
+     "k": 10,
+     "positions": 327202876,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 1.68
+    },
+    {
+     "c": 3,
+     "k": 9,
+     "positions": 297457160,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 1.71
+    },
+    {
+     "c": 4,
+     "k": 8,
+     "positions": 223092870,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 1.36
+    },
+    {
+     "c": 5,
+     "k": 7,
+     "positions": 137287920,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 0.9
+    }
+   ],
+   "seconds": 8.42,
+   "positions_per_second": 178803209,
+   "metadata_counts_match": true
+  },
+  {
+   "layer": "pl12_T",
+   "mode": "u8 (value+distance) + u2 consistency",
+   "positions": 1505590856,
+   "mismatches": 0,
+   "aux_mismatches": 0,
+   "counts": {
+    "draw": 1132440815,
+    "win": 287659573,
+    "loss": 85490468,
+    "invalid": 0
+   },
+   "max_d": 210,
+   "examples": [],
+   "blocks": [
+    {
+     "c": 0,
+     "k": 12,
+     "positions": 223092870,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 1.9
+    },
+    {
+     "c": 1,
+     "k": 11,
+     "positions": 297457160,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 2.59
+    },
+    {
+     "c": 2,
+     "k": 10,
+     "positions": 327202876,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 2.84
+    },
+    {
+     "c": 3,
+     "k": 9,
+     "positions": 297457160,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 2.64
+    },
+    {
+     "c": 4,
+     "k": 8,
+     "positions": 223092870,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 2.1
+    },
+    {
+     "c": 5,
+     "k": 7,
+     "positions": 137287920,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 1.32
+    }
+   ],
+   "seconds": 13.39,
+   "positions_per_second": 112451899,
+   "metadata_counts_match": true
+  },
+  {
+   "layer": "pl11_G",
+   "mode": "u8 (value+distance) + u2 consistency",
+   "positions": 1351141946,
+   "mismatches": 0,
+   "aux_mismatches": 0,
+   "counts": {
+    "draw": 1005553158,
+    "win": 282405385,
+    "loss": 63183403,
+    "invalid": 0
+   },
+   "max_d": 211,
+   "examples": [],
+   "blocks": [
+    {
+     "c": 0,
+     "k": 11,
+     "positions": 297457160,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 1.65
+    },
+    {
+     "c": 1,
+     "k": 10,
+     "positions": 327202876,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 1.97
+    },
+    {
+     "c": 2,
+     "k": 9,
+     "positions": 297457160,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 1.69
+    },
+    {
+     "c": 3,
+     "k": 8,
+     "positions": 223092870,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 1.38
+    },
+    {
+     "c": 4,
+     "k": 7,
+     "positions": 137287920,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 1.03
+    },
+    {
+     "c": 5,
+     "k": 6,
+     "positions": 68643960,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 0.5
+    }
+   ],
+   "seconds": 8.22,
+   "positions_per_second": 164381219,
+   "metadata_counts_match": true
+  },
+  {
+   "layer": "pl11_T",
+   "mode": "u8 (value+distance) + u2 consistency",
+   "positions": 1351141946,
+   "mismatches": 0,
+   "aux_mismatches": 0,
+   "counts": {
+    "draw": 1094093900,
+    "win": 161783427,
+    "loss": 95264619,
+    "invalid": 0
+   },
+   "max_d": 210,
+   "examples": [],
+   "blocks": [
+    {
+     "c": 0,
+     "k": 11,
+     "positions": 297457160,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 2.72
+    },
+    {
+     "c": 1,
+     "k": 10,
+     "positions": 327202876,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 3.03
+    },
+    {
+     "c": 2,
+     "k": 9,
+     "positions": 297457160,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 2.8
+    },
+    {
+     "c": 3,
+     "k": 8,
+     "positions": 223092870,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 2.16
+    },
+    {
+     "c": 4,
+     "k": 7,
+     "positions": 137287920,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 1.55
+    },
+    {
+     "c": 5,
+     "k": 6,
+     "positions": 68643960,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 0.72
+    }
+   ],
+   "seconds": 12.97,
+   "positions_per_second": 104135367,
+   "metadata_counts_match": true
+  },
+  {
+   "layer": "pl10_G",
+   "mode": "u8 (value+distance) + u2 consistency",
+   "positions": 1081142370,
+   "mismatches": 0,
+   "aux_mismatches": 0,
+   "counts": {
+    "draw": 784340178,
+    "win": 272326356,
+    "loss": 24475836,
+    "invalid": 0
+   },
+   "max_d": 211,
+   "examples": [],
+   "blocks": [
+    {
+     "c": 0,
+     "k": 10,
+     "positions": 327202876,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 2.23
+    },
+    {
+     "c": 1,
+     "k": 9,
+     "positions": 297457160,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 1.71
+    },
+    {
+     "c": 2,
+     "k": 8,
+     "positions": 223092870,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 1.36
+    },
+    {
+     "c": 3,
+     "k": 7,
+     "positions": 137287920,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 1.01
+    },
+    {
+     "c": 4,
+     "k": 6,
+     "positions": 68643960,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 0.51
+    },
+    {
+     "c": 5,
+     "k": 5,
+     "positions": 27457584,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 0.22
+    }
+   ],
+   "seconds": 7.04,
+   "positions_per_second": 153545875,
+   "metadata_counts_match": true
+  },
+  {
+   "layer": "pl10_T",
+   "mode": "u8 (value+distance) + u2 consistency",
+   "positions": 1081142370,
+   "mismatches": 0,
+   "aux_mismatches": 0,
+   "counts": {
+    "draw": 920281839,
+    "win": 71565148,
+    "loss": 89295383,
+    "invalid": 0
+   },
+   "max_d": 210,
+   "examples": [],
+   "blocks": [
+    {
+     "c": 0,
+     "k": 10,
+     "positions": 327202876,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 3.25
+    },
+    {
+     "c": 1,
+     "k": 9,
+     "positions": 297457160,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 2.77
+    },
+    {
+     "c": 2,
+     "k": 8,
+     "positions": 223092870,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 2.02
+    },
+    {
+     "c": 3,
+     "k": 7,
+     "positions": 137287920,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 1.41
+    },
+    {
+     "c": 4,
+     "k": 6,
+     "positions": 68643960,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 0.81
+    },
+    {
+     "c": 5,
+     "k": 5,
+     "positions": 27457584,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 0.32
+    }
+   ],
+   "seconds": 10.57,
+   "positions_per_second": 102320958,
+   "metadata_counts_match": true
+  },
+  {
+   "layer": "pl9_G",
+   "mode": "u8 (value+distance) + u2 consistency",
+   "positions": 762519989,
+   "mismatches": 0,
+   "aux_mismatches": 0,
+   "counts": {
+    "draw": 533787830,
+    "win": 221699880,
+    "loss": 7032279,
+    "invalid": 0
+   },
+   "max_d": 211,
+   "examples": [],
+   "blocks": [
+    {
+     "c": 0,
+     "k": 9,
+     "positions": 297457160,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 1.94
+    },
+    {
+     "c": 1,
+     "k": 8,
+     "positions": 223092870,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 1.31
+    },
+    {
+     "c": 2,
+     "k": 7,
+     "positions": 137287920,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 0.9
+    },
+    {
+     "c": 3,
+     "k": 6,
+     "positions": 68643960,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 0.49
+    },
+    {
+     "c": 4,
+     "k": 5,
+     "positions": 27457584,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 0.21
+    },
+    {
+     "c": 5,
+     "k": 4,
+     "positions": 8580495,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 0.07
+    }
+   ],
+   "seconds": 4.92,
+   "positions_per_second": 154834715,
+   "metadata_counts_match": true
+  },
+  {
+   "layer": "pl9_T",
+   "mode": "u8 (value+distance) + u2 consistency",
+   "positions": 762519989,
+   "mismatches": 0,
+   "aux_mismatches": 0,
+   "counts": {
+    "draw": 668324532,
+    "win": 23982872,
+    "loss": 70212585,
+    "invalid": 0
+   },
+   "max_d": 212,
+   "examples": [],
+   "blocks": [
+    {
+     "c": 0,
+     "k": 9,
+     "positions": 297457160,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 2.84
+    },
+    {
+     "c": 1,
+     "k": 8,
+     "positions": 223092870,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 2.18
+    },
+    {
+     "c": 2,
+     "k": 7,
+     "positions": 137287920,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 1.42
+    },
+    {
+     "c": 3,
+     "k": 6,
+     "positions": 68643960,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 0.71
+    },
+    {
+     "c": 4,
+     "k": 5,
+     "positions": 27457584,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 0.32
+    },
+    {
+     "c": 5,
+     "k": 4,
+     "positions": 8580495,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 0.11
+    }
+   ],
+   "seconds": 7.58,
+   "positions_per_second": 100600840,
+   "metadata_counts_match": true
+  },
+  {
+   "layer": "pl8_G",
+   "mode": "u8 (value+distance) + u2 consistency",
+   "positions": 467081769,
+   "mismatches": 0,
+   "aux_mismatches": 0,
+   "counts": {
+    "draw": 314312732,
+    "win": 151373142,
+    "loss": 1395895,
+    "invalid": 0
+   },
+   "max_d": 213,
+   "examples": [],
+   "blocks": [
+    {
+     "c": 0,
+     "k": 8,
+     "positions": 223092870,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 1.49
+    },
+    {
+     "c": 1,
+     "k": 7,
+     "positions": 137287920,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 0.9
+    },
+    {
+     "c": 2,
+     "k": 6,
+     "positions": 68643960,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 0.49
+    },
+    {
+     "c": 3,
+     "k": 5,
+     "positions": 27457584,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 0.21
+    },
+    {
+     "c": 4,
+     "k": 4,
+     "positions": 8580495,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 0.08
+    },
+    {
+     "c": 5,
+     "k": 3,
+     "positions": 2018940,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 0.02
+    }
+   ],
+   "seconds": 3.19,
+   "positions_per_second": 146211468,
+   "metadata_counts_match": true
+  },
+  {
+   "layer": "pl8_T",
+   "mode": "u8 (value+distance) + u2 consistency",
+   "positions": 467081769,
+   "mismatches": 0,
+   "aux_mismatches": 0,
+   "counts": {
+    "draw": 415300574,
+    "win": 5690928,
+    "loss": 46090267,
+    "invalid": 0
+   },
+   "max_d": 212,
+   "examples": [],
+   "blocks": [
+    {
+     "c": 0,
+     "k": 8,
+     "positions": 223092870,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 2.42
+    },
+    {
+     "c": 1,
+     "k": 7,
+     "positions": 137287920,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 1.55
+    },
+    {
+     "c": 2,
+     "k": 6,
+     "positions": 68643960,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 0.73
+    },
+    {
+     "c": 3,
+     "k": 5,
+     "positions": 27457584,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 0.29
+    },
+    {
+     "c": 4,
+     "k": 4,
+     "positions": 8580495,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 0.09
+    },
+    {
+     "c": 5,
+     "k": 3,
+     "positions": 2018940,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 0.02
+    }
+   ],
+   "seconds": 5.12,
+   "positions_per_second": 91307018,
+   "metadata_counts_match": true
+  },
+  {
+   "layer": "pl7_G",
+   "mode": "u8 (value+distance) + u2 consistency",
+   "positions": 244325389,
+   "mismatches": 0,
+   "aux_mismatches": 0,
+   "counts": {
+    "draw": 158339445,
+    "win": 85818757,
+    "loss": 167187,
+    "invalid": 0
+   },
+   "max_d": 213,
+   "examples": [],
+   "blocks": [
+    {
+     "c": 0,
+     "k": 7,
+     "positions": 137287920,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 1.02
+    },
+    {
+     "c": 1,
+     "k": 6,
+     "positions": 68643960,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 0.51
+    },
+    {
+     "c": 2,
+     "k": 5,
+     "positions": 27457584,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 0.2
+    },
+    {
+     "c": 3,
+     "k": 4,
+     "positions": 8580495,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 0.07
+    },
+    {
+     "c": 4,
+     "k": 3,
+     "positions": 2018940,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 0.02
+    },
+    {
+     "c": 5,
+     "k": 2,
+     "positions": 336490,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 0.01
+    }
+   ],
+   "seconds": 1.83,
+   "positions_per_second": 133859382,
+   "metadata_counts_match": true
+  },
+  {
+   "layer": "pl7_T",
+   "mode": "u8 (value+distance) + u2 consistency",
+   "positions": 244325389,
+   "mismatches": 0,
+   "aux_mismatches": 0,
+   "counts": {
+    "draw": 218414208,
+    "win": 840742,
+    "loss": 25070439,
+    "invalid": 0
+   },
+   "max_d": 214,
+   "examples": [],
+   "blocks": [
+    {
+     "c": 0,
+     "k": 7,
+     "positions": 137287920,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 1.47
+    },
+    {
+     "c": 1,
+     "k": 6,
+     "positions": 68643960,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 0.73
+    },
+    {
+     "c": 2,
+     "k": 5,
+     "positions": 27457584,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 0.31
+    },
+    {
+     "c": 3,
+     "k": 4,
+     "positions": 8580495,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 0.1
+    },
+    {
+     "c": 4,
+     "k": 3,
+     "positions": 2018940,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 0.03
+    },
+    {
+     "c": 5,
+     "k": 2,
+     "positions": 336490,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 0.01
+    }
+   ],
+   "seconds": 2.64,
+   "positions_per_second": 92551412,
+   "metadata_counts_match": true
+  },
+  {
+   "layer": "pl6_G",
+   "mode": "u8 (value+distance) + u2 consistency",
+   "positions": 107072889,
+   "mismatches": 0,
+   "aux_mismatches": 0,
+   "counts": {
+    "draw": 67195221,
+    "win": 39868955,
+    "loss": 8713,
+    "invalid": 0
+   },
+   "max_d": 213,
+   "examples": [],
+   "blocks": [
+    {
+     "c": 0,
+     "k": 6,
+     "positions": 68643960,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 0.53
+    },
+    {
+     "c": 1,
+     "k": 5,
+     "positions": 27457584,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 0.21
+    },
+    {
+     "c": 2,
+     "k": 4,
+     "positions": 8580495,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 0.07
+    },
+    {
+     "c": 3,
+     "k": 3,
+     "positions": 2018940,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 0.01
+    },
+    {
+     "c": 4,
+     "k": 2,
+     "positions": 336490,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 0.01
+    },
+    {
+     "c": 5,
+     "k": 1,
+     "positions": 35420,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 0.0
+    }
+   ],
+   "seconds": 0.83,
+   "positions_per_second": 128770127,
+   "metadata_counts_match": true
+  },
+  {
+   "layer": "pl6_T",
+   "mode": "u8 (value+distance) + u2 consistency",
+   "positions": 107072889,
+   "mismatches": 0,
+   "aux_mismatches": 0,
+   "counts": {
+    "draw": 95818382,
+    "win": 56564,
+    "loss": 11197943,
+    "invalid": 0
+   },
+   "max_d": 214,
+   "examples": [],
+   "blocks": [
+    {
+     "c": 0,
+     "k": 6,
+     "positions": 68643960,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 0.73
+    },
+    {
+     "c": 1,
+     "k": 5,
+     "positions": 27457584,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 0.31
+    },
+    {
+     "c": 2,
+     "k": 4,
+     "positions": 8580495,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 0.1
+    },
+    {
+     "c": 3,
+     "k": 3,
+     "positions": 2018940,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 0.02
+    },
+    {
+     "c": 4,
+     "k": 2,
+     "positions": 336490,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 0.01
+    },
+    {
+     "c": 5,
+     "k": 1,
+     "positions": 35420,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 0.0
+    }
+   ],
+   "seconds": 1.17,
+   "positions_per_second": 91428575,
+   "metadata_counts_match": true
+  },
+  {
+   "layer": "pl5_G",
+   "mode": "u8 (value+distance) + u2 consistency",
+   "positions": 38430700,
+   "mismatches": 0,
+   "aux_mismatches": 0,
+   "counts": {
+    "draw": 23522616,
+    "win": 14908084,
+    "loss": 0,
+    "invalid": 0
+   },
+   "max_d": 215,
+   "examples": [],
+   "blocks": [
+    {
+     "c": 0,
+     "k": 5,
+     "positions": 27457584,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 0.22
+    },
+    {
+     "c": 1,
+     "k": 4,
+     "positions": 8580495,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 0.07
+    },
+    {
+     "c": 2,
+     "k": 3,
+     "positions": 2018940,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 0.02
+    },
+    {
+     "c": 3,
+     "k": 2,
+     "positions": 336490,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 0.01
+    },
+    {
+     "c": 4,
+     "k": 1,
+     "positions": 35420,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 0.0
+    },
+    {
+     "c": 5,
+     "k": 0,
+     "positions": 1771,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 0.0
+    }
+   ],
+   "seconds": 0.32,
+   "positions_per_second": 121726906,
+   "metadata_counts_match": true
+  },
+  {
+   "layer": "pl5_T",
+   "mode": "u8 (value+distance) + u2 consistency",
+   "positions": 38430700,
+   "mismatches": 0,
+   "aux_mismatches": 0,
+   "counts": {
+    "draw": 34383851,
+    "win": 0,
+    "loss": 4046849,
+    "invalid": 0
+   },
+   "max_d": 214,
+   "examples": [],
+   "blocks": [
+    {
+     "c": 0,
+     "k": 5,
+     "positions": 27457584,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 0.31
+    },
+    {
+     "c": 1,
+     "k": 4,
+     "positions": 8580495,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 0.1
+    },
+    {
+     "c": 2,
+     "k": 3,
+     "positions": 2018940,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 0.02
+    },
+    {
+     "c": 3,
+     "k": 2,
+     "positions": 336490,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 0.01
+    },
+    {
+     "c": 4,
+     "k": 1,
+     "positions": 35420,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 0.0
+    },
+    {
+     "c": 5,
+     "k": 0,
+     "positions": 1771,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 0.0
+    }
+   ],
+   "seconds": 0.44,
+   "positions_per_second": 87431365,
+   "metadata_counts_match": true
+  },
+  {
+   "layer": "pl4_G",
+   "mode": "u8 (value+distance) + u2 consistency",
+   "positions": 10973116,
+   "mismatches": 0,
+   "aux_mismatches": 0,
+   "counts": {
+    "draw": 6590358,
+    "win": 4382758,
+    "loss": 0,
+    "invalid": 0
+   },
+   "max_d": 215,
+   "examples": [],
+   "blocks": [
+    {
+     "c": 0,
+     "k": 4,
+     "positions": 8580495,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 0.07
+    },
+    {
+     "c": 1,
+     "k": 3,
+     "positions": 2018940,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 0.02
+    },
+    {
+     "c": 2,
+     "k": 2,
+     "positions": 336490,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 0.01
+    },
+    {
+     "c": 3,
+     "k": 1,
+     "positions": 35420,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 0.0
+    },
+    {
+     "c": 4,
+     "k": 0,
+     "positions": 1771,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 0.0
+    }
+   ],
+   "seconds": 0.1,
+   "positions_per_second": 109818453,
+   "metadata_counts_match": true
+  },
+  {
+   "layer": "pl4_T",
+   "mode": "u8 (value+distance) + u2 consistency",
+   "positions": 10973116,
+   "mismatches": 0,
+   "aux_mismatches": 0,
+   "counts": {
+    "draw": 9808414,
+    "win": 0,
+    "loss": 1164702,
+    "invalid": 0
+   },
+   "max_d": 206,
+   "examples": [],
+   "blocks": [
+    {
+     "c": 0,
+     "k": 4,
+     "positions": 8580495,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 0.1
+    },
+    {
+     "c": 1,
+     "k": 3,
+     "positions": 2018940,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 0.02
+    },
+    {
+     "c": 2,
+     "k": 2,
+     "positions": 336490,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 0.01
+    },
+    {
+     "c": 3,
+     "k": 1,
+     "positions": 35420,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 0.0
+    },
+    {
+     "c": 4,
+     "k": 0,
+     "positions": 1771,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 0.0
+    }
+   ],
+   "seconds": 0.13,
+   "positions_per_second": 82192188,
+   "metadata_counts_match": true
+  },
+  {
+   "layer": "pl3_G",
+   "mode": "u8 (value+distance) + u2 consistency",
+   "positions": 2392621,
+   "mismatches": 0,
+   "aux_mismatches": 0,
+   "counts": {
+    "draw": 1414531,
+    "win": 978090,
+    "loss": 0,
+    "invalid": 0
+   },
+   "max_d": 207,
+   "examples": [],
+   "blocks": [
+    {
+     "c": 0,
+     "k": 3,
+     "positions": 2018940,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 0.02
+    },
+    {
+     "c": 1,
+     "k": 2,
+     "positions": 336490,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 0.01
+    },
+    {
+     "c": 2,
+     "k": 1,
+     "positions": 35420,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 0.0
+    },
+    {
+     "c": 3,
+     "k": 0,
+     "positions": 1771,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 0.0
+    }
+   ],
+   "seconds": 0.03,
+   "positions_per_second": 88596979,
+   "metadata_counts_match": true
+  },
+  {
+   "layer": "pl3_T",
+   "mode": "u8 (value+distance) + u2 consistency",
+   "positions": 2392621,
+   "mismatches": 0,
+   "aux_mismatches": 0,
+   "counts": {
+    "draw": 2131503,
+    "win": 0,
+    "loss": 261118,
+    "invalid": 0
+   },
+   "max_d": 208,
+   "examples": [],
+   "blocks": [
+    {
+     "c": 0,
+     "k": 3,
+     "positions": 2018940,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 0.02
+    },
+    {
+     "c": 1,
+     "k": 2,
+     "positions": 336490,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 0.01
+    },
+    {
+     "c": 2,
+     "k": 1,
+     "positions": 35420,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 0.0
+    },
+    {
+     "c": 3,
+     "k": 0,
+     "positions": 1771,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 0.0
+    }
+   ],
+   "seconds": 0.03,
+   "positions_per_second": 70062833,
+   "metadata_counts_match": true
+  },
+  {
+   "layer": "pl2_G",
+   "mode": "u8 (value+distance) + u2 consistency",
+   "positions": 373681,
+   "mismatches": 0,
+   "aux_mismatches": 0,
+   "counts": {
+    "draw": 216614,
+    "win": 157067,
+    "loss": 0,
+    "invalid": 0
+   },
+   "max_d": 209,
+   "examples": [],
+   "blocks": [
+    {
+     "c": 0,
+     "k": 2,
+     "positions": 336490,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 0.01
+    },
+    {
+     "c": 1,
+     "k": 1,
+     "positions": 35420,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 0.0
+    },
+    {
+     "c": 2,
+     "k": 0,
+     "positions": 1771,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 0.0
+    }
+   ],
+   "seconds": 0.01,
+   "positions_per_second": 42423378,
+   "metadata_counts_match": true
+  },
+  {
+   "layer": "pl2_T",
+   "mode": "u8 (value+distance) + u2 consistency",
+   "positions": 373681,
+   "mismatches": 0,
+   "aux_mismatches": 0,
+   "counts": {
+    "draw": 329423,
+    "win": 0,
+    "loss": 44258,
+    "invalid": 0
+   },
+   "max_d": 210,
+   "examples": [],
+   "blocks": [
+    {
+     "c": 0,
+     "k": 2,
+     "positions": 336490,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 0.01
+    },
+    {
+     "c": 1,
+     "k": 1,
+     "positions": 35420,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 0.0
+    },
+    {
+     "c": 2,
+     "k": 0,
+     "positions": 1771,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 0.0
+    }
+   ],
+   "seconds": 0.01,
+   "positions_per_second": 32922295,
+   "metadata_counts_match": true
+  },
+  {
+   "layer": "pl1_G",
+   "mode": "u8 (value+distance) + u2 consistency",
+   "positions": 37191,
+   "mismatches": 0,
+   "aux_mismatches": 0,
+   "counts": {
+    "draw": 20759,
+    "win": 16432,
+    "loss": 0,
+    "invalid": 0
+   },
+   "max_d": 199,
+   "examples": [],
+   "blocks": [
+    {
+     "c": 0,
+     "k": 1,
+     "positions": 35420,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 0.0
+    },
+    {
+     "c": 1,
+     "k": 0,
+     "positions": 1771,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 0.0
+    }
+   ],
+   "seconds": 0.0,
+   "positions_per_second": 11812977,
+   "metadata_counts_match": true
+  },
+  {
+   "layer": "pl1_T",
+   "mode": "u8 (value+distance) + u2 consistency",
+   "positions": 37191,
+   "mismatches": 0,
+   "aux_mismatches": 0,
+   "counts": {
+    "draw": 31971,
+    "win": 0,
+    "loss": 5220,
+    "invalid": 0
+   },
+   "max_d": 200,
+   "examples": [],
+   "blocks": [
+    {
+     "c": 0,
+     "k": 1,
+     "positions": 35420,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 0.0
+    },
+    {
+     "c": 1,
+     "k": 0,
+     "positions": 1771,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 0.0
+    }
+   ],
+   "seconds": 0.0,
+   "positions_per_second": 8716980,
+   "metadata_counts_match": true
+  },
+  {
+   "layer": "pl0_G",
+   "mode": "u8 (value+distance) + u2 consistency",
+   "positions": 1771,
+   "mismatches": 0,
+   "aux_mismatches": 0,
+   "counts": {
+    "draw": 917,
+    "win": 854,
+    "loss": 0,
+    "invalid": 0
+   },
+   "max_d": 201,
+   "examples": [],
+   "blocks": [
+    {
+     "c": 0,
+     "k": 0,
+     "positions": 1771,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 0.0
+    }
+   ],
+   "seconds": 0.0,
+   "positions_per_second": 6533080,
+   "metadata_counts_match": true
+  },
+  {
+   "layer": "pl0_T",
+   "mode": "u8 (value+distance) + u2 consistency",
+   "positions": 1771,
+   "mismatches": 0,
+   "aux_mismatches": 0,
+   "counts": {
+    "draw": 1444,
+    "win": 0,
+    "loss": 327,
+    "invalid": 0
+   },
+   "max_d": 202,
+   "examples": [],
+   "blocks": [
+    {
+     "c": 0,
+     "k": 0,
+     "positions": 1771,
+     "mismatches": 0,
+     "aux_mismatches": 0,
+     "seconds": 0.0
+    }
+   ],
+   "seconds": 0.0,
+   "positions_per_second": 5971151,
+   "metadata_counts_match": true
+  }
+ ],
+ "total_positions": 19017918920,
+ "total_mismatches": 0,
+ "files_used": {
+  "mv_k15_G.u16": {
+   "bytes": 54915168,
+   "mtime": "2026-11-05 15:19:56"
+  },
+  "mv_k15_T.u16": {
+   "bytes": 54915168,
+   "mtime": "2026-11-05 15:19:56"
+  },
+  "mv_k14_G.u16": {
+   "bytes": 137287920,
+   "mtime": "2026-11-05 15:19:56"
+  },
+  "mv_k14_T.u16": {
+   "bytes": 137287920,
+   "mtime": "2026-11-05 15:19:56"
+  },
+  "mv_k13_G.u16": {
+   "bytes": 274575840,
+   "mtime": "2026-11-05 15:19:55"
+  },
+  "mv_k13_T.u16": {
+   "bytes": 274575840,
+   "mtime": "2026-11-05 15:19:55"
+  },
+  "mv_k12_G.u16": {
+   "bytes": 446185740,
+   "mtime": "2026-11-05 15:19:53"
+  },
+  "mv_k12_T.u16": {
+   "bytes": 446185740,
+   "mtime": "2026-11-05 15:19:53"
+  },
+  "mv_k11_G.u16": {
+   "bytes": 594914320,
+   "mtime": "2026-11-05 15:19:50"
+  },
+  "mv_k11_T.u16": {
+   "bytes": 594914320,
+   "mtime": "2026-11-05 15:19:51"
+  },
+  "mv_k10_G.u16": {
+   "bytes": 654405752,
+   "mtime": "2026-11-05 15:19:47"
+  },
+  "mv_k10_T.u16": {
+   "bytes": 654405752,
+   "mtime": "2026-11-05 15:19:47"
+  },
+  "pl_n14_G.u2": {
+   "bytes": 337785487,
+   "mtime": "2026-11-05 15:20:01"
+  },
+  "pl_n14_G.u8": {
+   "bytes": 1351141946,
+   "mtime": "2026-11-05 18:42:18"
+  },
+  "pl_n14_T.u2": {
+   "bytes": 337785487,
+   "mtime": "2026-11-05 15:20:01"
+  },
+  "pl_n14_T.u8": {
+   "bytes": 1351141946,
+   "mtime": "2026-11-05 18:42:19"
+  },
+  "pl_n13_G.u2": {
+   "bytes": 376397714,
+   "mtime": "2026-11-05 15:20:02"
+  },
+  "pl_n13_G.u8": {
+   "bytes": 1505590856,
+   "mtime": "2026-11-05 18:42:20"
+  },
+  "pl_n13_T.u2": {
+   "bytes": 376397714,
+   "mtime": "2026-11-05 15:20:03"
+  },
+  "pl_n13_T.u8": {
+   "bytes": 1505590856,
+   "mtime": "2026-11-05 18:42:21"
+  },
+  "pl_n12_G.u2": {
+   "bytes": 376397714,
+   "mtime": "2026-11-05 15:20:04"
+  },
+  "pl_n12_G.u8": {
+   "bytes": 1505590856,
+   "mtime": "2026-11-05 18:42:23"
+  },
+  "pl_n12_T.u2": {
+   "bytes": 376397714,
+   "mtime": "2026-11-05 15:20:04"
+  },
+  "pl_n12_T.u8": {
+   "bytes": 1505590856,
+   "mtime": "2026-11-05 18:42:25"
+  },
+  "pl_n11_G.u2": {
+   "bytes": 337785487,
+   "mtime": "2026-11-05 15:20:05"
+  },
+  "pl_n11_G.u8": {
+   "bytes": 1351141946,
+   "mtime": "2026-11-05 18:42:27"
+  },
+  "pl_n11_T.u2": {
+   "bytes": 337785487,
+   "mtime": "2026-11-05 15:20:06"
+  },
+  "pl_n11_T.u8": {
+   "bytes": 1351141946,
+   "mtime": "2026-11-05 18:42:28"
+  },
+  "pl_n10_G.u2": {
+   "bytes": 270285593,
+   "mtime": "2026-11-05 15:20:06"
+  },
+  "pl_n10_G.u8": {
+   "bytes": 1081142370,
+   "mtime": "2026-11-05 18:42:30"
+  },
+  "pl_n10_T.u2": {
+   "bytes": 270285593,
+   "mtime": "2026-11-05 15:20:07"
+  },
+  "pl_n10_T.u8": {
+   "bytes": 1081142370,
+   "mtime": "2026-11-05 18:42:31"
+  },
+  "pl_n9_G.u2": {
+   "bytes": 190629998,
+   "mtime": "2026-11-05 15:20:07"
+  },
+  "pl_n9_G.u8": {
+   "bytes": 762519989,
+   "mtime": "2026-11-05 18:42:32"
+  },
+  "pl_n9_T.u2": {
+   "bytes": 190629998,
+   "mtime": "2026-11-05 15:20:07"
+  },
+  "pl_n9_T.u8": {
+   "bytes": 762519989,
+   "mtime": "2026-11-05 18:42:32"
+  },
+  "pl_n8_G.u2": {
+   "bytes": 116770443,
+   "mtime": "2026-11-05 15:20:08"
+  },
+  "pl_n8_G.u8": {
+   "bytes": 467081769,
+   "mtime": "2026-11-05 18:42:33"
+  },
+  "pl_n8_T.u2": {
+   "bytes": 116770443,
+   "mtime": "2026-11-05 15:20:08"
+  },
+  "pl_n8_T.u8": {
+   "bytes": 467081769,
+   "mtime": "2026-11-05 18:42:33"
+  },
+  "pl_n7_G.u2": {
+   "bytes": 61081348,
+   "mtime": "2026-11-05 15:20:08"
+  },
+  "pl_n7_G.u8": {
+   "bytes": 244325389,
+   "mtime": "2026-11-05 18:42:34"
+  },
+  "pl_n7_T.u2": {
+   "bytes": 61081348,
+   "mtime": "2026-11-05 15:20:08"
+  },
+  "pl_n7_T.u8": {
+   "bytes": 244325389,
+   "mtime": "2026-11-05 18:42:34"
+  },
+  "pl_n6_G.u2": {
+   "bytes": 26768223,
+   "mtime": "2026-11-05 15:20:08"
+  },
+  "pl_n6_G.u8": {
+   "bytes": 107072889,
+   "mtime": "2026-11-05 18:42:34"
+  },
+  "pl_n6_T.u2": {
+   "bytes": 26768223,
+   "mtime": "2026-11-05 15:20:08"
+  },
+  "pl_n6_T.u8": {
+   "bytes": 107072889,
+   "mtime": "2026-11-05 18:42:34"
+  },
+  "pl_n5_G.u2": {
+   "bytes": 9607675,
+   "mtime": "2026-11-05 15:20:08"
+  },
+  "pl_n5_G.u8": {
+   "bytes": 38430700,
+   "mtime": "2026-11-05 18:42:34"
+  },
+  "pl_n5_T.u2": {
+   "bytes": 9607675,
+   "mtime": "2026-11-05 15:20:08"
+  },
+  "pl_n5_T.u8": {
+   "bytes": 38430700,
+   "mtime": "2026-11-05 18:42:34"
+  },
+  "pl_n4_G.u2": {
+   "bytes": 2743279,
+   "mtime": "2026-11-05 15:20:08"
+  },
+  "pl_n4_G.u8": {
+   "bytes": 10973116,
+   "mtime": "2026-11-05 18:42:34"
+  },
+  "pl_n4_T.u2": {
+   "bytes": 2743279,
+   "mtime": "2026-11-05 15:20:08"
+  },
+  "pl_n4_T.u8": {
+   "bytes": 10973116,
+   "mtime": "2026-11-05 18:42:34"
+  },
+  "pl_n3_G.u2": {
+   "bytes": 598156,
+   "mtime": "2026-11-05 15:20:08"
+  },
+  "pl_n3_G.u8": {
+   "bytes": 2392621,
+   "mtime": "2026-11-05 18:42:34"
+  },
+  "pl_n3_T.u2": {
+   "bytes": 598156,
+   "mtime": "2026-11-05 15:20:08"
+  },
+  "pl_n3_T.u8": {
+   "bytes": 2392621,
+   "mtime": "2026-11-05 18:42:34"
+  },
+  "pl_n2_G.u2": {
+   "bytes": 93421,
+   "mtime": "2026-11-05 15:20:08"
+  },
+  "pl_n2_G.u8": {
+   "bytes": 373681,
+   "mtime": "2026-11-05 18:42:34"
+  },
+  "pl_n2_T.u2": {
+   "bytes": 93421,
+   "mtime": "2026-11-05 15:20:08"
+  },
+  "pl_n2_T.u8": {
+   "bytes": 373681,
+   "mtime": "2026-11-05 18:42:34"
+  },
+  "pl_n1_G.u2": {
+   "bytes": 9298,
+   "mtime": "2026-11-05 15:20:08"
+  },
+  "pl_n1_G.u8": {
+   "bytes": 37191,
+   "mtime": "2026-11-05 18:42:34"
+  },
+  "pl_n1_T.u2": {
+   "bytes": 9298,
+   "mtime": "2026-11-05 15:20:08"
+  },
+  "pl_n1_T.u8": {
+   "bytes": 37191,
+   "mtime": "2026-11-05 18:42:34"
+  },
+  "pl_n0_G.u2": {
+   "bytes": 443,
+   "mtime": "2026-11-05 15:20:08"
+  },
+  "pl_n0_G.u8": {
+   "bytes": 1771,
+   "mtime": "2026-11-05 18:42:34"
+  },
+  "pl_n0_T.u2": {
+   "bytes": 443,
+   "mtime": "2026-11-05 15:20:08"
+  },
+  "pl_n0_T.u8": {
+   "bytes": 1771,
+   "mtime": "2026-11-05 18:42:34"
+  }
+ },
+ "seconds_total": 163.8,
+ "ok": true
+}
