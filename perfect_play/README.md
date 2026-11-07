@@ -18,15 +18,34 @@ the goat-learner environment) or the tigers do (as in the tiger-learner environm
 | goats to move, movement phase | 66,849,681 | 224,239,532 | 790,053,157 |
 | tigers to move, movement phase | 455,794,551 | 23,345,358 | 602,002,461 |
 
-**Longest forced wins** (plies with best play on both sides: the winner as fast as possible, the loser as slow):
-- **Over all positions: 215 plies.** Four positions (two mirror pairs) with the goats to move after 4 or 5
-  goats placed and none captured. Example: tigers on 4, 12, 13, goats on 3, 5, 6, 22. The goats win in 215
-  plies, and placing on square 2 is their only winning move.
-- **In the movement phase: 210 plies.** Tigers to move, 15 goats on the board, no captures; the goats win.
-  The tigers' best defence includes a capture.
+The counts above cover every arrangement of the pieces, including positions no game can reach.
 
-Per-layer counts, maximum plies and ply histograms are in `tables/metadata.json` (`movement`,
-`placement_dtm`).
+**Longest forced wins a real game can reach** (`reachable.py`; plies with best play on both sides: the winner
+as fast as possible, the loser as slow). Ready-to-load games are in [`games/`](games/): a shortest route from
+the opening to the position, then perfect play to the end. The route is only a way to get there, not good play.
+
+| Who moves first | Goats' longest forced win | … ending within 200 plies | Tigers' longest forced win |
+| --- | --- | --- | --- |
+| goats | **213 plies**, from ply 10 (game of 223 plies) | 191 plies, from ply 6 (197) | 67 plies, from ply 19 (86) |
+| tigers | **214 plies**, from ply 14 (game of 228 plies) | 193 plies, from ply 7 (200) | 67 plies, from ply 20 (87) |
+
+- Goats first, 213: tigers on 1, 5, 8, goats on 0, 6, 15, 18, 22, goats to move after 5 placed
+  ([game](games/goats_first_goats_win_213.txt)).
+- Tigers first, 214: tigers on 1, 6, 14, goats on 10, 16, 18–22, tigers to move after 7 placed
+  ([game](games/tigers_first_goats_win_214.txt)).
+- "Within 200 plies" means TnGEnv's turn limit would not cut the win off when the position is reached by the
+  shortest route. The longest wins themselves end after ply 200, so in TnGEnv they would be draws.
+
+**Over all positions, reachable or not**, the longest forced win is 215 plies: four positions with the
+goats to move after 4 or 5 goats placed, such as tigers on 4, 12, 13 and goats on 3, 5, 6, 22. No game
+reaches them. From b0, c1 and d1 the tigers need at least 7 moves to get there (no capture has happened),
+but they have made only 4 or 5 (5 or 6 with 5 goats placed). In the movement phase the longest is 210
+plies (tigers to move, 15 goats, no captures). That position is reachable, but only from ply 29 on.
+
+Reachable positions: 18,189,005,282 with the goats first and 18,553,660,020 with the tigers first, of
+19,017,918,920. Every movement-phase position with the tigers to move is reachable by the end of placement,
+in both kinds of game. Per-layer counts are in `tables/reachable.json`; ply histograms over all positions are
+in `tables/metadata.json` (`movement`, `placement_dtm`).
 
 ## How it was solved
 
@@ -54,6 +73,7 @@ Each position's mover, captured count and goats placed come from the observation
 | `pl_n{n}_{G\|T}.u2` | **deleted** (4.2 GB). The same positions at 2 bits each (0 draw, 1 mover wins, 2 mover loses), written by `solve.py`. The `.u8` files hold the same values; the oracle and `check_all.py` fall back to the 2-bit files only if the `.u8` files are missing |
 | `metadata.json` | rules hash, encodings, counts per layer, maximum plies and ply histograms, opening value |
 | `rules_proof.json`, `check_all.json`, `verification.json` | results of `prove_rules.py`, `check_all.py` and `verify_tables.py` |
+| `reachable.json` | from `reachable.py`: reachable positions per layer for goats-first and tigers-first games, with win/draw/loss counts, and the longest reachable forced wins with their games (also in [`games/`](games/)) |
 | `solve_log.txt` | the solver's log |
 
 ## Using it
@@ -124,6 +144,8 @@ What establishes each part:
 | Minimax recursion on the GPU, during the solve | every movement position | 0 failures |
 | 2-bit vs ply-count placement tables | every placement position | 0 disagreements |
 | Pure-Python recomputation of values and plies, `verify_tables.py` | 126,000 random positions, every layer | 0 mismatches |
+| Reachability, `reachable.py`: GPU forward search vs a separate pure-Python search | placement layers 0–4, both kinds of game | identical counts |
+| The longest-win games in `games/`, replayed move by move with the visualizer's rules | 6 games | legal; each reaches its position at the stated ply and ends with the stated winner after exactly the stated plies |
 | Perfect vs perfect from both openings | | draw both times: threefold repetition with a 4-ply cycle, or 400 plies with no third repeat when avoiding repeats |
 | Perfect goat vs greedy tiger, 200 games | | 78 wins, 122 draws (52 turn limit, 70 repeat rule), **0 losses** |
 | Perfect goat vs smart tiger, 200 games | | 200 draws (repeat rule), **0 losses**: the smart tiger never makes a losing mistake |
@@ -175,7 +197,7 @@ Lim Yew Jin and J. Nievergelt studied Bagh-Chal, the larger Nepali version: *Com
 | Placement phase | 39 plies, ~33 billion positions | 29–30 plies, 16.9 billion positions |
 | Sliding phase | 88,260,972 positions after symmetry | 2,162,284,740 positions (no symmetry reduction) |
 | Sliding-phase method | retrograde analysis, win/draw/loss | retrograde analysis, win/draw/loss **plus exact plies to the result** (longest 210) |
-| Placement-phase method | forward search (tree estimated at ~10⁴¹): a heuristic player against an exhaustive opponent, and a halfway database at ply 19 (216.5 million of ~1.6 billion positions computed as needed) | **every position tabulated** by backward induction, with exact plies (longest 215) |
+| Placement-phase method | forward search (tree estimated at ~10⁴¹): a heuristic player against an exhaustive opponent, and a halfway database at ply 19 (216.5 million of ~1.6 billion positions computed as needed) | **every position tabulated** by backward induction, with exact plies (longest 215 over all positions; 213 or 214 in a reachable position) |
 | What is solved | the opening position (a *weak* solution): "Goat can at least draw" and "Tiger can at least draw" | **every position** (a *strong* solution), so a perfect move exists after any history |
 | Compute | about 3 years on and off: an 8-PC cluster, a 5-month run on a PowerMac G5, 2 months of verification; re-proofs took 7 h and 48 h | **62 s** on one RTX 5070 Ti; full independent verification in 164 s on 16 CPU threads |
 | Result | **draw** | **draw** |
@@ -194,5 +216,6 @@ python perfect_play/solve.py                     # needs CuPy + CUDA GPU; moveme
 python perfect_play/solve_placement_dtm.py --delete-u2   # placement ply counts (17 GB), checked against the
                                                          # 2-bit tables, which are then deleted
 python perfect_play/check_all.py                 # independent check of every position (about 3 minutes)
+python perfect_play/reachable.py                 # reachable positions and longest reachable forced wins (1 minute)
 python perfect_play/verify_tables.py --samples 3000 --games 200
 ```

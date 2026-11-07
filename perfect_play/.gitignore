@@ -4,3 +4,4 @@ tables/*
 !tables/solve_log.txt
 !tables/rules_proof.json
 !tables/check_all.json
+!tables/reachable.json

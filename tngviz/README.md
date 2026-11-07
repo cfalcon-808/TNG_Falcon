@@ -84,7 +84,7 @@ tngviz/run.sh --first tiger                        # the tigers move first
 tngviz/run.sh --goats RobustGoat --tigers perfect  # a trained goat model (unique part of its file name)
 tngviz/run.sh --goats SmartGoat --tigers RobustTiger
 tngviz/run.sh --limits tngenv                      # TnGEnv's turn limit and repeat rule
-tngviz/run.sh --position "tigers=4,12,13 goats=3,5,6,22 captured=0 mover=goat"   # the 215-ply win
+tngviz/run.sh --game perfect_play/games/goats_first_goats_win_213.txt   # the longest reachable forced win
 tngviz/run.sh --help                               # all options
 ```
 
