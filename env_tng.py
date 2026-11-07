@@ -193,6 +193,7 @@ class TnGEnv(gym.Env):
             reward_fn=None,
             max_turns: int | None = None,
             truncate_on_invalid: bool = True,
+            terminate_on_invalid: bool = False,
             ):
         """Initialize environment state, tuning knobs, spaces, and board topology."""
         super(TnGEnv, self).__init__()
@@ -206,6 +207,9 @@ class TnGEnv(gym.Env):
         self._tiger_model_predict_fn = tiger_model_predict_fn  # callable(obs, mask)->flat action
         self.reward_fn = reward_fn or self.sparse_reward
         self.truncate_on_invalid = truncate_on_invalid
+        # True: an illegal learner action ends the episode as a real ending (terminated, not truncated),
+        # keeping its penalty, so PPO does not bootstrap the value of the unchanged board.
+        self.terminate_on_invalid = terminate_on_invalid
 
         # Load any tuning values passed to this function.
         if reward_weights is not None:
@@ -386,7 +390,13 @@ class TnGEnv(gym.Env):
             result = self._step_tiger_transition(action)
         else:
             result = self._step_goat_transition(action)
-        if not self.truncate_on_invalid and result[4].get("invalid_action", False):
+        if self.terminate_on_invalid and result[4].get("invalid_action", False):
+            # An illegal action is a terminal failure, not a time-limit cutoff.
+            # Keep the invalid reason and its penalty; do not bootstrap.
+            obs, reward, terminated, truncated, info = result
+            self.terminate = True
+            result = obs, reward, True, False, info
+        elif not self.truncate_on_invalid and result[4].get("invalid_action", False):
             # Illegal attempts consume a turn but leave the board and opponent idle.
             obs, reward, terminated, truncated, info = result
             self.terminate = self.turns >= self.max_turns
