@@ -6,7 +6,7 @@ DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PY="$DIR/.venv/bin/python"
 if [ ! -x "$PY" ]; then
     echo "Environment missing. Create it with:" >&2
-    echo "  python3 -m venv \"$DIR/.venv\" && \"$DIR/.venv/bin/pip\" install -r \"$DIR/requirements.txt\"" >&2
+    echo "  \"$DIR/setup.sh\"              (or --no-models to skip the trained models)" >&2
     exit 1
 fi
 export PYTHONPATH="$(dirname "$DIR")${PYTHONPATH:+:$PYTHONPATH}"

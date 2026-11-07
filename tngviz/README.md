@@ -26,15 +26,18 @@ The layout follows the `chessviz` visualizer.
   - Select a piece to see the result of each of its moves.
   - With no piece selected, each movable piece gets a ring in the colour of its best move.
   - Outlined badges and pills are forced results beyond the turn limit.
-- **Players:** goats and tigers can each be **Human**, **Perfect** or **Random**. Perfect takes the fastest
-  win or the slowest loss. In a draw it prefers positions not seen yet, then the moves that set the most
-  traps.
+- **Players:** the *Goats* and *Tigers* buttons open a drop-down: **Human**, **Perfect**, **Random**, or
+  any trained model in `stable_models/models/Goats` or `stable_models/models/Tigers`. Perfect takes the
+  fastest win or the slowest loss. In a draw it prefers positions not seen yet, then the moves that set
+  the most traps. A model plays its deterministic MaskablePPO move from TnGEnv's observation and action
+  mask, as in training; it loads in the background the first time it is picked (needs
+  `requirements-models.txt`).
 - **Move list:** click a move to jump to it, or step with Back and Next. `?` marks a move that threw away
   a win or a draw, and `??` a move that turned a win into a loss.
 - **Rules:**
-  - *Limits: TnGEnv* (the default) plays like `env_tng.py`: 100 turns (200 plies), and with goats moving
-    first, the 4th repeat of a board ends the game as a draw.
-  - *Limits: None* is the solved game, which a draw makes endless.
+  - *Limits: None* (the default) is the solved game, which a draw makes endless.
+  - *Limits: TnGEnv* plays like `env_tng.py`: 100 turns (200 plies), and with goats moving first, the 4th
+    repeat of a board ends the game as a draw.
   - *First* chooses who moves first.
 - **Copy and paste** a position (`tigers=4,12,13 goats=3,5,6,22 captured=0 mover=goat`) or a whole game.
 
@@ -44,20 +47,31 @@ Requires Python 3.10 or newer and the solved tables in `perfect_play/tables` (21
 with the rebuild commands in [`perfect_play/README.md`](../perfect_play/README.md#rebuild), or pass
 `--tables PATH`. Without them, the board still opens for human and random play.
 
-### Linux / macOS
+The setup scripts create the virtual environment and install everything, including CPU torch and
+sb3-contrib for the trained models (about 200 MB). Pass `--no-models` to skip those; the model entries
+then report that the packages are missing when picked.
+
+| | Linux / macOS | Windows (cmd or PowerShell) |
+| --- | --- | --- |
+| Set up | `tngviz/setup.sh` | `tngviz\setup.cmd` |
+| Set up without models | `tngviz/setup.sh --no-models` | `tngviz\setup.cmd --no-models` |
+| Choose the Python | `PYTHON=python3.12 tngviz/setup.sh` | `set PYTHON=py -3.12` then `tngviz\setup.cmd` |
+| Environment | `tngviz/.venv` | `tngviz\.venv-windows` |
+| Run | `tngviz/run.sh [options]` | `tngviz\run.cmd [options]` |
+| Tests | `PYTHONPATH=. tngviz/.venv/bin/python -m tngviz.test_tngviz` | `set PYTHONPATH=.` then `tngviz\.venv-windows\Scripts\python.exe -m tngviz.test_tngviz` |
+
+Both environments can live side by side in one checkout (for example on a drive shared with WSL).
+
+<details><summary>Manual setup</summary>
 
 ```bash
-python3 -m venv tngviz/.venv
-tngviz/.venv/bin/pip install -r tngviz/requirements.txt
+python3 -m venv tngviz/.venv                                  # Windows: py -3 -m venv tngviz\.venv-windows
+tngviz/.venv/bin/pip install -r tngviz/requirements.txt       # Windows: tngviz\.venv-windows\Scripts\python.exe -m pip ...
+tngviz/.venv/bin/pip install torch --index-url https://download.pytorch.org/whl/cpu   # optional: models
+tngviz/.venv/bin/pip install -r tngviz/requirements-models.txt                        # optional: models
 ```
 
-### Windows
-
-```powershell
-cd tngviz
-py -3 -m venv .venv-windows
-.\.venv-windows\Scripts\python.exe -m pip install -r requirements.txt
-```
+</details>
 
 ## Run
 
@@ -67,7 +81,9 @@ tngviz/run.sh --goats perfect --tigers human       # you play the tigers
 tngviz/run.sh --goats human --tigers human         # analysis board: move both sides yourself
 tngviz/run.sh --goats perfect --tigers random --delay 0.25
 tngviz/run.sh --first tiger                        # the tigers move first
-tngviz/run.sh --limits none                        # the solved game, no turn limit or repeat rule
+tngviz/run.sh --goats RobustGoat --tigers perfect  # a trained goat model (unique part of its file name)
+tngviz/run.sh --goats SmartGoat --tigers RobustTiger
+tngviz/run.sh --limits tngenv                      # TnGEnv's turn limit and repeat rule
 tngviz/run.sh --position "tigers=4,12,13 goats=3,5,6,22 captured=0 mover=goat"   # the 215-ply win
 tngviz/run.sh --help                               # all options
 ```
@@ -82,7 +98,7 @@ with `PYTHONPATH=. tngviz/.venv/bin/python -m tngviz`.
 | Place a goat | click an empty square | |
 | Move a piece | click-click or drag | Esc deselects |
 | Play a listed move | click it in the side-to-move panel | |
-| Goats / Tigers: Human, Perfect, Random | top-row buttons | `1` / `G`, `2` / `T` |
+| Goats / Tigers: Human, Perfect, Random or a model | top-row drop-downs (cycle with keys) | `1` / `G`, `2` / `T` |
 | Who moves first | First (starts a new game if no move was made) | |
 | TnGEnv limits on / off | Limits | `R` |
 | Step back / forward | Back / Next, mouse wheel on the board | `←` `→` |
@@ -115,7 +131,7 @@ press Space, to continue. While paused you can move for either side.
   d ≤ 200 (see `PerfectPlay.evaluate_with_limit`). The repeat rule never interrupts a perfect winner,
   because along a winning line the plies to go fall every ply.
 - **End of the game:** six captures win for the tigers. A side with no legal move loses. With the limits
-  on, the 200th ply or the 4th repeat ends the game as a draw. Switch to *Limits: None* to play on.
+  on, the 200th ply or the 4th repeat ends the game as a draw. Switch to *Limits: None* (the default) to play on.
 - **Tests:** `PYTHONPATH=. tngviz/.venv/bin/python -m tngviz.test_tngviz` from the repository root.
   They cover:
   - moves and captures against TnGEnv's action mask;

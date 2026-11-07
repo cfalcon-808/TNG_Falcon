@@ -157,7 +157,9 @@ def test_app_headless():
     import pygame
     from tngviz.app import App, parse_args
 
-    app = App(parse_args(["--size", "1200x780", "--goats", "human", "--tigers", "perfect", "--delay", "0"]))
+    assert parse_args([]).limits == "none"
+    app = App(parse_args(["--size", "1200x780", "--goats", "human", "--tigers", "perfect", "--delay", "0",
+                          "--limits", "tngenv"]))
     try:
         for _ in range(3):
             assert app.step()
@@ -190,6 +192,65 @@ def test_app_headless():
             if app.outcome is not None:
                 break
         assert app.outcome is not None and app.outcome.winner != TIGER   # perfect goats never lose
+    finally:
+        pygame.quit()
+
+
+def test_model_observation_matches_tngenv():
+    """The observation a model sees equals TnGEnv.get_state() on the same board."""
+    from tngviz.models import observation
+    rng = random.Random(17)
+    for _ in range(500):
+        pos = _random_position(rng)
+        assert np.array_equal(observation(pos), _env_at(pos).get_state()), pos
+
+
+def test_models_play():
+    """Every trained model loads, fits TnGEnv's spaces, and plays a full game through the app's dropdown."""
+    import importlib.util
+    from tngviz.models import ModelPlayer, discover
+    found = discover()
+    infos = found[GOAT] + found[TIGER]
+    assert infos, "no models in stable_models/models"
+    if importlib.util.find_spec("sb3_contrib") is None:
+        print("  skipped: sb3-contrib not installed")
+        return
+    rng = random.Random(23)
+    for info in infos:
+        mp = ModelPlayer(info)
+        mp._load()
+        assert mp.ready, mp.error
+        assert mp.model.observation_space.shape == (25,) and mp.model.action_space.n == 115, info.path.name
+        played = 0
+        for _ in range(200):
+            pos = _random_position(rng)
+            if pos.mover != info.side or not legal_moves(pos):
+                continue
+            mv = mp.choose(pos, legal_moves(pos))
+            assert mv is not None and mv in legal_moves(pos), (info.path.name, pos)
+            played += 1
+        assert played > 20
+
+    import pygame
+    from tngviz.app import App, parse_args
+    goat, tiger = found[GOAT][0], found[TIGER][0]
+    app = App(parse_args(["--size", "1200x780", "--goats", "human", "--tigers", "random", "--delay", "0"]))
+    try:
+        dd = app.dropdowns[GOAT]
+        app.step()
+        x, y = app.btn_goats.rect.center
+        app._on_left_down((x, y))
+        assert dd.open
+        rows = dd._rows(app.screen.get_height())
+        target = [r for r, (value, _, _) in rows if value == goat.key][0]
+        app._on_left_down(target.center)                      # pick the first goat model from the list
+        assert not dd.open and app.players[GOAT] == goat.key
+        app._set_player(TIGER, app._resolve_player(TIGER, tiger.path.stem))
+        deadline = time.monotonic() + 120
+        while app.outcome is None and len(app.game.moves) < 60 and time.monotonic() < deadline:
+            app.step()
+        sides = {m.side for m in app.game.moves}
+        assert sides == {GOAT, TIGER}, "both models moved"
     finally:
         pygame.quit()
 

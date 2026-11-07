@@ -3,9 +3,8 @@ setlocal
 rem Keep relative --tables and --game paths relative to the caller's directory.
 set "TNGVIZ_PYTHON=%~dp0.venv-windows\Scripts\python.exe"
 if not exist "%TNGVIZ_PYTHON%" (
-    echo Windows environment missing. Run these commands in the tngviz folder:
-    echo   py -3 -m venv .venv-windows
-    echo   .venv-windows\Scripts\python.exe -m pip install -r requirements.txt
+    echo Windows environment missing. Create it with:
+    echo   "%~dp0setup.cmd"              ^(or --no-models to skip the trained models^)
     exit /b 1
 )
 if defined PYTHONPATH (

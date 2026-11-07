@@ -24,9 +24,11 @@ from . import ui  # noqa: E402
 from .game import (DEFAULT_TABLES, FLIP, GOAT, OTHER, PLY_LIMIT, RANK, SIDE_NAME, TIGER, Analysis,  # noqa: E402
                    Analyzer, Game, Line, Move, Outcome, Position, describe, edges, goat_count_text,
                    legal_moves, parse_position, pill_text, position_to_text, square_name, start_position)
+from .models import PREFIX as MODEL_PREFIX, ModelInfo, ModelPlayer, discover  # noqa: E402
 
 HUMAN, PERFECT, RANDOM = "human", "perfect", "random"
 PLAYER_LABEL = {HUMAN: "Human", PERFECT: "Perfect", RANDOM: "Random"}
+PLAYER_NOTE = {HUMAN: "you move", PERFECT: "solved tables", RANDOM: "uniform legal move"}
 DELAYS = [0.0, 0.1, 0.25, 0.5, 1.0, 2.0, 3.0, 5.0]
 ANIM_SECONDS = 0.18
 FLASH_SECONDS = 4.0
@@ -114,11 +116,14 @@ class App:
         # game and options
         self.first = args.first
         self.limits = args.limits == "tngenv"
-        self.players: Dict[str, str] = {GOAT: args.goats, TIGER: args.tigers}
-        if self.an is None:
-            for side in self.players:
-                if self.players[side] == PERFECT:
-                    self.players[side] = HUMAN
+        self.models: Dict[str, List[ModelInfo]] = discover()
+        self.model_players: Dict[str, ModelPlayer] = {}
+        self.players: Dict[str, str] = {GOAT: HUMAN, TIGER: HUMAN}
+        for side, spec in ((GOAT, args.goats), (TIGER, args.tigers)):
+            kind = self._resolve_player(side, spec)
+            if kind == PERFECT and self.an is None:
+                kind = HUMAN
+            self._set_player(side, kind, announce=False)
         self.paused = False
         self.lines_max = _clamp(args.lines, 1, LINES_MAX)
         self.pv_len = _clamp(args.pv, 0, PV_MAX)
@@ -202,12 +207,18 @@ class App:
     def _build_controls(self) -> None:
         B = ui.Button
         has_moves = lambda: self.game.ply < len(self.game.moves)  # noqa: E731
-        self.btn_goats = B(lambda: self._fit(f"Goats: {PLAYER_LABEL[self.players[GOAT]]}",
-                                             f"G: {PLAYER_LABEL[self.players[GOAT]]}", self.btn_goats),
-                           lambda: self._cycle_player(GOAT), active=lambda: self.players[GOAT] != HUMAN)
-        self.btn_tigers = B(lambda: self._fit(f"Tigers: {PLAYER_LABEL[self.players[TIGER]]}",
-                                              f"T: {PLAYER_LABEL[self.players[TIGER]]}", self.btn_tigers),
-                            lambda: self._cycle_player(TIGER), active=lambda: self.players[TIGER] != HUMAN)
+        self.btn_goats = B(lambda: self._fit(f"Goats: {self._player_label(self.players[GOAT])} ▾",
+                                             f"G: {self._player_label(self.players[GOAT])} ▾", self.btn_goats),
+                           lambda: None, active=lambda: self.players[GOAT] != HUMAN)
+        self.btn_tigers = B(lambda: self._fit(f"Tigers: {self._player_label(self.players[TIGER])} ▾",
+                                              f"T: {self._player_label(self.players[TIGER])} ▾", self.btn_tigers),
+                            lambda: None, active=lambda: self.players[TIGER] != HUMAN)
+        self.dropdowns = {
+            side: ui.Dropdown(btn, lambda side=side: self._player_options(side),
+                              lambda side=side: self.players[side],
+                              lambda kind, side=side: self._set_player(side, kind))
+            for side, btn in ((GOAT, self.btn_goats), (TIGER, self.btn_tigers))
+        }
         self.btn_first = B(lambda: self._fit(f"First: {SIDE_NAME[self.first]}",
                                              f"{SIDE_NAME[self.first]} first", self.btn_first), self._toggle_first)
         self.btn_limits = B(lambda: self._fit(f"Limits: {'TnGEnv' if self.limits else 'None'}",
@@ -458,11 +469,80 @@ class App:
         self.movelist_scroll = 0
         self._on_position_changed()
 
-    def _cycle_player(self, side: str) -> None:
+    # ------------------------------------------------------------------
+    # players
+    # ------------------------------------------------------------------
+    def _model_info(self, kind: str) -> Optional[ModelInfo]:
+        for infos in self.models.values():
+            for info in infos:
+                if info.key == kind:
+                    return info
+        return None
+
+    def _player_label(self, kind: str) -> str:
+        info = self._model_info(kind)
+        return info.label if info else PLAYER_LABEL.get(kind, kind)
+
+    def _player_options(self, side: str) -> List[Tuple[str, str, str]]:
         kinds = [HUMAN, PERFECT, RANDOM] if self.an is not None else [HUMAN, RANDOM]
+        out = [(k, PLAYER_LABEL[k], PLAYER_NOTE[k]) for k in kinds]
+        out += [(info.key, info.label, "trained model") for info in self.models[side]]
+        return out
+
+    def _resolve_player(self, side: str, spec: str) -> str:
+        """A --goats/--tigers value: human, perfect, random, or a model of that side by file name or label
+        (case-insensitive; a unique substring is enough)."""
+        s = spec.strip().lower()
+        if s in PLAYER_LABEL:
+            return s
+        s = s[len(MODEL_PREFIX):] if s.startswith(MODEL_PREFIX) else s
+        infos = self.models[side]
+        exact = [i for i in infos if s in (i.path.stem.lower(), i.label.lower())]
+        part = exact or [i for i in infos if s in i.path.stem.lower() or s in i.label.lower()]
+        if len(part) == 1:
+            return part[0].key
+        names = ", ".join(i.path.stem for i in infos) or "none found"
+        why = f"matches several {side} models" if part else f"matches no {side} model"
+        raise SystemExit(f"--{SIDE_NAME[side].lower()} {spec!r} {why}. Use human, perfect, random or one of: {names}")
+
+    def _set_player(self, side: str, kind: str, announce: bool = True) -> None:
+        info = self._model_info(kind)
+        if info is not None:
+            mp = self.model_players.get(kind)
+            if mp is None or mp.error:
+                mp = self.model_players[kind] = ModelPlayer(info)
+            mp.start()
+            if announce and not mp.ready:
+                self._flash(f"Loading {info.label} for the {SIDE_NAME[side].lower()}…")
+        self.players[side] = kind
+        if announce:
+            self.engine_due = time.monotonic() + self.delay
+
+    def _cycle_player(self, side: str) -> None:
+        kinds = [k for k, _, _ in self._player_options(side)]
         cur = self.players[side]
-        self.players[side] = kinds[(kinds.index(cur) + 1) % len(kinds)] if cur in kinds else HUMAN
-        self.engine_due = time.monotonic() + self.delay
+        self._set_player(side, kinds[(kinds.index(cur) + 1) % len(kinds)] if cur in kinds else HUMAN)
+
+    def _engine_move(self, side: str) -> Optional[Move]:
+        """The engine's move for `side`, or None while a model is still loading."""
+        kind = self.players[side]
+        moves = legal_moves(self.game.pos)
+        if kind == PERFECT and self.cur is not None:
+            return self.an.choose(self.cur, self.game.seen(), self.rng)
+        mp = self.model_players.get(kind)
+        if mp is not None:
+            if mp.error:
+                self._flash(f"{mp.info.label}: {mp.error}. The {SIDE_NAME[side].lower()} are now Human.", ui.BAD)
+                print(mp.error, file=sys.stderr)
+                self.players[side] = HUMAN
+                return None
+            if not mp.ready:
+                return None
+            mv = mp.choose(self.game.pos, moves)
+            if mv is not None:
+                return mv
+            self._flash(f"{mp.info.label} proposed an illegal move; played a random one.", ui.WARN)
+        return self.rng.choice(moves)
 
     def _toggle_first(self) -> None:
         self.first = OTHER[self.first]
@@ -623,6 +703,15 @@ class App:
     # input
     # ------------------------------------------------------------------
     def _on_left_down(self, pos: Tuple[int, int]) -> None:
+        h = self.screen.get_height()
+        for dd in self.dropdowns.values():
+            if dd.open:
+                # a click outside an open menu only closes it, unless it opens the other menu
+                if not dd.click(pos, h):
+                    for other in self.dropdowns.values():
+                        if other is not dd and other.button.hit(pos):
+                            other.toggle()
+                return
         for b in self._all_buttons():
             if b.hit(pos):
                 b.on_click()
@@ -736,6 +825,8 @@ class App:
         elif k in (pygame.K_MINUS, pygame.K_KP_MINUS):
             self._set_lines(self.lines_max - 1)
         elif k == pygame.K_ESCAPE:
+            for dd in self.dropdowns.values():
+                dd.open = False
             self.selected = None
             self.dragging = False
         return True
@@ -749,12 +840,9 @@ class App:
             self.anim = None
             self.engine_due = max(self.engine_due, now + min(self.delay, 0.05))
         if self._engine_should_move() and now >= self.engine_due:
-            side = self.game.pos.mover
-            if self.players[side] == PERFECT and self.cur is not None:
-                mv = self.an.choose(self.cur, self.game.seen(), self.rng)
-            else:
-                mv = self.rng.choice(legal_moves(self.game.pos))
-            self._play_move(mv, animate=self.delay > 0, human=False)
+            mv = self._engine_move(self.game.pos.mover)
+            if mv is not None:
+                self._play_move(mv, animate=self.delay > 0, human=False)
 
         t_end = time.perf_counter() + PV_BUDGET
         while self.pv_jobs and time.perf_counter() < t_end:
@@ -795,6 +883,8 @@ class App:
         self._draw_eval_bar()
         self._draw_board()
         self._draw_panel()
+        for dd in self.dropdowns.values():
+            dd.draw_menu(self.screen, self.fonts, self.mouse)
 
     def _draw_eval_bar(self) -> None:
         r, s = self.eval_rect, self.screen
@@ -1011,8 +1101,10 @@ class App:
         kind = self.players[mover]
         if kind != HUMAN and self.paused:
             text += " · engines paused (Space to resume)"
+        elif kind in self.model_players and not self.model_players[kind].ready:
+            text += f" · loading {self._player_label(kind)}…"
         elif kind != HUMAN:
-            text += f" · {PLAYER_LABEL[kind]} engine to move"
+            text += f" · {self._player_label(kind)} engine to move"
         else:
             text += " · your move"
         return text, ui.TEXT
@@ -1317,13 +1409,17 @@ def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
     p = argparse.ArgumentParser(
         prog="tngviz",
         description="Tigers & Goats board with perfect-play analysis for both sides, forced wins and engine play.")
-    kinds = [HUMAN, PERFECT, RANDOM]
-    p.add_argument("--goats", choices=kinds, default=HUMAN, help="who plays the goats (default: human)")
-    p.add_argument("--tigers", choices=kinds, default=PERFECT, help="who plays the tigers (default: perfect)")
+    found = discover()
+    for side, flag in ((GOAT, "goats"), (TIGER, "tigers")):
+        names = ", ".join(i.path.stem for i in found[side]) or "none found"
+        p.add_argument(f"--{flag}", default=HUMAN if side == GOAT else PERFECT,
+                       help=f"who plays the {flag}: human, perfect, random, or a trained model from "
+                            f"stable_models/models/{flag.title()} by file name or a unique part of it "
+                            f"({names}) (default: {'human' if side == GOAT else 'perfect'})")
     p.add_argument("--first", choices=[GOAT, TIGER], default=GOAT, help="who moves first (default: goat)")
-    p.add_argument("--limits", choices=["tngenv", "none"], default="tngenv",
+    p.add_argument("--limits", choices=["tngenv", "none"], default="none",
                    help="tngenv: 200-ply turn limit and the 4th-repeat rule, as in TnGEnv; none: the solved "
-                        "game without limits (default: tngenv)")
+                        "game without limits (default: none)")
     p.add_argument("--position", help="start from a position, e.g. 'tigers=4,12,13 goats=3,5,6,22 captured=0 "
                                       "mover=goat'")
     p.add_argument("--game", help="load a game saved with Copy game (a text file)")

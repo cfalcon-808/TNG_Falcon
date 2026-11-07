@@ -129,6 +129,71 @@ class Button:
                   anchor="center", max_w=self.rect.w - 10)
 
 
+class Dropdown:
+    """A button that opens a list of (value, label, note) options below it; the open list draws on top."""
+
+    ROW_H = 26
+
+    def __init__(self, button: Button, options: Callable[[], Sequence[Tuple[str, str, str]]],
+                 current: Callable[[], str], on_pick: Callable[[str], None]) -> None:
+        self.button = button
+        self.options = options
+        self.current = current
+        self.on_pick = on_pick
+        self.open = False
+        self.button.on_click = self.toggle
+
+    def toggle(self) -> None:
+        self.open = not self.open
+
+    def _rows(self, screen_h: int) -> list:
+        opts = list(self.options())
+        r = self.button.rect
+        h = self.ROW_H * len(opts) + 6
+        y = r.bottom + 2 if r.bottom + 2 + h <= screen_h else max(0, r.top - 2 - h)
+        width = max(r.w, 260)
+        return [(pygame.Rect(r.x + 3, y + 3 + i * self.ROW_H, width - 6, self.ROW_H), o) for i, o in enumerate(opts)]
+
+    def menu_rect(self, screen_h: int) -> pygame.Rect:
+        rows = self._rows(screen_h)
+        if not rows:
+            return pygame.Rect(0, 0, 0, 0)
+        top, bottom = rows[0][0], rows[-1][0]
+        return pygame.Rect(top.x - 3, top.y - 3, top.w + 6, bottom.bottom - top.y + 6)
+
+    def click(self, pos: Tuple[int, int], screen_h: int) -> bool:
+        """Handle a click while open; True if it was consumed (a pick, or a click on the menu frame)."""
+        if not self.open:
+            return False
+        for rect, (value, _label, _note) in self._rows(screen_h):
+            if rect.collidepoint(pos):
+                self.open = False
+                self.on_pick(value)
+                return True
+        inside = self.menu_rect(screen_h).collidepoint(pos)
+        self.open = False
+        return inside or self.button.rect.collidepoint(pos)
+
+    def draw_menu(self, surf: pygame.Surface, fonts: Fonts, mouse: Tuple[int, int]) -> None:
+        if not self.open:
+            return
+        h = surf.get_height()
+        frame = self.menu_rect(h)
+        pygame.draw.rect(surf, PANEL, frame, border_radius=6)
+        pygame.draw.rect(surf, ACCENT, frame, width=1, border_radius=6)
+        cur = self.current()
+        for rect, (value, label, note) in self._rows(h):
+            if value == cur:
+                pygame.draw.rect(surf, ACCENT_DARK, rect, border_radius=4)
+            elif rect.collidepoint(mouse):
+                pygame.draw.rect(surf, PANEL_HOVER, rect, border_radius=4)
+            lr = draw_text(surf, fonts.regular, label, TEXT, (rect.x + 8, rect.centery), anchor="midleft",
+                           max_w=rect.w - 16)
+            if note:
+                draw_text(surf, fonts.small, note, MUTED, (lr.right + 10, rect.centery), anchor="midleft",
+                          max_w=rect.right - lr.right - 18)
+
+
 class Stepper:
     """'Title: value' with − and + buttons."""
 
