@@ -58,6 +58,8 @@ Each position's mover, captured count and goats placed come from the observation
 
 ## Using it
 
+To play against the tables or explore positions on a board, use the visualizer in [`tngviz/`](../tngviz/README.md): it shows every move's exact result, the best moves and forced wins for both sides.
+
 ```python
 from perfect_play.oracle import PerfectPlay, Position, RepetitionTracker
 pp = PerfectPlay()

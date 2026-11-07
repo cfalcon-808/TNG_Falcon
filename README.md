@@ -37,6 +37,8 @@ An experiment contains named `TRAINING_RUNS`. Each run config defines an indepen
 | `train.py` | PPO training and experiment runner |
 | `eval.py` | Evaluation and matchup sweeps |
 | `gui.py` | Tkinter game and replay viewer |
+| [`perfect_play/`](perfect_play/README.md) | The solved game: exact value and plies to the end of every position, with the solver, proofs and checks |
+| [`tngviz/`](tngviz/README.md) | Perfect-play visualizer: play either side, see every move's exact result, the best moves and forced wins |
 | `model_summary.py` | Policy architecture inspection |
 | `requirements.txt` | Python dependencies needed to run the project |
 | `.gitignore` | Shared rules that keep generated outputs and local files out of Git |
