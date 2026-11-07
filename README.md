@@ -6,11 +6,9 @@ A reinforcement learning project using MaskablePPO with masked and unmasked lear
 
 Follow the [quickstart](Important_Docs/QUICKSTART.md) to install dependencies, play, evaluate a model, and run a short training experiment.
 
-For Colab or Jupyter, open the standalone [general PPO notebook](TnG_PPO_Notebook.ipynb) for optional learner masking and masked/unmasked evaluation, or the [MPPO notebook](TnG_MPPO_Notebook.ipynb) for masked training and evaluation. Both use MaskablePPO. Edit the configuration cell near the top, then run the chosen notebook in order. Each includes the environment, training, and a separate final evaluation section; no repository clone is required.
+For Colab or Jupyter, open the standalone [control-center notebook](TnG_Notebook.ipynb). Tick the features to run in its first cell, then set the grouped options in the second. It includes the environment, Maskable PPO and plain PPO training (clip, KL penalty or SPO policy losses, MSE or Huber value loss, and an optional legality loss), evaluation with and without masks, model listing, diagnostics, human play and a GUI launcher; no repository clone is required. It replaces the v1.1 `TnG_PPO_Notebook.ipynb` and `TnG_MPPO_Notebook.ipynb`, including the legality-loss experiment added on `main`; both remain in the git history.
 
-The [control-center notebook](TnG_Notebook.ipynb) combines both workflows with the older control hub in one place. Tick the features to run in its first cell, then set the grouped options in the second. It adds model listing, diagnostics, a GUI launcher, and plain PPO with a configurable loss (clip, KL penalty or SPO policy losses, MSE or Huber value loss, and an optional legality loss).
-
-**Version 1.1 · Notebook update: October 25, 2026**
+**Version 1.3 · Notebook update: November 7, 2026**
 
 An experiment contains named `TRAINING_RUNS`. Each run config defines an independent training job; phase configs continue the same model through stages. See the [run config reference](Important_Docs/TRAINING_RUN_CONFIGS.md) for notebook/script differences.
 
@@ -31,8 +29,6 @@ An experiment contains named `TRAINING_RUNS`. Each run config defines an indepen
 | Path | Purpose |
 | --- | --- |
 | `env_tng.py` | Game rules, environment, action masks, and rewards |
-| [`TnG_MPPO_Notebook.ipynb`](TnG_MPPO_Notebook.ipynb) | Standalone masked training, evaluation, and interactive play |
-| [`TnG_PPO_Notebook.ipynb`](TnG_PPO_Notebook.ipynb) | General PPO with optional masking, seeded comparisons, and masked/unmasked evaluation |
 | [`TnG_Notebook.ipynb`](TnG_Notebook.ipynb) | Control center: selectable features for the environment, models, training (Maskable PPO or plain PPO with a configurable loss), evaluation, diagnostics, and play |
 | `train.py` | PPO training and experiment runner |
 | `eval.py` | Evaluation and matchup sweeps |

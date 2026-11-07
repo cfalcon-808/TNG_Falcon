@@ -4171,5 +4171,7 @@
     "seconds": 27.4
   },
   "rules_note": "env_tng.py changed after the solve only in TnGEnv._find_jumped_goat (the goat removed by the capture 4 -> 2 over 3 was the hub goat, or none); the solved game always removed the goat on 3. The move graph, HUB0_CAPTURE_JUMP and _tiger_moves are unchanged. See rules_proof.json.",
-  "rules_sha256_after_fix": "eac52150eaff130ab50e860edfb22118e99585b7390853ba7bfd35c8a4af3592"
+  "rules_sha256_after_fix": "eac52150eaff130ab50e860edfb22118e99585b7390853ba7bfd35c8a4af3592",
+  "rules_sha256_v1_3": "879c49853f7205b3855d96d06b0fdf90051111fa88e79ee7faaa9866815da6f9",
+  "rules_note_v1_3": "env_tng.py v1.3 adds terminate_on_invalid (from main), which only changes how an illegal learner action ends an episode. prove_rules.py was rerun on this file: 0 mismatches, so the tables still match TnGEnv's rules."
 }

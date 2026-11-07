@@ -13,7 +13,7 @@ python -m pip install -r requirements.txt
 
 The GUI requires Tkinter, included with standard Windows Python installations.
 
-For a standalone Colab or Jupyter workflow, open [TnG_PPO_Notebook.ipynb](../TnG_PPO_Notebook.ipynb) for optional masking and masked/unmasked evaluation, or [TnG_MPPO_Notebook.ipynb](../TnG_MPPO_Notebook.ipynb) for masked training and evaluation. Both use MaskablePPO. Edit the chosen notebook's configuration cell and run it from top to bottom. Each includes the environment, training, evaluation, and interactive play. [TnG_Notebook.ipynb](../TnG_Notebook.ipynb) is the control center: it combines both with model listing, diagnostics, and plain PPO with a configurable loss, and you choose which sections run.
+For a standalone Colab or Jupyter workflow, open [TnG_Notebook.ipynb](../TnG_Notebook.ipynb), the control center. Tick the sections to run in its first cell, set the options in the second, and run it from top to bottom. It includes the environment, Maskable PPO and plain PPO training, evaluation with and without masks, model listing, diagnostics, and interactive play.
 
 ## 2. Play
 

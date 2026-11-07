@@ -1,7 +1,9 @@
 # Training mathematics: environment, algorithms, models and tests
 
 **Version 1.2 · 2026-10-28** · Code: `env_tng.py` (v1.1, commit `11ee06e`), `TnG_Notebook.ipynb` (control center, v1.2),
-`TnG_MPPO_Notebook.ipynb`, `TnG_PPO_Notebook.ipynb`, `train.py`.
+`TnG_MPPO_Notebook.ipynb`, `TnG_PPO_Notebook.ipynb`, `train.py`. The two v1.1 notebooks were removed in v1.3 (their
+options and `main`'s legality-loss experiment are in `TnG_Notebook.ipynb`); they stay in the git history, and the
+sections below still describe how the models they trained were trained.
 
 This document specifies, in one notation:
 - the game as a decision process

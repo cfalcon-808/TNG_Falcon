@@ -4,7 +4,7 @@
     "legality_mismatches": 0,
     "capture_effect_mismatches": 0,
     "discrepancies": {},
-    "seconds": 18.2,
+    "seconds": 18.5,
     "squares_read_per_piece": {
       "tiger": {
         "0": [
@@ -338,33 +338,33 @@
     }
   },
   "state_writes": [
-    "__init__ line 254: self.eaten = 0",
-    "__init__ line 255: self.phase = 0",
-    "__init__ line 256: self.goats_placed = 0",
-    "__init__ line 252: self.board[idx] = 2",
-    "reset line 348: self.board[:] = 0",
-    "reset line 352: self.eaten = 0",
-    "reset line 353: self.phase = 0",
-    "reset line 354: self.goats_placed = 0",
-    "reset line 350: self.board[idx] = 2",
-    "_step_goat_transition line 1071: self.board[t_to] = 2",
-    "_step_goat_transition line 1072: self.board[t_from] = 0",
-    "_step_goat_transition line 968: self.board[pos] = 1",
-    "_step_goat_transition line 969: self.goats_placed += 1",
-    "_step_goat_transition line 990: self.board[pos] = 0",
-    "_step_goat_transition line 991: self.board[dest] = 1",
-    "_step_goat_transition line 973: self.phase = 1",
-    "_step_goat_transition line 1067: self.board[jumped_goat_pos] = 0",
-    "_step_goat_transition line 1068: self.eaten += 1",
-    "_step_tiger_transition line 1187: self.board[dest] = 2",
-    "_step_tiger_transition line 1188: self.board[pos] = 0",
-    "_step_tiger_transition line 1193: self.board[jumped_goat_pos] = 0",
-    "_step_tiger_transition line 1194: self.eaten += 1",
-    "_step_tiger_transition line 1287: self.board[g_pos] = 1",
-    "_step_tiger_transition line 1288: self.goats_placed += 1",
-    "_step_tiger_transition line 1294: self.board[g_pos] = 0",
-    "_step_tiger_transition line 1295: self.board[g_dest] = 1",
-    "_step_tiger_transition line 1290: self.phase = 1"
+    "__init__ line 258: self.eaten = 0",
+    "__init__ line 259: self.phase = 0",
+    "__init__ line 260: self.goats_placed = 0",
+    "__init__ line 256: self.board[idx] = 2",
+    "reset line 352: self.board[:] = 0",
+    "reset line 356: self.eaten = 0",
+    "reset line 357: self.phase = 0",
+    "reset line 358: self.goats_placed = 0",
+    "reset line 354: self.board[idx] = 2",
+    "_step_goat_transition line 1081: self.board[t_to] = 2",
+    "_step_goat_transition line 1082: self.board[t_from] = 0",
+    "_step_goat_transition line 978: self.board[pos] = 1",
+    "_step_goat_transition line 979: self.goats_placed += 1",
+    "_step_goat_transition line 1000: self.board[pos] = 0",
+    "_step_goat_transition line 1001: self.board[dest] = 1",
+    "_step_goat_transition line 983: self.phase = 1",
+    "_step_goat_transition line 1077: self.board[jumped_goat_pos] = 0",
+    "_step_goat_transition line 1078: self.eaten += 1",
+    "_step_tiger_transition line 1197: self.board[dest] = 2",
+    "_step_tiger_transition line 1198: self.board[pos] = 0",
+    "_step_tiger_transition line 1203: self.board[jumped_goat_pos] = 0",
+    "_step_tiger_transition line 1204: self.eaten += 1",
+    "_step_tiger_transition line 1297: self.board[g_pos] = 1",
+    "_step_tiger_transition line 1298: self.goats_placed += 1",
+    "_step_tiger_transition line 1304: self.board[g_pos] = 0",
+    "_step_tiger_transition line 1305: self.board[g_dest] = 1",
+    "_step_tiger_transition line 1300: self.phase = 1"
   ],
   "transition_and_terminal_rules": [
     "goat placement (both learner paths): board[pos] = 1, goats_placed += 1, phase = 1 once goats_placed >= 15 -> rules: gm | 1 << p, placed + 1 (placing while placed < 15)",
@@ -397,7 +397,7 @@
     },
     "indices_checked": 1846054980,
     "failures": 0,
-    "seconds": 16.6
+    "seconds": 16.5
   },
   "checker_vs_rules_every_board": {
     "blocks": {
@@ -500,6 +500,6 @@
     },
     "boards": 1846054980,
     "mismatches": 0,
-    "seconds": 614.3
+    "seconds": 625.6
   }
 }

@@ -156,9 +156,9 @@ tables. `prove_rules.py` found 1,248 differing local patterns before the fix and
 checker flagged the same capture from `env_tng.py` alone. Models trained or evaluated before the fix saw the
 old behaviour.
 
-The notebooks `TnG_Notebook.ipynb`, `TnG_MPPO_Notebook.ipynb` and `TnG_PPO_Notebook.ipynb` each contain their
-own copy of the environment. Those copies still have the old `_find_jumped_goat`. `TnG_Notebook.ipynb` uses
-the fixed file when `ENV_SOURCE = "repo"`.
+`TnG_Notebook.ipynb` contains its own copy of the environment; since v1.3 it has the fix too and matches
+`env_tng.py` line for line apart from comments. The removed v1.1 notebooks, and `main` until it merges this
+branch, still have the old `_find_jumped_goat`.
 
 ## Comparison with the published Bagh-Chal solution
 

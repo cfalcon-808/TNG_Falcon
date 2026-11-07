@@ -212,7 +212,8 @@ tiger in this environment. That is a ceiling for every model in the legality stu
 
 ### 7.1 Compute, from measured throughput
 
-`tools/dp_bench.py` uses the exact move rules and the indexing of §4.4. On 16 threads it measured
+A benchmark script (`tools/dp_bench.py`, removed once the solver existed; it is in the git history) used the
+exact move rules and the indexing of §4.4. On 16 threads it measured
 **4.2 million positions per second, or 82 million successor reads per second**. Each position generated all
 of its ~19.5 successors, indexed them, and read their values from a full-size 446 MB table, so every read is
 a realistic cache miss. The machine was partly loaded during the run, so these figures are conservative.
