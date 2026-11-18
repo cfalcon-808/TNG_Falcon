@@ -1,0 +1,37 @@
+\section{Overview}\label{sec:intro}
+
+Tigers \& Goats is a two-player board game on 23 squares. Three tigers start on the board. The goats enter
+one at a time until 15 have been placed, and then slide. A tiger captures a goat by jumping over it; six
+captures win for the tigers. The goats win by leaving the tigers without a legal move.
+
+The project studies the game in two ways, and this document gives the mathematics of both.
+
+\begin{itemize}
+\item \textbf{Learning (Part II).} A neural network plays one side against a fixed opponent and improves by
+  trial and error. Section~\ref{sec:fp} derives the method from first principles. Sections
+  \ref{old:3}--\ref{old:6} then state exactly what each saved model optimized.
+\item \textbf{Solving (Part III).} Dynamic programming computes the true value of every position, with no
+  learning and no approximation. Section~\ref{sec:dp} gives the recursion, the algorithms and the proof that
+  the tables are right. Section~\ref{sec:longest} finds the longest forced wins and proves them.
+\end{itemize}
+
+The two meet in Part IV. Because every position's exact value is known, every move a model makes can be
+judged as value-preserving or as a blunder. Section~\ref{sec:comparisons} does this for all models.
+
+\paragraph{Main results.}
+\begin{itemize}
+\item The game is a draw with perfect play, whichever side moves first.
+\item The longest forced win a real game can reach is 213 plies when the goats move first and 214 when the
+  tigers do. Both are goat wins. The tigers' longest forced win is 67 plies.
+\item No trained model beats a perfect player. Against a perfect tiger that looks for traps, the goat
+  models lose between 12\% and 98\% of their games. Against the matching perfect goat, all three tiger
+  models lose every game.
+\item A perfect player is not the best exploiter of a weak opponent. The models win more often against the
+  scripted tigers they were trained on than the perfect goat does.
+\item Masking teaches a network nothing about which moves are legal. A supervised legality loss does.
+\end{itemize}
+
+\paragraph{Sources.} Parts I, II and IV extend the earlier \code{docs/TRAINING\_MATHEMATICS.md} (v1.2), which this
+document replaces. Line numbers of the form \code{env\_tng.py:399} refer to commit \code{11ee06e} (v1.1) of that
+file. Two later changes to it are noted where they matter: the option \code{terminate\_on\_invalid} (v1.3) and a
+correction to one capture (Section~\ref{sec:rulefix}).

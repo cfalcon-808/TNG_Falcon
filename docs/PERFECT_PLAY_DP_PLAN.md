@@ -2,7 +2,7 @@
 
 **Status:** implemented in [`perfect_play/`](../perfect_play/README.md) (results, verification and the one rule fix
 found on the way are there) · **Date:** 2026-11-05 · **Rules:** `env_tng.py` v1.1 (commit `11ee06e`) · **Notation:** as in
-[`TRAINING_MATHEMATICS.md`](TRAINING_MATHEMATICS.md)
+the [Mathematical Architecture](mathematical_architecture/TnG_Mathematical_Architecture.pdf) (Part III gives the final method and its proofs)
 
 ## 1. Answer
 
@@ -41,7 +41,7 @@ strategy, and can win more often.
 ### 2.1 Canonical rules
 
 The solver uses one rule set: the environment's rules, with two asymmetries between its learner paths
-removed (from `TRAINING_MATHEMATICS.md` §2):
+removed (from the Mathematical Architecture, Section 2):
 
 | Rule | Solver | Environment |
 | --- | --- | --- |
@@ -193,7 +193,7 @@ tiger in this environment. That is a ceiling for every model in the legality stu
   about $2\times10^{10}$ table reads, or about 4 minutes per step at the measured rate. The 85 movement-phase
   steps then take about 6 hours, plus computing the smart tiger's move distribution (cached once per position).
 - **Prerequisite:** the smart tiger's move distribution has to be re-implemented exactly. That means its
-  capture ranking, breadth-first anchor search and random roaming (`TRAINING_MATHEMATICS.md` §2.4), so
+  capture ranking, breadth-first anchor search and random roaming (Mathematical Architecture, Section 2.4), so
   that $\mu$ can be computed for any position.
 
 ## 6. Verification

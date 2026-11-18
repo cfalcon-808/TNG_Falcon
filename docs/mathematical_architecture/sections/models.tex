@@ -1,0 +1,96 @@
+\section{How each model was trained}\label{old:6}
+
+\subsection{Opponent mixing and curricula}\label{old:6.1}
+
+\textbf{Mixing.} A run with mixing probability $q$ (\code{MIX\_\allowbreak{}PROB}, \code{mix\_\allowbreak{}prob}) draws the opponent once per episode, at reset:
+
+\[
+\mu \sim \begin{cases} q\,\delta_{\text{smart}} + (1-q)\,\delta_{\text{greedy}} & \omega = \text{goat} \\ q\,\delta_{\text{model goat}} + (1-q)\,\delta_{\text{random goat}} & \omega = \text{tiger} \end{cases}
+\]
+\textbf{Curricula.} A run with phases $j = 1, \dots, J$ continues one parameter vector:
+
+\begin{itemize}
+\item Phase $j$ trains for $T_j$ steps against $\mu_j$ with knobs $\knob{K}_j$.
+\item It starts from $(\theta, \psi)$ at the end of phase $j-1$, keeping the optimizer state and step counter.
+\item Phases do not inherit settings from each other. Each phase's knobs are the environment defaults, then the global overrides, then the run's overrides, then the phase's own.
+\end{itemize}
+\textbf{Seeds.} Python, NumPy, PyTorch and the environments are seeded with the run seed. Copy $i$ of the $N_{\text{env}}$ environments uses seed $+\, i$.
+
+\subsection{Shipped models (\code{stable\_\allowbreak{}models/models/})}\label{old:6.2}
+
+All six are MaskablePPO (\S\ref{old:5.1}) with a tanh MLP (\S\ref{old:3}), $\gamma = 0.99$, $\lambda = 0.95$, $\epsilon = 0.2$ (constant), $\alpha = 3\times10^{-4}$ (constant), $c_{\text{ent}} = 0.02$, $c_{\text{vf}} = 0.5$, $g_{\max} = 0.5$ and $N_{\text{env}} = 16$. They were trained in March 2026 with \code{train.py} (then \code{train\_\allowbreak{}abc.py}) on the environment of that time. That environment's reward code predates v1.1, so its knob values may differ. Their evaluations in \S\ref{old:9} use the v1.1 environment.
+
+{\footnotesize
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{\dimexpr 0.244\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.047\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.472\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.087\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.055\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.047\linewidth-2\tabcolsep\relax}>{\raggedleft\arraybackslash}p{\dimexpr 0.047\linewidth-2\tabcolsep\relax}@{}}
+\toprule
+\textbf{Model} & \textbf{$\omega$} & \textbf{Opponent schedule} & \textbf{Steps} & \textbf{$N_{\text{steps}}$} & \textbf{$B$} & \textbf{$N_{\text{ep}}$} \\
+\midrule
+\endhead
+\code{mppo\_\allowbreak{}NormalGoat030726} & goat & greedy tiger & 100,007,936 & 4096 & 256 & 10 \\
+\code{mppo\_\allowbreak{}SmartGoat030726} & goat & smart tiger & 100,007,936 & 4096 & 256 & 10 \\
+\code{mppo\_\allowbreak{}RobustGoat030726} & goat & curriculum: greedy → smart → mix $q = 0.5$, $\approx$20.05M steps each (boundaries at 20,054,016 and 40,108,032 in its logs) & 60,162,048 & 4096 & 256 & 10 \\
+\code{best\_\allowbreak{}tiger\_\allowbreak{}vs\_\allowbreak{}normal\_\allowbreak{}goat\_\allowbreak{}10M\_\allowbreak{}\ldots{}} & tiger & model goat (NormalGoat, per name) & 5,005,312 & 512 & 128 & 5 \\
+\code{best\_\allowbreak{}tiger\_\allowbreak{}vs\_\allowbreak{}smart\_\allowbreak{}goat\_\allowbreak{}10M\_\allowbreak{}\ldots{}} & tiger & model goat (SmartGoat, per name) & 5,005,312 & 512 & 128 & 5 \\
+\code{mppo\_\allowbreak{}RobustTiger030726} & tiger & model goat (RobustGoat), realized model-goat fraction 1.0 in its log & 20,054,016 & 4096 & 256 & 10 \\
+\bottomrule
+\end{longtable}\addtocounter{table}{-1}
+}
+
+The two \code{best\_\allowbreak{}tiger} files say 10M in their names but hold 5.0M steps. They are the best checkpoints of 10M-step runs. Their rollout sizes match \code{train.py}'s CPU preset (\code{DEVICE\_\allowbreak{}MODE = "cpu"}); the others match its GPU preset.
+
+\subsection{Models trained by the notebooks}\label{old:6.3}
+
+{\footnotesize
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{\dimexpr 0.150\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.228\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.311\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.311\linewidth-2\tabcolsep\relax}@{}}
+\toprule
+\textbf{Notebook} & \textbf{Algorithm} & \textbf{Environment} & \textbf{Defaults} \\
+\midrule
+\endhead
+\code{TnG\_\allowbreak{}MPPO\_\allowbreak{}Notebook} (removed in v1.3) & \S\ref{old:5.1} & default (an illegal move cannot occur) & ReLU, $N_{\text{env}} = 8$, $N_{\text{steps}} = 128$, $B = 64$, $N_{\text{ep}} = 5$, $\alpha = 3\times10^{-4}$, $c_{\text{ent}} = 0.02$, 2,048 steps \\
+\code{TnG\_\allowbreak{}PPO\_\allowbreak{}Notebook} (removed in v1.3) & \S\ref{old:5.2} when \code{TRAIN\_\allowbreak{}WITH\_\allowbreak{}MASK = False}, else \S\ref{old:5.1} & lose-a-turn for both training and evaluation & ReLU and the sizes above; 600,000 steps; reward overrides $\knob{REWARD\_GOAT\_WIN} = 6$, $\knob{REWARD\_TIGER\_WIN} = -3$, $\knob{REWARD\_BLOCK\_TIGER} = 0.16$, $\knob{NEAR\_LOCK\_BONUS} = 0.08$, $\knob{REWARD\_INVALID\_SOFT} = -0.5$, $\knob{REWARD\_INVALID\_HARD} = -1$ \\
+\code{TnG\_\allowbreak{}Notebook} (control center) & \S\ref{old:5.1}, or \S\ref{old:5.3}--\ref{old:5.4} per run (\code{"algorithm"}) & default for Maskable PPO; \code{ILLEGAL\_\allowbreak{}MOVE\_\allowbreak{}HANDLING} for plain PPO & ReLU, the sizes above, $\lambda = 0.95$, $\epsilon = 0.2$, $c_{\text{vf}} = 0.5$, $g_{\max} = 0.5$; plain PPO: clip, MSE, \code{nll}, $c_{\text{legal}} = 0.5$, $r_{\text{ill}} = -3.2$, \code{"end\_\allowbreak{}game"} \\
+\bottomrule
+\end{longtable}\addtocounter{table}{-1}
+}
+
+Every notebook-trained model saves \code{meta/phase\_\allowbreak{}NN\_\allowbreak{}settings.json} next to it. That file records the algorithm, loss settings, illegal-move handling, seed, activation, every knob in effect ($\knob{K}_j$) and the effective PPO hyperparameters, so \S\ref{old:6.4} can be reproduced from it.
+
+\subsection{Models trained for the legality study (\code{artifacts/legality\_\allowbreak{}study/})}\label{old:6.4}
+
+Common to all 19 runs (control center, run through \code{run\_\allowbreak{}training()}):
+
+\begin{itemize}
+\item \textbf{Task:} goat learner against a tiger mix with $q = 0.5$ (\S\ref{old:6.1}), default v1.1 knobs, 10,002,432 steps.
+\item \textbf{Rollouts:} $N_{\text{env}} = 8$, $N_{\text{steps}} = 512$, so $D = 4096$; $B = 256$, $N_{\text{ep}} = 5$.
+\item \textbf{Hyperparameters:} $\alpha = 3\times10^{-4}$, $\gamma = 0.99$, $\lambda = 0.95$, $\epsilon = 0.2$, $c_{\text{ent}} = 0.02$, $c_{\text{vf}} = 0.5$, $g_{\max} = 0.5$.
+\item \textbf{Checkpoints:} 10 per run, every 1M steps.
+\item \textbf{Plain PPO only:} $r_{\text{ill}} = -3.2$, $d_{\text{targ}} = 0.01$, $\beta_0 = 1$, $\delta_H = 1$.
+\end{itemize}
+{\footnotesize
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{\dimexpr 0.268\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.107\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.116\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.054\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.134\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.214\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.054\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.054\linewidth-2\tabcolsep\relax}@{}}
+\toprule
+\textbf{Run} & \textbf{Algorithm} & \textbf{$\mathcal{J}^\pi$} & \textbf{$\mathcal{J}^V$} & \textbf{$\mathcal{J}^{\text{legal}}$, $c_{\text{legal}}$} & \textbf{Illegal move} & \textbf{act} & \textbf{Seeds} \\
+\midrule
+\endhead
+\code{maskable} & Maskable PPO & clip (masked) & MSE & — & impossible & tanh & 42, 7 \\
+\code{ppo\_\allowbreak{}clip\_\allowbreak{}nolegal} & plain PPO & clip & MSE & — , 0 & ends game & tanh & 42, 7 \\
+\code{ppo\_\allowbreak{}clip\_\allowbreak{}nll05} & plain PPO & clip & MSE & nll, 0.5 & ends game & tanh & 42, 7 \\
+\code{ppo\_\allowbreak{}clip\_\allowbreak{}nll2} & plain PPO & clip & MSE & nll, 2 & ends game & tanh & 42 \\
+\code{ppo\_\allowbreak{}clip\_\allowbreak{}mass05} & plain PPO & clip & MSE & mass, 0.5 & ends game & tanh & 42 \\
+\code{ppo\_\allowbreak{}klpen\_\allowbreak{}nll05} & plain PPO & KL penalty & MSE & nll, 0.5 & ends game & tanh & 42 \\
+\code{ppo\_\allowbreak{}spo\_\allowbreak{}nll05} & plain PPO & SPO & MSE & nll, 0.5 & ends game & tanh & 42 \\
+\code{ppo\_\allowbreak{}clip\_\allowbreak{}nll05\_\allowbreak{}huber} & plain PPO & clip & Huber & nll, 0.5 & ends game & tanh & 42 \\
+\code{relu\_\allowbreak{}maskable} & Maskable PPO & clip (masked) & MSE & — & impossible & ReLU & 42 \\
+\code{relu\_\allowbreak{}ppo\_\allowbreak{}clip\_\allowbreak{}nolegal} & plain PPO & clip & MSE & — , 0 & ends game & ReLU & 42 \\
+\code{relu\_\allowbreak{}ppo\_\allowbreak{}clip\_\allowbreak{}nll05} & plain PPO & clip & MSE & nll, 0.5 & ends game & ReLU & 42 \\
+\code{relu\_\allowbreak{}ppo\_\allowbreak{}clip\_\allowbreak{}nll2} & plain PPO & clip & MSE & nll, 2 & ends game & ReLU & 42 \\
+\code{relu\_\allowbreak{}ppo\_\allowbreak{}klpen\_\allowbreak{}nll05} & plain PPO & KL penalty & MSE & nll, 0.5 & ends game & ReLU & 42 \\
+\code{relu\_\allowbreak{}ppo\_\allowbreak{}spo\_\allowbreak{}nll05} & plain PPO & SPO & MSE & nll, 0.5 & ends game & ReLU & 42 \\
+\code{relu\_\allowbreak{}ppo\_\allowbreak{}clip\_\allowbreak{}nolegal\_\allowbreak{}loseturn} & plain PPO & clip & MSE & — , 0 & loses a turn, $r_{\text{ill}} = -1$ & ReLU & 42 \\
+\code{relu\_\allowbreak{}ppo\_\allowbreak{}clip\_\allowbreak{}nll2\_\allowbreak{}loseturn} & plain PPO & clip & MSE & nll, 2 & loses a turn, $r_{\text{ill}} = -1$ & ReLU & 42 \\
+\bottomrule
+\end{longtable}\addtocounter{table}{-1}
+}
+
+The tanh runs were trained with the control center before main was merged in (v1.1), the ReLU runs with v1.2. With tanh, both versions produce bit-identical weights (\S\ref{old:8}, test 7), so activation is the only difference.
+

@@ -1,0 +1,44 @@
+\section{Evaluation protocol and metrics}\label{old:7}
+
+\textbf{Games.}
+
+\begin{itemize}
+\item Game $i \in \{0, \dots, G-1\}$ resets every random generator and the environment with seed $s_0 + i$ ($s_0 = 10{,}000$ in the study, \code{EVAL\_\allowbreak{}SEED} in the notebooks), so every model faces the same games.
+\item The learner plays deterministically (\S\ref{old:3.2}).
+\item The opponent is a fixed tiger, greedy or smart, with no mixing.
+\item The study uses $G = 1000$ per cell for final models and $G = 200$ per checkpoint.
+\end{itemize}
+\textbf{Play modes.}
+
+{\small
+\begin{longtable}{@{}lll@{}}
+\toprule
+\textbf{Mode} & \textbf{Learner action} & \textbf{Illegal move} \\
+\midrule
+\endhead
+masked & $\arg\max_{a \in \mathcal{L}(s)} z_a$ & impossible \\
+raw & $\arg\max_{a \in \mathcal{A}} z_a$ & ends the game (IllegalMove) \\
+raw, lose a turn & $\arg\max_{a \in \mathcal{A}} z_a$ & costs a turn (\S\ref{old:2.3}) \\
+\bottomrule
+\end{longtable}\addtocounter{table}{-1}
+}
+
+Raw play is deterministic and an illegal attempt leaves $s$ unchanged. In lose-a-turn mode, a model that picks an illegal action therefore repeats it until the turn limit.
+
+\textbf{Metrics.}
+
+{\footnotesize
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{\dimexpr 0.348\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.652\linewidth-2\tabcolsep\relax}@{}}
+\toprule
+\textbf{Metric} & \textbf{Definition} \\
+\midrule
+\endhead
+win rate $W$ & $\#\{\text{Goat wins}\}/G$; standard error $\sqrt{W(1-W)/G} \leq 1.6$ pp at $G = 1000$, $\leq 3.5$ pp at $G = 200$ \\
+illegal endings & fraction of raw games ended by an illegal move \\
+illegal probability by phase & $\bar P^{\text{ill}}_{\varphi} = \operatorname{mean}\{1 - P_{\mathcal{L}}(s) : s \text{ visited in masked play},\ \phi(s) = \varphi\}$, for $\varphi \in \{0, 1\}$ \\
+\code{train/illegal\_\allowbreak{}prob} (TensorBoard) & $\mathbb{E}_{\mathcal{B}}[1 - P_{\mathcal{L}}(s_t)]$ averaged over a rollout's minibatches: on-policy, training states \\
+window win rate (TensorBoard) & goat wins over the last 1,000 training episodes. These use sampled actions and the $q = 0.5$ mix, so they are not comparable to $W$ \\
+\bottomrule
+\end{longtable}\addtocounter{table}{-1}
+}
+

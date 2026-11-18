@@ -1,0 +1,35 @@
+\section{Data collection, returns and advantages}\label{old:4}
+
+\textbf{Rollouts.}
+
+\begin{itemize}
+\item $N_{\text{env}}$ environment copies run in lockstep: \code{DummyVecEnv} (sequential) in the notebooks, or subprocess environments in \code{train.py}.
+\item Each update collects $N_{\text{steps}}$ transitions per copy, so a rollout holds $D = N_{\text{env}} N_{\text{steps}}$ transitions.
+\item Each transition stores $\big(s_t, a_t, r_t, d_t, V_{\psi_{\text{old}}}(s_t), \log \pi_{\text{old}}(a_t \mid s_t), m(s_t)\big)$, where $d_t$ marks the first step of an episode.
+\item Masked training stores $\log \pi^m_{\text{old}}$. The mask is stored by MaskablePPO, and by the control center's plain PPO for its legality loss (\S\ref{old:5.4}).
+\end{itemize}
+\textbf{Truncation bootstrap (SB3).} If an episode ends with $\text{trunc}_t = 1$ and $\text{term}_t = 0$, the reward is augmented before GAE:
+
+\[
+r_t \leftarrow r_t + \gamma\, V_{\psi_{\text{old}}}\big(s^{\text{final}}_{t+1}\big)
+\]
+Which endings are truncations is set by \S\ref{old:2.3}: timeouts, repeat stalls and (by default) invalid actions. The \code{"end\_\allowbreak{}game"} illegal-move handling (\S\ref{old:5.4}) relabels invalid actions as terminations, so no bootstrap is added.
+
+\textbf{Generalized advantage estimation.}
+
+\[
+\delta_t = r_t + \gamma\,(1 - e_{t+1})\,V_{\psi_{\text{old}}}(s_{t+1}) - V_{\psi_{\text{old}}}(s_t),
+\]
+\[
+\hat A_t = \sum_{l \geq 0} (\gamma\lambda)^l \Big(\prod_{j=1}^{l} (1 - e_{t+j})\Big)\,\delta_{t+l},
+\]
+\[
+\hat R_t = \hat A_t + V_{\psi_{\text{old}}}(s_t)
+\]
+Here $e_{t+1} = 1$ when the episode ended at step $t$. The sum stops at the rollout boundary, where the value of the last observation bootstraps the tail.
+
+\textbf{Optimization schedule.} Each rollout gets $N_{\text{ep}}$ epochs. Each epoch is a pass over a random permutation of the $D$ transitions in minibatches $\mathcal{B}$ of size $B$; it requires $B \mid D$. Within a minibatch the advantages are normalized:
+
+\[
+\tilde A_t = \frac{\hat A_t - \operatorname{mean}_{\mathcal{B}}(\hat A)}{\operatorname{std}_{\mathcal{B}}(\hat A) + 10^{-8}}
+\]

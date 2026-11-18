@@ -1,0 +1,219 @@
+\section{Learning from first principles}\label{sec:fp}
+
+This section derives the training method step by step. Each step ends with a pointer to the section that
+states the exact form used in the code. Nothing here is specific to Tigers \& Goats except the last two
+subsections.
+
+\subsection{The game as a decision process}\label{sec:fp-mdp}
+
+Training controls one side, the \emph{learner}. The other side is played by a fixed opponent policy $\mu$
+(Section~\ref{old:2.4}). From the learner's point of view the opponent is part of the world: the learner
+picks an action $a_t$, the world applies it, lets the opponent reply, and returns the next observation and
+a reward. That is a \textbf{Markov decision process}
+\[
+\mathcal{M}_\mu = \big(\mathcal{S},\ \mathcal{A},\ P_\mu,\ r,\ \gamma\big),
+\qquad s_{t+1} \sim P_\mu(\cdot \mid s_t, a_t), \qquad r_t = r(s_t, a_t, s_{t+1}),
+\]
+with states $\mathcal{S}$, the 115 actions $\mathcal{A}$, transition law $P_\mu$ (which contains the opponent and
+its randomness), reward $r$ and discount $\gamma \in (0, 1]$. The subscript matters: a different opponent is a
+different decision process.
+
+Strictly, the observation $s_t$ of Section~\ref{old:2.1} is not the full state. It leaves out the turn
+counter and the repeat history, which affect rewards and endings, so the process is partially observed. The
+policies here ignore that and act on $s_t$ alone.
+
+A \textbf{policy} $\pi_\theta(a \mid s)$ is a probability distribution over actions, computed by a neural network
+with parameters $\theta$ (Section~\ref{old:3}). Playing $\pi_\theta$ in $\mathcal{M}_\mu$ produces a random
+\emph{trajectory} $\xi = (s_0, a_0, r_0, s_1, a_1, r_1, \dots, s_T)$ with probability
+\begin{equation}\label{eq:traj}
+p_\theta(\xi) = p_0(s_0) \prod_{t=0}^{T-1} \pi_\theta(a_t \mid s_t)\, P_\mu(s_{t+1} \mid s_t, a_t).
+\end{equation}
+The \textbf{return} from step $t$ and the \textbf{objective} are
+\begin{equation}\label{eq:objective}
+G_t = \sum_{l \ge 0} \gamma^{l}\, r_{t+l},
+\qquad
+J(\theta) = \E_{\xi \sim p_\theta}\big[G_0\big].
+\end{equation}
+Training means finding $\theta$ that makes $J(\theta)$ large. Three functions describe how good a policy $\pi$
+is from a given point:
+\[
+V^\pi(s) = \E_\pi[G_t \mid s_t = s], \qquad
+Q^\pi(s, a) = \E_\pi[G_t \mid s_t = s, a_t = a], \qquad
+A^\pi(s, a) = Q^\pi(s, a) - V^\pi(s).
+\]
+$V^\pi$ is the expected return from $s$; $Q^\pi$ is the same after first taking $a$; the \textbf{advantage} $A^\pi$
+says how much better $a$ is than the policy's average choice. They satisfy the Bellman equation
+$V^\pi(s) = \E_{a \sim \pi,\, s' \sim P_\mu}\big[r + \gamma V^\pi(s')\big]$, with $V^\pi = 0$ after a terminal state.
+
+\subsection{The policy gradient}\label{sec:fp-pg}
+
+$J$ is an expectation over trajectories whose distribution depends on $\theta$. Its gradient follows from the
+identity $\nabla_\theta p_\theta = p_\theta \nabla_\theta \log p_\theta$:
+\[
+\nabla_\theta J(\theta) = \int \nabla_\theta p_\theta(\xi)\, G_0(\xi)\, d\xi = \E_{\xi \sim p_\theta}\big[\nabla_\theta \log p_\theta(\xi)\ G_0(\xi)\big].
+\]
+In $\log p_\theta(\xi)$, from \eqref{eq:traj}, only the policy factors depend on $\theta$. The start
+distribution, the game rules and the opponent drop out:
+\begin{equation}\label{eq:pg-raw}
+\nabla_\theta J(\theta) = \E\Big[\sum_{t} \nabla_\theta \log \pi_\theta(a_t \mid s_t)\ G_0\Big].
+\end{equation}
+So the gradient can be estimated from played games alone, without a model of the rules or the opponent.
+Two refinements reduce the noise of \eqref{eq:pg-raw} without changing its expectation.
+
+\textbf{Causality.} An action cannot affect rewards that came before it. The rewards $r_0, \dots, r_{t-1}$
+multiply $\nabla \log \pi_\theta(a_t \mid s_t)$ with expectation zero, so $G_0$ can be replaced by
+$\gamma^t G_t$.
+
+\textbf{Baseline.} For any function $b(s)$ that does not depend on the action,
+\[
+\E_{a \sim \pi_\theta(\cdot \mid s)}\big[\nabla_\theta \log \pi_\theta(a \mid s)\ b(s)\big]
+ = b(s)\, \nabla_\theta \sum_{a} \pi_\theta(a \mid s) = b(s)\, \nabla_\theta 1 = 0 .
+\]
+Subtracting $b(s_t)$ from the return therefore leaves the gradient unbiased. The choice $b = V^\pi$ gives the
+\textbf{policy gradient theorem} in the form used here:
+\begin{equation}\label{eq:pg}
+\nabla_\theta J(\theta) = \E\Big[\sum_{t} \gamma^t\, \nabla_\theta \log \pi_\theta(a_t \mid s_t)\ A^{\pi_\theta}(s_t, a_t)\Big].
+\end{equation}
+Reading: raise the probability of actions that did better than expected, lower it for those that did
+worse, in proportion to how much. Like most implementations, the code drops the factor $\gamma^t$ and
+weights all time steps equally.
+
+\subsection{Estimating the advantage}\label{sec:fp-gae}
+
+$A^\pi$ is unknown. A second network, the \textbf{critic} $V_\psi(s)$, learns to predict the return, and the
+advantage is estimated from it. The \textbf{temporal-difference residual}
+\[
+\delta_t = r_t + \gamma\, V_\psi(s_{t+1}) - V_\psi(s_t)
+\]
+compares the critic's prediction before the step with the reward actually received plus the prediction
+after it. If the critic were exact, $\E[\delta_t \mid s_t, a_t] = A^\pi(s_t, a_t)$. With an imperfect critic
+$\delta_t$ is biased, but its variance is small because it uses one random step. Looking $j$ steps ahead
+before trusting the critic gives the estimators
+\[
+\hat A^{(j)}_t = \sum_{l=0}^{j-1} \gamma^l\, \delta_{t+l} = r_t + \gamma r_{t+1} + \dots + \gamma^{j-1} r_{t+j-1} + \gamma^{j} V_\psi(s_{t+j}) - V_\psi(s_t).
+\]
+Small $j$ leans on the critic (bias); large $j$ leans on the sampled rewards (variance).
+\textbf{Generalized advantage estimation} averages them with weights $(1-\lambda)\lambda^{j-1}$:
+\begin{equation}\label{eq:gae}
+\hat A_t = (1 - \lambda) \sum_{j \ge 1} \lambda^{j-1} \hat A^{(j)}_t = \sum_{l \ge 0} (\gamma\lambda)^l\, \delta_{t+l},
+\qquad\text{computed backwards as}\quad \hat A_t = \delta_t + \gamma\lambda\, \hat A_{t+1}.
+\end{equation}
+$\lambda = 0$ is the one-step estimate and $\lambda = 1$ the full sampled return minus the baseline. All
+models here use $\gamma = 0.99$ and $\lambda = 0.95$. The critic's regression target is
+$\hat R_t = \hat A_t + V_\psi(s_t)$.
+
+\textbf{Termination and truncation.} At a real ending (a win or a loss) nothing follows, so the value after it
+is zero and the recursion \eqref{eq:gae} stops. At a \emph{truncation} (the turn limit) the game was merely cut
+off, so the critic's value of the last state stands in for the missing future. Which endings count as which
+has consequences. If an illegal move is reported as a truncation, the bootstrap adds back almost exactly the
+value the state had before the move, and the penalty for the illegal move nearly cancels. Section~\ref{old:2.3}
+and Section~\ref{old:5.4} return to this. The exact formulas with episode boundaries are in Section~\ref{old:4}.
+
+\subsection{From a gradient to a safe update: PPO}\label{sec:fp-ppo}
+
+The gradient \eqref{eq:pg} is valid only at the parameters that generated the data. One small step per batch
+of games would waste most of the data; many steps on the same batch can move the policy so far that the
+data no longer describes it. Proximal policy optimization takes several steps while keeping the new policy
+close to the old one.
+
+\textbf{Reusing data.} Let $\theta_{\text{old}}$ be the parameters that played the games. For a candidate
+$\theta$, importance sampling re-weights each recorded action by the \textbf{probability ratio}
+\[
+\rho_t(\theta) = \frac{\pi_\theta(a_t \mid s_t)}{\pi_{\theta_{\text{old}}}(a_t \mid s_t)},
+\qquad
+S(\theta) = \E_{\text{old}}\big[\rho_t(\theta)\, \hat A_t\big].
+\]
+At $\theta = \theta_{\text{old}}$ the ratio is 1 and $\nabla_\theta S = \E[\nabla_\theta \log \pi_\theta\, \hat A_t]$, the policy
+gradient. So maximizing the \emph{surrogate} $S$ starts in the right direction.
+
+\textbf{Why it must stay close.} The exact change in the objective is (Kakade and Langford)
+\[
+J(\theta) - J(\theta_{\text{old}}) = \E_{\xi \sim \pi_\theta}\Big[\sum_t \gamma^t A^{\pi_{\text{old}}}(s_t, a_t)\Big],
+\]
+an expectation over the states the \emph{new} policy visits. $S(\theta)$ uses the states the old policy
+visited. The two agree to first order, and the gap grows with the distance between the policies. Trust-region
+methods bound that distance by the KL divergence. PPO enforces it more simply.
+
+\textbf{The clipped objective.} With clip range $\epsilon$ (0.2 here), PPO maximizes
+\begin{equation}\label{eq:clip}
+S^{\text{clip}}(\theta) = \E_{\text{old}}\Big[\min\big(\rho_t \hat A_t,\ \operatorname{clip}(\rho_t,\, 1 - \epsilon,\, 1 + \epsilon)\, \hat A_t\big)\Big].
+\end{equation}
+Take the two cases. If $\hat A_t > 0$ the action was good and the term is $\min(\rho_t, 1 + \epsilon)\, \hat A_t$:
+raising its probability is rewarded only up to a factor $1 + \epsilon$. If $\hat A_t < 0$ the term is
+$\max(\rho_t, 1 - \epsilon)\, \hat A_t$: lowering its probability is rewarded only down to a factor $1 - \epsilon$.
+Beyond those points the gradient is zero, so there is no incentive to move further. Moves in the harmful
+direction are never clipped. $S^{\text{clip}}$ is thus a pessimistic lower bound on $S$ that removes the
+reward for leaving the trust region. Section~\ref{old:5.3} lists two alternatives used in the experiments, a
+KL penalty and the smooth SPO penalty.
+
+\textbf{The complete loss.} Three terms are minimized together on each minibatch $\mathcal{B}$:
+\begin{equation}\label{eq:total}
+\mathcal{J}(\theta, \psi) =
+\underbrace{-\,S^{\text{clip}}(\theta)}_{\mathcal{J}^\pi:\ \text{improve the policy}}
+\ +\ c_{\text{vf}} \underbrace{\E_{\mathcal{B}}\big[(\hat R_t - V_\psi(s_t))^2\big]}_{\mathcal{J}^V:\ \text{fit the critic}}
+\ +\ c_{\text{ent}} \underbrace{\big(-\E_{\mathcal{B}}\,\mathcal{H}[\pi_\theta(\cdot \mid s_t)]\big)}_{\mathcal{J}^{\mathcal{H}}:\ \text{keep exploring}} .
+\end{equation}
+The entropy $\mathcal{H}[\pi] = -\sum_a \pi(a) \log \pi(a)$ is largest for a uniform policy. Rewarding it stops
+the policy from committing to one move before it has tried the others. Algorithm~\ref{alg:ppo} puts the
+pieces together.
+
+\begin{algorithm}[H]
+\caption{One training run of PPO (the form used for every model; Sections~\ref{old:4}--\ref{old:5})}\label{alg:ppo}
+\begin{tabbing}
+\hspace{1.6em}\=\hspace{1.6em}\=\hspace{1.6em}\=\kill
+\textbf{repeat} until the step budget is used: \\
+\> \textbf{collect:} play $N_{\text{steps}}$ steps in each of $N_{\text{env}}$ games with $\pi_{\theta_{\text{old}}}$; store $s_t, a_t, r_t$, $V_\psi(s_t)$, $\log \pi_{\theta_{\text{old}}}(a_t \mid s_t)$ \\
+\> \textbf{estimate:} compute $\hat A_t$ backwards by \eqref{eq:gae} and $\hat R_t = \hat A_t + V_\psi(s_t)$ \\
+\> \textbf{for} epoch $= 1, \dots, N_{\text{ep}}$: \\
+\>\> shuffle the $N_{\text{env}} N_{\text{steps}}$ transitions and split them into minibatches of size $B$ \\
+\>\> \textbf{for} each minibatch $\mathcal{B}$: \\
+\>\>\> normalize the advantages in $\mathcal{B}$ to mean 0 and standard deviation 1 \\
+\>\>\> take one Adam step on $\mathcal{J}(\theta, \psi)$ of \eqref{eq:total}, with the gradient norm clipped to $g_{\max}$ \\
+\> $\theta_{\text{old}} \leftarrow \theta$
+\end{tabbing}
+\end{algorithm}
+
+\subsection{Illegal moves: masking and what it does not teach}\label{sec:fp-mask}
+
+Most of the 115 actions are illegal in any given position. Two ways to deal with that lead to very
+different networks.
+
+\textbf{Masking} removes illegal actions before sampling: the masked policy is the raw policy restricted to the
+legal set $\mathcal{L}(s)$ and renormalized, $\pi^m_\theta(a \mid s) = \pi_\theta(a \mid s)\, \ind[a \in \mathcal{L}(s)] / P_{\mathcal{L}}(s)$.
+All of the above applies with $\pi^m_\theta$ in place of $\pi_\theta$. Its log-probability has the gradient
+\[
+\frac{\partial \log \pi^m_\theta(a \mid s)}{\partial z_b} =
+\begin{cases} \ind[a = b] - \pi^m_\theta(b \mid s) & b \in \mathcal{L}(s) \\ 0 & b \notin \mathcal{L}(s) \end{cases}
+\]
+with respect to the logits $z$. The logit of an illegal action receives \emph{no gradient from any term of
+the loss}. The network is never told that those actions are bad; the mask does that job at play time, and
+the network is useless without it (Section~\ref{old:9.3}, finding 1).
+
+\textbf{No mask} lets the policy sample any action and makes the environment punish illegal ones. The reward
+signal is weak for this purpose: it arrives once per mistake and competes with everything else the reward
+encodes.
+
+\textbf{The legality loss} adds direct supervision. The mask is known at every visited state, so it can serve
+as a label for the event ``the chosen action is legal'':
+\[
+\mathcal{J}^{\text{legal}}_{\text{nll}} = -\E_{\mathcal{B}}\big[\log P_{\mathcal{L}}(s_t)\big],
+\qquad P_{\mathcal{L}}(s) = \sum_{a \in \mathcal{L}(s)} \pi_\theta(a \mid s).
+\]
+It is added to \eqref{eq:total} with weight $c_{\text{legal}}$. Unlike the reward, it gives a gradient at every
+state and on every logit: for an illegal action $b$, $\partial \mathcal{J}^{\text{legal}}_{\text{nll}} / \partial z_b = \pi_\theta(b \mid s) > 0$,
+which pushes that logit down. Section~\ref{old:5.4} gives the details and a variant that fails, and
+Section~\ref{old:9} measures the effect.
+
+\subsection{What a trained model is, and is not}\label{sec:fp-br}
+
+The objective \eqref{eq:objective} is defined inside $\mathcal{M}_\mu$. Its maximizer is a \textbf{best response}
+to the opponent $\mu$ under the shaped rewards of Appendix~\ref{app:rewards}. It is not the game-theoretic
+optimum, which must hold against \emph{every} opponent. Two consequences follow, and Part~IV measures both.
+
+\begin{itemize}
+\item A best response may win more often against $\mu$ than a perfect player does, because it steers into
+  the positions where $\mu$ goes wrong.
+\item A best response may lose to an opponent it never met, in positions it never visited.
+\end{itemize}
+
+Part~III computes the other object: the value of every position against the best possible opponent.

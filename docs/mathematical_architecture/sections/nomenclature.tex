@@ -1,0 +1,85 @@
+\section*{Nomenclature}
+\addcontentsline{toc}{section}{Nomenclature}
+\label{sec:nomenclature}
+
+Symbols are grouped by the part that uses them. A few letters are reused across parts with different
+meanings ($k$, $c$, $d$, $n$); the group heading says which meaning applies.
+
+{\small
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.27\linewidth}>{\raggedright\arraybackslash}p{0.69\linewidth}@{}}
+\toprule
+\textbf{Symbol} & \textbf{Meaning} \\
+\midrule
+\endhead
+\multicolumn{2}{@{}l}{\textbf{Abbreviations}} \\
+MDP, POMDP & (partially observable) Markov decision process \\
+PPO, GAE & proximal policy optimization; generalized advantage estimation \\
+SB3 & Stable-Baselines3 and sb3-contrib, the libraries the learners are built on \\
+DP & dynamic programming (here: retrograde analysis and backward induction) \\
+DTM & distance to the end: plies until the game ends with perfect play (``distance to mate'') \\
+BFS & breadth-first search \\
+ply & one move by one side; a \emph{turn} is a goat move and a tiger move (2 plies) \\
+\midrule
+\multicolumn{2}{@{}l}{\textbf{The board and the game (all parts)}} \\
+$p \in \{0,\dots,22\}$ & a square of the board (Figure~\ref{fig:board}); square 0 is the hub \code{b0} \\
+$d \in \{0,\dots,4\}$ & direction code of an action: 0 places a goat, 1--4 move along the board graph \\
+$a = 5p + d \in \mathcal{A}$ & an action; $\mathcal{A} = \{0,\dots,114\}$ \\
+$N(p,d)$ & neighbour of $p$ in direction $d$, or $\varnothing$ \\
+$Q(d)$ & landing square of a capture from the hub in direction $d$ ($8, 9, 10, 11$) \\
+$\mathcal{T}(b)$, $M(b)$ & list of legal tiger moves on board $b$, and its size (tiger mobility) \\
+$\mathcal{L}(s)$, $m(s)$ & legal actions in $s$ and the mask $m_a(s) = \ind[a \in \mathcal{L}(s)]$ \\
+\midrule
+\multicolumn{2}{@{}l}{\textbf{The environment (Parts I, II, IV and Appendix~\ref{app:rewards})}} \\
+$t$, $T$ & learner decision index within an episode, and its last value \\
+$b_t \in \{0,1,2\}^{23}$ & board: 0 empty, 1 goat, 2 tiger \\
+$c_t$, $\phi_t$, $g_t$ & goats captured (0--6), phase (0 placement, 1 movement), goats placed (0--15) \\
+$s_t = (b_t, c_t, \phi_t)$ & observation given to the policy, in $\mathbb{Z}^{25}$ \\
+$\tau_t$, $n^{\text{mv}}_t$ & turn counter and goat moves made in the movement phase \\
+$\omega$, $\mu$ & learner role (goat or tiger), and the opponent policy that replies inside each step \\
+$r_t$, $\text{term}_t$, $\text{trunc}_t$ & reward, termination flag and truncation flag after $a_t$ and the reply \\
+$\knob{NAME}$ & an environment knob from \code{DEFAULT\_KNOBS}, e.g.\ $\knob{MAX\_TURNS} = 100$ \\
+$q$ & probability of the stronger opponent when opponents are mixed \\
+\midrule
+\multicolumn{2}{@{}l}{\textbf{Learning (Part II)}} \\
+$\pi_\theta(a \mid s)$, $z_\theta(s)$ & raw policy and its logits; $\pi_\theta = \operatorname{softmax}(z_\theta)$ \\
+$\pi^m_\theta(a \mid s)$ & masked policy: $\pi_\theta$ restricted to $\mathcal{L}(s)$ and renormalized \\
+$P_{\mathcal{L}}(s)$ & probability that the raw policy picks a legal action, $\sum_{a \in \mathcal{L}(s)} \pi_\theta(a \mid s)$ \\
+$V_\psi(s)$ & value estimate (the critic); $\theta$, $\psi$ are the policy and value parameters \\
+$\gamma$, $\lambda$ & discount factor and GAE parameter \\
+$G_t$ & return from step $t$: $\sum_{l \ge 0} \gamma^l r_{t+l}$ \\
+$J(\theta)$ & expected return of $\pi_\theta$, the quantity training maximizes \\
+$V^\pi$, $Q^\pi$, $A^\pi$ & value, action-value and advantage functions of a policy $\pi$ \\
+$\delta_t$ & temporal-difference residual $r_t + \gamma V(s_{t+1}) - V(s_t)$ \\
+$\hat A_t$, $\tilde A_t$, $\hat R_t$ & advantage estimate, its minibatch-normalized form, and the return target $\hat A_t + V(s_t)$ \\
+$\rho_t(\theta)$ & probability ratio $\pi_\theta(a_t \mid s_t) / \pi_{\theta_{\text{old}}}(a_t \mid s_t)$ \\
+$\epsilon$ & clip range (PPO) or trust-region width (SPO) \\
+$\mathcal{J}^\pi, \mathcal{J}^V, \mathcal{J}^{\mathcal{H}}, \mathcal{J}^{\text{legal}}$ & minimized loss terms: policy, value, entropy, legality \\
+$c_{\text{vf}}, c_{\text{ent}}, c_{\text{legal}}$ & weights of the value, entropy and legality terms \\
+$\beta$, $d_{\text{targ}}$ & KL-penalty coefficient and its target KL \\
+$\mathcal{B}$, $\E_{\mathcal{B}}$ & a minibatch of transitions and its sample mean \\
+$N_{\text{env}}, N_{\text{steps}}, B, N_{\text{ep}}$ & parallel environments, rollout length, minibatch size, epochs per rollout \\
+$\alpha$, $g_{\max}$ & learning rate and gradient-norm clip \\
+$r_{\text{ill}}$ & reward for an illegal move in plain-PPO training \\
+\midrule
+\multicolumn{2}{@{}l}{\textbf{Perfect play (Part III)}} \\
+$x = (T, G, c, n, m)$ & a position: tiger squares $T$, goat squares $G$, goats captured $c$, goats placed $n$, side to move $m \in \{\gt, \tg\}$ \\
+$k = |G| = n - c$ & goats on the board; in the movement phase $n = 15$ and $k = 15 - c$ \\
+$\Succ(x)$, $\Pred(x)$ & positions one legal move after $x$, and one legal move before it \\
+$v(x) \in \{\W, \D, \Lo\}$ & game-theoretic value for the side to move: win, draw, loss \\
+$d(x)$ & plies to the end with perfect play (winner as fast as possible, loser as slow), for $v(x) \ne \D$ \\
+$\W_j$, $\Lo_j$ & positions the side to move wins, or loses, in exactly $j$ plies \\
+$\Lambda^m_k$ & movement layer: all positions with $k$ goats on the board and side $m$ to move \\
+$\Pi^m_n$ & placement layer: all positions with $n < 15$ goats placed and side $m$ to move \\
+$\operatorname{rank}(T, G)$ & index of a board inside its layer (Section~\ref{sec:indexing}) \\
+$f \in \{\gt, \tg\}$ & the side that moves first; $x_0^f$ the opening position \\
+$\Reach_f$ & positions reachable from $x_0^f$ by legal play \\
+$\delta_f(x)$ & fewest plies from the opening to $x \in \Reach_f$ \\
+$\ell^*_f$, $\ell^{200}_f$ & longest forced win over $\Reach_f$, and the longest that still ends by ply 200 \\
+\midrule
+\multicolumn{2}{@{}l}{\textbf{Evaluation (Part IV)}} \\
+$W$ & goat win rate over $G$ evaluation games \\
+$\bar P^{\text{ill}}_{\varphi}$ & mean probability the raw policy puts on illegal actions in phase $\varphi$ \\
+$\W{\to}\D$, $\W{\to}\Lo$, $\D{\to}\Lo$ & blunders: a move that lowers the exact value of the position for the side that made it \\
+\bottomrule
+\end{longtable}\addtocounter{table}{-1}
+}

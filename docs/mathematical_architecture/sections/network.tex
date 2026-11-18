@@ -1,0 +1,71 @@
+\section{Policy and value network}\label{old:3}
+
+\subsection{Architecture}\label{old:3.1}
+
+Every model in the project, whether shipped, notebook-trained or from the study, uses Stable-Baselines3's \code{MlpPolicy} with \code{net\_\allowbreak{}arch = [256, 256, 256]}. Since SB3 1.8 this list builds \textbf{two separate trunks} of the same shape, one for the policy and one for the value, with no shared hidden layers. The observation is cast to \code{float32} without normalization: $x = s_t \in \mathbb{R}^{25}$.
+
+\[
+h^{\pi}_0 = x, \qquad h^{\pi}_\ell = \operatorname{act}\!\big(W^{\pi}_\ell h^{\pi}_{\ell-1} + \beta^{\pi}_\ell\big),\ \ell = 1,2,3, \qquad z_\theta(s) = W^{\pi}_4 h^{\pi}_3 + \beta^{\pi}_4 \in \mathbb{R}^{115}
+\]
+\[
+h^{V}_0 = x, \qquad h^{V}_\ell = \operatorname{act}\!\big(W^{V}_\ell h^{V}_{\ell-1} + \beta^{V}_\ell\big),\ \ell = 1,2,3, \qquad V_\psi(s) = w^{V\top} h^{V}_3 + \beta^{V}_4
+\]
+Here $\theta = \{W^\pi_\ell, \beta^\pi_\ell\}$ and $\psi = \{W^V_\ell, \beta^V_\ell, w^V\}$. The activation $\operatorname{act}$ is $\tanh$ (SB3 default: all shipped models and the study's main arm) or ReLU (the two v1.1 notebooks, the control-center default since v1.2, and the study's ReLU arm).
+
+{\small
+\begin{longtable}{@{}llr@{}}
+\toprule
+\textbf{Component} & \textbf{Shape} & \textbf{Parameters} \\
+\midrule
+\endhead
+policy trunk & 25 → 256 → 256 → 256 & 138,240 \\
+value trunk & 25 → 256 → 256 → 256 & 138,240 \\
+action head & 256 → 115 & 29,555 \\
+value head & 256 → 1 & 257 \\
+\textbf{total} &  & \textbf{306,292} \\
+\bottomrule
+\end{longtable}\addtocounter{table}{-1}
+}
+
+\textbf{Initialization.} Orthogonal weights, zero biases. Gains: $\sqrt 2$ for both trunks, $0.01$ for the action head (near-uniform initial policy), $1$ for the value head. \textbf{Optimizer.} One Adam optimizer for $(\theta, \psi)$ with learning rate $\alpha$ and $\epsilon_{\text{Adam}} = 10^{-5}$. Before each step the gradient is clipped to global norm $g_{\max}$ (\code{max\_\allowbreak{}grad\_\allowbreak{}norm}).
+
+\subsection{Raw and masked policies}\label{old:3.2}
+
+The \textbf{raw policy} is the network output:
+
+\[
+\pi_\theta(a \mid s) = \frac{\exp z_{\theta,a}(s)}{\sum_{b \in \mathcal{A}} \exp z_{\theta,b}(s)}
+\]
+The \textbf{masked policy} (sb3-contrib \code{MaskableCategorical}) replaces each illegal logit with the constant $-10^{8}$:
+
+\[
+\tilde z_a = \begin{cases} z_{\theta,a}(s) & a \in \mathcal{L}(s) \\ -10^{8} & a \notin \mathcal{L}(s) \end{cases}
+\qquad
+\pi^{m}_\theta(a \mid s) = \operatorname{softmax}(\tilde z)_a = \frac{\pi_\theta(a \mid s)\,\ind[a \in \mathcal{L}(s)]}{P_{\mathcal{L}}(s)}
+\]
+Two consequences matter for \S\ref{old:9}:
+
+\[
+\frac{\partial \tilde z_a}{\partial z_{\theta,a}} = 0 \quad \text{for } a \notin \mathcal{L}(s)
+\qquad\text{and}\qquad
+\mathcal{H}\big[\pi^m_\theta(\cdot \mid s)\big] = -\sum_{a \in \mathcal{L}(s)} \pi^m_\theta(a \mid s) \log \pi^m_\theta(a \mid s)
+\]
+No term of a masked loss ever puts a gradient on an illegal logit. Those logits drift only through the shared trunk, so nothing teaches the network that illegal actions are bad.
+
+\textbf{Action selection.}
+
+{\small
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{\dimexpr 0.216\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.474\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.309\linewidth-2\tabcolsep\relax}@{}}
+\toprule
+\textbf{Use} & \textbf{Masked} & \textbf{Raw} \\
+\midrule
+\endhead
+training rollouts & $a_t \sim \pi^m_\theta(\cdot \mid s_t)$ & $a_t \sim \pi_\theta(\cdot \mid s_t)$ \\
+deterministic play & $\arg\max_{a \in \mathcal{L}(s)} z_{\theta,a}(s)$ & $\arg\max_{a \in \mathcal{A}} z_{\theta,a}(s)$ \\
+saved-model opponents & $\arg\max_{a \in \mathcal{L}(s)} z_{\bar\theta,a}(s)$ for frozen $\bar\theta$ & — \\
+\bottomrule
+\end{longtable}\addtocounter{table}{-1}
+}
+
+The control-center notebook computes masked choices on log-probabilities. Its choices were verified to be identical to \code{MaskablePPO.predict} (\S\ref{old:8}).
+

@@ -63,7 +63,7 @@ Use these when you want to understand how the code and models work.
 
 - [API index](docs/API_Index.md): reference to the main scripts, classes, functions, and command-line entry points.
 - [Network architecture and model combiner](docs/NETWORK_ARCHITECTURE_AND_MODEL_COMBINER.md): explanations of the policy network and discussion of combining models.
-- [Training mathematics](docs/TRAINING_MATHEMATICS.md): the environment and rewards as equations, every training objective (Maskable PPO, plain PPO loss variants, legality loss), how each model was trained, and the verification tests and legality study.
+- [Mathematical architecture (PDF)](docs/mathematical_architecture/TnG_Mathematical_Architecture.pdf): one document with a nomenclature, the environment as equations, how the models are trained from first principles (policy gradient, GAE, PPO, masking, the legality loss) and what each saved model optimized, the dynamic programming behind perfect play with its proofs and the longest forced wins, and comparisons of the models with each other and with perfect play. LaTeX source in [`docs/mathematical_architecture/`](docs/mathematical_architecture/).
 
 ## stable_models: reference models and logs
 

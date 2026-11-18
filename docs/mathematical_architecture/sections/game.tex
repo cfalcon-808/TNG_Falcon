@@ -1,0 +1,134 @@
+\section{The game and the environment}\label{old:2}
+
+\begin{figure}[H]
+\centering
+\tngboard{0,3,4}{}{1.15}
+\caption{The board and the opening position. Squares are numbered 0--22 as in \code{env\_tng.py}; the tigers
+(filled) start on 0, 3 and 4. Lines are the legal steps. Square 0 is the hub \code{b0}; the rows below it are
+\code{a1}--\code{f1} (1--6), \code{a2}--\code{f2} (7--12), \code{a3}--\code{f3} (13--18) and \code{b4}--\code{e4} (19--22).}
+\label{fig:board}
+\end{figure}
+
+Everything in this section is derived from \code{env\_tng.py} at commit \code{11ee06e} (v1.1); line numbers refer
+to that file. \code{TnG\_Notebook.ipynb} carries the same code in its environment cell. The reward functions are
+in Appendix~\ref{app:rewards}.
+
+\subsection{State, observation and actions}\label{old:2.1}
+
+{\footnotesize
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{\dimexpr 0.261\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.522\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.217\linewidth-2\tabcolsep\relax}@{}}
+\toprule
+\textbf{Symbol} & \textbf{Meaning} & \textbf{Code} \\
+\midrule
+\endhead
+$b_t \in \{0,1,2\}^{23}$ & board before learner decision $t$: 0 empty, 1 goat, 2 tiger & \code{self.board} \\
+$c_t \in \{0,\dots,6\}$ & goats captured so far & \code{self.eaten} \\
+$\phi_t \in \{0,1\}$ & phase: 0 placement, 1 movement & \code{self.phase} \\
+$g_t \in \{0,\dots,15\}$ & goats placed so far & \code{self.goats\_\allowbreak{}placed} \\
+$\tau_t$ & turn counter: learner decisions taken before step $t$ ($\tau_0 = 0$) & \code{self.turns} \\
+$n^{\text{mv}}_t$ & goat \emph{moves} (not placements) made so far in the movement phase, by whichever side controls the goats & \code{self.move\_\allowbreak{}steps} \\
+$s_t = (b_t, c_t, \phi_t) \in \mathbb{Z}^{25}$ & observation given to the policy & \code{get\_\allowbreak{}state}, \code{env\_\allowbreak{}tng.py:399} \\
+\bottomrule
+\end{longtable}\addtocounter{table}{-1}
+}
+
+The observation omits $\tau_t$, $n^{\text{mv}}_t$ and the repeat history. All three enter the reward and the episode endings below, so the process is only partially observed. ($g_t = \#\{i : b_{t,i}=1\} + c_t$ can be recovered from $s_t$.)
+
+\textbf{Actions.} $\mathcal{A} = \{0,\dots,114\}$, with $a = 5p + d$ for position $p \in \{0,\dots,22\}$ and direction $d \in \{0,\dots,4\}$ (\code{encode\_\allowbreak{}action}, \code{env\_\allowbreak{}tng.py:505}). The board graph is the fixed neighbour map $N(p, d) \in \{0,\dots,22\} \cup \{\varnothing\}$ (\code{self.move\_\allowbreak{}map}, \code{env\_\allowbreak{}tng.py:275}). The hub $p = 0$ connects to $2, 3, 4, 5$ through $d = 1,\dots,4$. Tigers start on $\{0, 3, 4\}$ (\code{TIGER\_\allowbreak{}START\_\allowbreak{}POSITIONS}).
+
+\textbf{Legal sets.} $\mathcal{L}_\omega(s)$ for learner role $\omega$; mask $m_a(s) = \ind[a \in \mathcal{L}_\omega(s)]$ (\code{get\_\allowbreak{}action\_\allowbreak{}mask}, \code{env\_\allowbreak{}tng.py:468}).
+
+\[
+\mathcal{L}_{\text{goat}}(s) = \begin{cases}
+\{\,5p : b_p = 0\,\} & \phi = 0 \text{ (place, } d = 0) \\
+\{\,5p + d : b_p = 1,\ N(p,d) \neq \varnothing,\ b_{N(p,d)} = 0\,\} & \phi = 1 \text{ (slide)}
+\end{cases}
+\]
+\[
+\mathcal{L}_{\text{tiger}}(s) = \{\,5p + d : (p, q, \kappa, d) \in \mathcal{T}(b)\,\}
+\]
+$\mathcal{T}(b)$ is the tiger move list (\code{\_\allowbreak{}tiger\_\allowbreak{}moves}, \code{env\_\allowbreak{}tng.py:1675}). For every tiger at $p$ and direction $d$ with $j = N(p,d) \neq \varnothing$:
+
+\begin{itemize}
+\item \textbf{slide:} if $b_j = 0$, then $(p, j, \kappa{=}0, d) \in \mathcal{T}(b)$;
+\item \textbf{capture:} if $b_j = 1$, the landing is $q = Q(d)$ when $p = 0$ (hub table \code{HUB0\_\allowbreak{}CAPTURE\_\allowbreak{}JUMP}: $Q(1..4) = 8, 9, 10, 11$), otherwise $q = N(j, d)$ (same direction twice). The capture is legal when $q \neq \varnothing$ and $b_q = 0$, except that tigers on $p \in \{2,3,4,5\}$ cannot capture with $d = 1$ (towards the hub; \code{env\_\allowbreak{}tng.py:1708}). It gives $(p, q, \kappa{=}1, d)$ and removes the goat on $j$.
+\end{itemize}
+A tiger action names only the tiger and direction; the environment decides whether it is a slide or a capture. $M(b) = |\mathcal{T}(b)|$ is \textbf{tiger mobility}.
+
+\subsection{One environment step}\label{old:2.2}
+
+One step is a learner decision and then the opponent's reply: $s_{t+1} \sim P(\cdot \mid s_t, a_t;\, \mu)$ with opponent policy $\mu$. Write $b^{+}_t$ for the board \emph{after the learner action and before the reply}. The reward depends on features measured at $b^{+}_t$, so the timing matters.
+
+\textbf{Goat learner} (\code{\_\allowbreak{}step\_\allowbreak{}goat\_\allowbreak{}transition}, \code{env\_\allowbreak{}tng.py:899}):
+
+\begin{enumerate}
+\item $\tau \leftarrow \tau + 1$. Validate $a_t$ (invalid cases in \S\ref{old:2.3}).
+\item Apply the placement ($g \leftarrow g+1$; when $g = 15$, $\phi \leftarrow 1$) or the slide ($n^{\text{mv}} \leftarrow n^{\text{mv}} + 1$). This gives $b^+_t$.
+\item Compute the shaping features of \S\ref{old:2.5} on $b^+_t$.
+\item If $M(b^+_t) = 0$: \textbf{goat win} (no reply).
+\item Tiger reply $\mu(b^+_t)$ (\S\ref{old:2.4}); a capture sets $c \leftarrow c + 1$.
+\item Check endings in this order: capture threshold, turn limit, repeat stall (\S\ref{old:2.3}).
+\end{enumerate}
+\textbf{Tiger learner} (\code{\_\allowbreak{}step\_\allowbreak{}tiger\_\allowbreak{}transition}, \code{env\_\allowbreak{}tng.py:1125}):
+
+\begin{enumerate}
+\item $\tau \leftarrow \tau + 1$. Validate $a_t \in \mathcal{L}_{\text{tiger}}(s_t)$.
+\item Apply the slide or capture. This gives $b^+_t$. Compute $k_t$, $M(b^+_t)$ and the tiger centre score on $b^+_t$.
+\item If $c \geq 6$: \textbf{tiger win} (no reply).
+\item Goat reply: placement or slide (a goat slide increments $n^{\text{mv}}$). If the goats have no legal action: \textbf{tiger win}.
+\item If $M(b_{t+1}) = 0$: \textbf{goat win}. Otherwise check the turn limit. The tiger learner has \emph{no} repeat-stall rule.
+\end{enumerate}
+\subsection{Episode endings}\label{old:2.3}
+
+{\footnotesize
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{\dimexpr 0.261\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.448\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.142\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.149\linewidth-2\tabcolsep\relax}@{}}
+\toprule
+\textbf{Outcome (\code{info["reason"]} → \code{winner})} & \textbf{Condition} & \textbf{Flags $(\text{term}, \text{trunc})$} & \textbf{Code} \\
+\midrule
+\endhead
+\code{goat\_\allowbreak{}win\_\allowbreak{}no\_\allowbreak{}tiger\_\allowbreak{}moves} → Goat & goat learner: $M(b^+_t) = 0$; tiger learner: $M(b_{t+1}) = 0$ after the goat reply & $(1, 0)$ & \code{:1043}, \code{:1299} \\
+\code{tiger\_\allowbreak{}win\_\allowbreak{}capture\_\allowbreak{}threshold} → Tiger & $c_{t+1} \geq 6$ (\code{GOATS\_\allowbreak{}EATEN\_\allowbreak{}FOR\_\allowbreak{}TIGER\_\allowbreak{}WIN}) & $(1, 0)$ & \code{:1095}, \code{:1221} \\
+\code{tiger\_\allowbreak{}win\_\allowbreak{}no\_\allowbreak{}goat\_\allowbreak{}moves} → Tiger & tiger learner only: the goat opponent has no legal action & $(1, 0)$ & \code{:1278} \\
+\code{max\_\allowbreak{}timeout} → MaxTimeout & $\tau_{t+1} \geq \knob{MAX\_TURNS}$, after the checks above & $(0, 1)$ & \code{:1101}, \code{:1305} \\
+\code{repeat\_\allowbreak{}timeout} → RepeatTimeout & goat learner only: $h_t + 1 \geq \knob{MAX\_REPEATS}$ (see $h_t$ in \S\ref{old:2.5}) & $(0, 1)$ & \code{:1113} \\
+\code{invalid\_\allowbreak{}soft} → none & goat: malformed action, or an illegal \emph{placement}; tiger: malformed action & $(0, 1)$ & \code{:924–966}, \code{:1150–1162} \\
+\code{invalid\_\allowbreak{}hard} → none & goat: an illegal \emph{slide}; tiger: any $(p,d) \notin \mathcal{L}_{\text{tiger}}$ & $(0, 1)$ & \code{:978}, \code{:1173} \\
+\bottomrule
+\end{longtable}\addtocounter{table}{-1}
+}
+
+In the default mode an invalid action leaves the board unchanged, sets \code{terminate}, and reports the episode as \textbf{truncated, not terminated}. The next call returns \code{already\_\allowbreak{}terminated} with reward 0.
+
+Notes:
+
+\begin{itemize}
+\item Stable-Baselines3 bootstraps truncated episodes with $\gamma V(s_{t+1})$, and here $s_{t+1} = s_t$. Under unmasked training the invalid-action penalty is therefore largely cancelled by the bootstrap. Since v1.3 the option \code{terminate\_on\_invalid=True} reports these endings as terminated instead; the control-center notebook uses it for plain PPO with \code{\textquotedbl{}end\_game\textquotedbl{}} handling (\S\ref{old:5.4}).
+\item The turn-limit check comes before the repeat check, so a stall on the last turn is reported as \code{max\_\allowbreak{}timeout}.
+\end{itemize}
+\textbf{``Lose a turn'' variant} (\code{truncate\_\allowbreak{}on\_\allowbreak{}invalid=False}, \code{step}, \code{env\_\allowbreak{}tng.py:389–396}). After an invalid action the board, opponent and repeat history are left as they were ($s_{t+1} = s_t$), but $\tau$ has already been incremented. Then:
+
+\[
+(\text{term}_t, \text{trunc}_t) = \big(0,\ \ind[\tau_{t+1} \geq \knob{MAX\_TURNS}]\big)
+\]
+On the final turn the reason is rewritten to \code{max\_\allowbreak{}timeout} (the original is kept in \code{info["invalid\_\allowbreak{}reason"]}), so the reward of that attempt is the timeout reward of \S\ref{old:2.5}/\S\ref{old:2.6}, not the invalid-action penalty.
+
+\subsection{Opponent policies $\mu$}\label{old:2.4}
+
+All scripted opponents draw from the global \code{random} / \code{np.random} generators, which is why evaluation seeds those as well as the environment.
+
+\begin{itemize}
+\item \textbf{Greedy tiger} (\code{\_\allowbreak{}greedy\_\allowbreak{}tiger\_\allowbreak{}move}, \code{env\_\allowbreak{}tng.py:1655}). Let $\mathcal{C} \subseteq \mathcal{T}(b^+)$ be the captures. With probability $\beta = \knob{BASE\_TIGER\_CAPTURE\_BIAS}$ (default 1), and only if $\mathcal{C} \neq \varnothing$, the tiger plays a uniform draw from $\mathcal{C}$. Otherwise it plays a uniform draw from all of $\mathcal{T}(b^+)$, captures included.
+\item \textbf{Smart tiger} (\code{\_\allowbreak{}smart\_\allowbreak{}tiger\_\allowbreak{}move}, \code{env\_\allowbreak{}tng.py:1387}). The first rule that applies wins, using the fixed square values $v(\cdot)$ (\code{POS\_\allowbreak{}VALS}; $v = 8$ on $\{0, 9, 10\}$, 7 on $\{3, 4, 8, 11, 15, 16\}$, …, 4 on the rim):
+\begin{enumerate}
+\item \textbf{Capture:} shuffle $\mathcal{C}$, then take $\arg\max_{(p,q,1)} v(q)$. Ties are broken by the shuffle.
+\item \textbf{Anchors:} if no tiger is on 0, or no tiger is on 9 or 10, run a breadth-first search through empty cells from each tiger (except those already holding a satisfied anchor) to the missing anchor(s): $\{0\}$, and the empty cells among $\{9, 10\}$, or both if neither is empty. Take the first step of the shortest path (ties: lowest tiger index, then anchor 0 before $\{9,10\}$). Use it only if it is a legal slide.
+\item \textbf{Roam:} take a uniform draw over legal moves with $v(q) \geq 5$. Moves leaving square 0 are excluded, as are moves leaving the only tiger on 9/10.
+\item \textbf{Fallback:} take a uniform draw from $\mathcal{T}(b^+)$.
+\end{enumerate}
+\item \textbf{Random goat} (\code{env\_\allowbreak{}tng.py:1245}): a uniform draw from $\mathcal{L}_{\text{goat}}$.
+\item \textbf{Model goat / model tiger:} a callback $f(s, m) \mapsto a$. The notebooks pass a frozen saved policy $\pi_{\bar\theta}$ and play $\arg\max_{a \in \mathcal{L}} \pi_{\bar\theta}(a \mid s)$.
+\begin{itemize}
+\item If the goat model's answer is missing, illegal or raises an error, the goat falls back to the random goat (\code{env\_\allowbreak{}tng.py:1272–1275}).
+\item If the tiger model's answer is illegal or missing, \code{\_\allowbreak{}model\_\allowbreak{}tiger\_\allowbreak{}move} returns \code{None} and the step raises \code{RuntimeError} (\code{env\_\allowbreak{}tng.py:1052–1057}). There is no fallback.
+\end{itemize}
+\end{itemize}

@@ -1,0 +1,23 @@
+\section{Reproducing the numbers}\label{app:repro}
+
+{\small
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.52\linewidth}>{\raggedright\arraybackslash}p{0.44\linewidth}@{}}
+\toprule
+\textbf{Command (from the repository root)} & \textbf{Produces} \\
+\midrule
+\endhead
+\code{python perfect\_play/prove\_rules.py} & rule and index equivalence with \code{TnGEnv} (Section~\ref{sec:dp-proof}); about 11 minutes \\
+\code{python perfect\_play/solve.py} & movement tables and placement values; needs CuPy and a CUDA GPU \\
+\code{python perfect\_play/solve\_placement\_dtm.py -{}-delete-u2} & placement ply counts \\
+\code{python perfect\_play/check\_all.py} & the independent check of every position; about 3 minutes on 16 threads \\
+\code{python perfect\_play/reachable.py} & reachable positions, longest forced wins and their games (Section~\ref{sec:longest}); about 1 minute \\
+\code{python perfect\_play/compare\_models.py} & the comparison of Section~\ref{sec:comparisons}; needs torch and sb3-contrib, and the study models in \code{artifacts/legality\_study/}; about 1 minute \\
+\code{python docs/mathematical\_architecture/make\_tables.py} & the generated tables and figures of this document \\
+\code{pdflatex TnG\_Mathematical\_Architecture.tex} (twice, in \code{docs/mathematical\_architecture/}) & this PDF \\
+\bottomrule
+\end{longtable}\addtocounter{table}{-1}
+}
+
+The tables (21 GB) are not in the repository; the first three commands rebuild them in about a minute of GPU
+time. The legality study of Section~\ref{old:9} is reproduced with \code{TnG\_Notebook.ipynb} and the run
+configurations of Section~\ref{old:6.4}.

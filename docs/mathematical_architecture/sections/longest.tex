@@ -1,0 +1,193 @@
+\section{The longest forced wins}\label{sec:longest}
+
+How long can a won game last when both sides play perfectly, the winner as fast as possible and the loser as
+slowly as possible? The tables answer this directly, but one more step is needed to get an answer about
+real games.
+
+\subsection{Over all positions: 215 plies, in positions no game reaches}
+
+The largest distance in the tables is $\max_x d(x) = 215$. It occurs in four positions (two mirror pairs),
+all with the goats to move after 4 or 5 goats are placed and none captured, for example tigers on
+$\{4, 12, 13\}$ and goats on $\{3, 5, 6, 22\}$ (Figure~\ref{fig:records}, right). The goats win, and they have
+exactly one winning move.
+
+None of the four can occur in a game. This was noticed by looking at the board, and the argument is short.
+
+\begin{lemma}\label{lem:unreachable}
+Let $x$ be a placement position with no captures in which the tigers stand on $T$. Let $\Delta(T)$ be the
+smallest total graph distance from the starting squares $\{0, 3, 4\}$ to $T$ over all ways of matching the
+three tigers to the three squares. If $\Delta(T)$ exceeds the number of tiger moves made before $x$, then $x$
+is unreachable.
+\end{lemma}
+
+\begin{proof}
+With no capture, every tiger move so far was a slide along one edge, which changes the total distance
+travelled by 1. Reaching $T$ needs at least $\Delta(T)$ slides.
+\end{proof}
+
+For $T = \{4, 12, 13\}$, $\Delta(T) = 7$. With 4 goats placed and the goats to move, the tigers have made 4
+moves if the goats moved first and 5 if the tigers did. The other three positions fail in the same way
+($\Delta = 7$ against at most 6 moves).
+
+The tables hold every arrangement of pieces because the recursion needs no more than that, and a position's
+value never depends on how it arose. Every stored value is therefore correct. But a maximum taken over all
+arrangements is a statement about arrangements, not about games.
+
+\subsection{Reachable positions}
+
+\begin{definition}
+For a first mover $f \in \{\gt, \tg\}$, let $x_0^f$ be the opening position (tigers on $\{0, 3, 4\}$, no goats,
+$f$ to move). $\Reach_f$ is the smallest set that contains $x_0^f$ and, with every position, all its
+successors. For $x \in \Reach_f$, $\delta_f(x)$ is the fewest plies in which a game from $x_0^f$ reaches $x$.
+\end{definition}
+
+$\Reach_f$ is computed by a forward search over the same layers and with the same move code as the solver
+(\code{reachable.py}; Algorithm~\ref{alg:reach}).
+
+\begin{algorithm}[H]
+\caption{Reachable positions and their fewest plies, for first mover $f$}\label{alg:reach}
+\begin{tabbing}
+\hspace{1.6em}\=\hspace{1.6em}\=\hspace{1.6em}\=\kill
+mark $x_0^f$ \\
+\textbf{placement, forwards:} for the layers in the order $\Pi^{\tg}_0, \Pi^{\gt}_0, \Pi^{\tg}_1, \Pi^{\gt}_1, \dots, \Pi^{\gt}_{14}$: \\
+\> for every marked position of the layer, mark all its successors \\
+\textbf{movement, breadth-first:} the successors of $\Pi^{\gt}_{14}$ are the entry positions; set $\delta_f = t_0$ on them \\
+\> \textbf{for} $j = t_0, t_0 + 1, \dots$ until nothing new is found: \\
+\>\> for every position with $\delta_f = j$ and every successor $y$ without a value: $\delta_f(y) \leftarrow j + 1$
+\end{tabbing}
+\end{algorithm}
+
+\begin{proposition}\label{prop:reach}
+Algorithm~\ref{alg:reach} marks exactly $\Reach_f$, and its $\delta_f$ is the fewest plies from the opening.
+In the placement phase the number of plies is the same along every route:
+$\delta_f(x) = 2n$ (goats to move) or $2n - 1$ (tigers to move) for $f = \gt$, and $2n + 1$ or $2n$ for $f = \tg$.
+\end{proposition}
+
+\begin{proof}
+Every placement move goes from a layer to a later one in the stated order (Section~\ref{sec:dp-graph}). When a
+layer is processed, all its predecessors' layers are finished, so its marks are final; by induction along
+the order the marked set is closed under successors and contains only positions with a marked predecessor
+chain to $x_0^f$. The ply count is fixed because each goat turn places exactly one goat and the sides
+alternate. In the movement phase every entry position has the same $\delta_f = t_0$ (29 for $f = \gt$, 30 for
+$f = \tg$), and breadth-first search from a set of equal depth visits positions in order of distance, so the
+first value written is the minimum. The search stops when a level adds nothing, at which point the marked
+set is closed under successors.
+\end{proof}
+
+Table~\ref{tab:reach} gives the counts. Of the 19.02 billion positions, 18{,}189{,}005{,}282 are reachable when
+the goats move first and 18{,}553{,}660{,}020 when the tigers do. Early layers are sparse: after three goats
+only 153{,}510 of 2{,}392{,}621 goat-to-move positions can have arisen with the goats first. By the end of
+the placement phase, every board with the tigers to move is reachable. The search needs only one more ply to
+close: the positions first reached in the movement phase all appear at ply 30 ($f = \gt$) or 31
+($f = \tg$). About 1\% of movement positions with the goats to move are never reached; these are boards on
+which no tiger can have just moved.
+
+\begin{table}[H]
+\centering\scriptsize
+\caption{Reachable positions by layer. ``All'' counts every arrangement, per side to move.}\label{tab:reach}
+\begin{tabular}{@{}lr rr rr@{}}
+\toprule
+ & & \multicolumn{2}{c}{goats move first} & \multicolumn{2}{c}{tigers move first} \\
+\cmidrule(lr){3-4}\cmidrule(l){5-6}
+layer ($n$ placed) & all & goats to move & tigers to move & goats to move & tigers to move \\
+\midrule
+\tabin{generated/tab_reachable}
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{The longest forced wins of real games}
+
+\begin{definition}
+For a first mover $f$ and a winner $w \in \{\gt, \tg\}$,
+\begin{align*}
+\ell^*_f(w) &= \max\{\, d(x) : x \in \Reach_f,\ w \text{ wins at } x \,\}, \\
+\ell^{200}_f(w) &= \max\{\, d(x) : x \in \Reach_f,\ w \text{ wins at } x,\ \delta_f(x) + d(x) \le 200 \,\}.
+\end{align*}
+\end{definition}
+
+The second quantity is the longest forced win that the 200-ply limit of \code{TnGEnv} does not cut off. By
+Proposition~\ref{prop:limit} a win from $x$ survives the limit exactly when the game reached $x$ early enough,
+and the earliest it can do so is $\delta_f(x)$.
+
+\begin{theorem}[Longest forced wins]\label{thm:longest}
+\begin{center}
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+first mover $f$ & $\ell^*_f(\text{goats})$ & $\ell^{200}_f(\text{goats})$ & $\ell^*_f(\text{tigers})$ & $\ell^{200}_f(\text{tigers})$ \\
+\midrule
+goats & \textbf{213} & 191 & 67 & 67 \\
+tigers & \textbf{214} & 193 & 67 & 67 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\end{theorem}
+
+\begin{proof}
+The claim has three parts, and each is established by something checked exhaustively.
+
+\emph{(i) The distances are exact.} $d(x)$ in the tables is the true distance for every position, by
+Theorem~\ref{thm:certificate} and the full check of Section~\ref{sec:dp-proof}.
+
+\emph{(ii) The set is exact.} The search marks exactly $\Reach_f$ with the true $\delta_f$, by
+Proposition~\ref{prop:reach}. Its move generation is the solver's, which equals the environment's on every
+board (Section~\ref{sec:dp-proof}).
+
+\emph{(iii) The maximum is taken over all of it.} The program reads $d(x)$ for every marked position and
+keeps the largest per winner, and the largest among those with $\delta_f(x) + d(x) \le 200$. Nothing is
+sampled. This gives the upper bound: no reachable position has a longer forced win.
+
+\emph{The bound is attained.} For each entry the program outputs a complete game. It walks back from the
+record position $x^*$ through marked predecessors to $x_0^f$, which exhibits a legal route of length
+$\delta_f(x^*)$, and then plays the perfect line from $x^*$. Each game has been replayed move by move with a
+separate implementation of the rules: every move is legal, $x^*$ appears at ply $\delta_f(x^*)$, and the game
+ends with the stated winner exactly $d(x^*)$ plies later (Appendix~\ref{app:games}).
+\end{proof}
+
+\begin{table}[H]
+\centering\small
+\caption{The record positions. ``Game'' is the length of the witness game: $\delta_f(x^*) + d(x^*)$.}\label{tab:records}
+\begin{tabular}{@{}llp{0.36\linewidth}rrr@{}}
+\toprule
+$f$ & quantity & position $x^*$ & $\delta_f$ & $d$ & game \\
+\midrule
+goats & $\ell^*(\text{goats})$ & tigers 1, 5, 8; goats 0, 6, 15, 18, 22; goats to move & 10 & 213 & 223 \\
+goats & $\ell^{200}(\text{goats})$ & tigers 4, 5, 8; goats 1, 2, 17; goats to move & 6 & 191 & 197 \\
+goats & $\ell^*(\text{tigers})$ & tigers 1, 5, 13; goats 6, 7, 8, 10, 11, 12, 18; 3 captured; tigers to move & 19 & 67 & 86 \\
+tigers & $\ell^*(\text{goats})$ & tigers 1, 6, 14; goats 10, 16, 18--22; tigers to move & 14 & 214 & 228 \\
+tigers & $\ell^{200}(\text{goats})$ & tigers 0, 5, 7; goats 3, 4, 19; goats to move & 7 & 193 & 200 \\
+tigers & $\ell^*(\text{tigers})$ & tigers 1, 5, 13; goats 6, 7, 8, 10, 11, 12, 18; 3 captured; tigers to move & 20 & 67 & 87 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[H]
+\centering
+\begin{tabular}{ccc}
+\tngboard{1,5,8}{0,6,15,18,22}{0.78} & \tngboard{1,6,14}{10,16,18,19,20,21,22}{0.78} & \tngboard{4,12,13}{3,5,6,22}{0.78} \\
+\footnotesize goats first: goats to move, & \footnotesize tigers first: tigers to move, & \footnotesize unreachable: goats to move, \\
+\footnotesize goats win in 213 & \footnotesize goats win in 214 & \footnotesize goats win in 215
+\end{tabular}
+\caption{The two record positions of real games, and one of the four positions with the largest distance
+over all arrangements. Filled circles are tigers, open circles goats.}\label{fig:records}
+\end{figure}
+
+\paragraph{Reading the result.}
+\begin{itemize}
+\item The reachable records are only one and two plies short of the figure over all arrangements. The
+  unreachable positions were not outliers; they sit at the end of a family of very long goat wins.
+\item Both records are goat wins that begin early in the placement phase and end with the tigers
+  immobilized. The goats' task is slow: they must place eleven or ten more goats and then close the net.
+\item The tigers' wins are much shorter. A tiger win is a sequence of captures, and the longest one a game
+  can reach takes 67 plies from a position in which three goats are already gone.
+\item Both record wins end after ply 200 (at plies 223 and 228 by the shortest route). Under the limit of
+  \code{TnGEnv} they would be cut off as draws. The longest win that fits takes 191 plies (goats first) or
+  193 (tigers first, ending exactly at ply 200).
+\item In the movement phase the largest distance is 210 plies (tigers to move, 15 goats, no captures). That
+  position is reachable, but only from ply 29, so its game would last at least 239 plies.
+\end{itemize}
+
+\paragraph{Independent checks of this section.} A separate search written in plain Python, sharing no code
+with the GPU search, reproduces the reachable counts exactly for the layers with up to four goats placed, for
+both first movers (20 layer counts, from 1 to 3{,}295{,}989 positions). All six witness games were replayed
+with the visualizer's rule implementation, which is itself tested against \code{TnGEnv}.

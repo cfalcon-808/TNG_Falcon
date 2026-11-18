@@ -1,0 +1,97 @@
+\section{Objectives}\label{old:5}
+
+Every update minimizes, per minibatch:
+
+\[
+\mathcal{J}(\theta, \psi) = \mathcal{J}^{\pi}(\theta) + c_{\text{vf}}\,\mathcal{J}^{V}(\psi) + c_{\text{ent}}\,\mathcal{J}^{\mathcal{H}}(\theta) + c_{\text{legal}}\,\mathcal{J}^{\text{legal}}(\theta)
+\]
+with $\mathcal{J}^{\mathcal{H}} = -\mathbb{E}_{\mathcal{B}}\big[\mathcal{H}[\pi(\cdot \mid s_t)]\big]$. The algorithms differ in which policy ($\pi^m_\theta$ or $\pi_\theta$) enters the ratio and the entropy, in $\mathcal{J}^\pi$ and $\mathcal{J}^V$, and in whether $c_{\text{legal}} > 0$.
+
+\subsection{Maskable PPO (shipped models, \code{train.py}, \code{TnG\_\allowbreak{}MPPO\_\allowbreak{}Notebook}, control center with \code{"maskable\_\allowbreak{}ppo"})}\label{old:5.1}
+
+\[
+\rho_t(\theta) = \frac{\pi^m_\theta(a_t \mid s_t)}{\pi^m_{\theta_{\text{old}}}(a_t \mid s_t)},
+\qquad
+\mathcal{J}^{\pi}_{\text{clip}} = -\mathbb{E}_{\mathcal{B}}\Big[\min\big(\rho_t \tilde A_t,\ \operatorname{clip}(\rho_t, 1-\epsilon, 1+\epsilon)\,\tilde A_t\big)\Big]
+\]
+\[
+\mathcal{J}^{V}_{\text{mse}} = \mathbb{E}_{\mathcal{B}}\big[(\hat R_t - V_\psi(s_t))^2\big],
+\qquad
+\mathcal{H} \text{ over } \mathcal{L}(s_t) \text{ only (§3.2)},
+\qquad
+c_{\text{legal}} = 0
+\]
+\subsection{MaskablePPO with masking off (\code{TnG\_\allowbreak{}PPO\_\allowbreak{}Notebook}, \code{TRAIN\_\allowbreak{}WITH\_\allowbreak{}MASK = False})}\label{old:5.2}
+
+\code{MaskablePPO.learn(use\_\allowbreak{}masking=False)} stores no masks, so $\pi^m_\theta \equiv \pi_\theta$ everywhere. The objective is \S\ref{old:5.1} with the raw policy in the ratio and the entropy over all 115 actions. It is exactly standard PPO. This notebook trains with the ``lose a turn'' environment (\code{truncate\_\allowbreak{}on\_\allowbreak{}invalid=False}, \S\ref{old:2.3}), and its shipped configuration overrides the invalid-move knobs. Each illegal attempt therefore costs its knob reward and one turn, and play continues.
+
+\code{TnG\_PPO\_Notebook} and \code{TnG\_MPPO\_Notebook} were removed in v1.3; \code{TnG\_Notebook.ipynb} covers both. The last version of \code{TnG\_PPO\_Notebook} on \code{main} added a learner called \code{LegalityPPO}: this section's objective plus the \code{mass} legality term of \S\ref{old:5.4}, with an option to end the episode on an illegal move. In the control center that is plain PPO with \code{PPO\_LEGALITY\_LOSS = "mass"} and \code{"end\_game"} handling.
+
+\subsection{Control-center plain PPO (\code{LossConfigurablePPO}, \code{ALGORITHM = "ppo"})}\label{old:5.3}
+
+The ratio uses the raw policy, $\rho_t(\theta) = \pi_\theta(a_t \mid s_t) / \pi_{\theta_{\text{old}}}(a_t \mid s_t)$, and the entropy runs over all of $\mathcal{A}$. \code{PPO\_\allowbreak{}POLICY\_\allowbreak{}LOSS} selects $\mathcal{J}^\pi$:
+
+{\small
+\begin{longtable}{@{}ll@{}}
+\toprule
+\textbf{Option} & \textbf{$\mathcal{J}^\pi$} \\
+\midrule
+\endhead
+\code{"clip"} & $\mathcal{J}^{\pi}_{\text{clip}}$ as in \S\ref{old:5.1}, with the raw ratio \\
+\code{"kl\_\allowbreak{}penalty"} & $-\mathbb{E}_{\mathcal{B}}[\rho_t \tilde A_t] + \beta\,\hat k$, where $\hat k = \mathbb{E}_{\mathcal{B}}\big[(\rho_t - 1) - \log \rho_t\big]$ \\
+\code{"spo"} & $-\mathbb{E}_{\mathcal{B}}\Big[\rho_t \tilde A_t - \dfrac{\lvert\tilde A_t\rvert}{2\epsilon}(\rho_t - 1)^2\Big]$ \\
+\bottomrule
+\end{longtable}\addtocounter{table}{-1}
+}
+
+$\hat k$ is Schulman's unbiased, non-negative estimator of $\mathrm{KL}(\pi_{\text{old}} \Vert \pi_\theta)$, and it is differentiable. For \code{"kl\_\allowbreak{}penalty"}, $\beta$ starts at $\beta_0$ (\code{PPO\_\allowbreak{}KL\_\allowbreak{}BETA}) and is adapted once per rollout from the mean $\bar k$ of all minibatch estimates:
+
+\[
+\beta \leftarrow \begin{cases} \min(2\beta,\ 10^{4}) & \bar k > 1.5\, d_{\text{targ}} \\ \max(\beta/2,\ 10^{-4}) & \bar k < d_{\text{targ}}/1.5 \\ \beta & \text{otherwise} \end{cases}
+\qquad d_{\text{targ}} = \texttt{PPO\_KL\_TARGET}
+\]
+\code{PPO\_\allowbreak{}VALUE\_\allowbreak{}LOSS} selects $\mathcal{J}^V$: \code{"mse"} as in \S\ref{old:5.1}, or \code{"huber"} with threshold $\delta_H$:
+
+\[
+\mathcal{J}^V_{\text{huber}} = \mathbb{E}_{\mathcal{B}}\big[\ell_{\delta_H}(V_\psi(s_t) - \hat R_t)\big],
+\qquad
+\ell_{\delta_H}(x) = \begin{cases} \tfrac12 x^2 & \lvert x\rvert \leq \delta_H \\ \delta_H\big(\lvert x\rvert - \tfrac12\delta_H\big) & \text{otherwise} \end{cases}
+\]
+With \code{"clip"}, \code{"mse"} and $c_{\text{legal}} = 0$, the update is identical to SB3 \code{PPO}; this was verified bit-for-bit in \S\ref{old:8}.
+
+\subsection{Legality loss and illegal-move handling (control center)}\label{old:5.4}
+
+The legal-action probability is $P_{\mathcal{L}}(s) = \sum_{a \in \mathcal{L}(s)} \pi_\theta(a \mid s)$. It is computed stably as $\log P_{\mathcal{L}} = \operatorname{logsumexp}_{a \in \mathcal{L}(s)} \log \pi_\theta(a \mid s)$. \code{PPO\_\allowbreak{}LEGALITY\_\allowbreak{}LOSS} selects:
+
+\[
+\mathcal{J}^{\text{legal}}_{\text{nll}} = -\mathbb{E}_{\mathcal{B}}\big[\log P_{\mathcal{L}}(s_t)\big]
+\qquad\qquad
+\mathcal{J}^{\text{legal}}_{\text{mass}} = \mathbb{E}_{\mathcal{B}}\big[1 - P_{\mathcal{L}}(s_t)\big]
+\]
+\code{"nll"} is the binary cross-entropy of the event ``the sampled action is legal'' with target 1. It is supervised: it uses the stored mask as the label, does not depend on $a_t$ or $\tilde A_t$, and applies to every state in $\mathcal{B}$. Its gradient with respect to the logits is
+
+\[
+\frac{\partial \mathcal{J}^{\text{legal}}_{\text{nll}}}{\partial z_a} = \pi_\theta(a \mid s) - \ind[a \in \mathcal{L}(s)]\,\frac{\pi_\theta(a \mid s)}{P_{\mathcal{L}}(s)}
+\qquad\qquad
+\frac{\partial \mathcal{J}^{\text{legal}}_{\text{mass}}}{\partial z_a} = \pi_\theta(a \mid s)\,\big(P_{\mathcal{L}}(s) - \ind[a \in \mathcal{L}(s)]\big)
+\]
+For an illegal $a$, the \code{nll} gradient is $\pi_\theta(a \mid s)$, but the \code{mass} gradient is $\pi_\theta(a \mid s)\,P_{\mathcal{L}}(s)$. That vanishes when the policy puts almost no probability on legal moves, which is exactly the state of a fresh network. \S\ref{old:9} shows the predicted failure of \code{"mass"}.
+
+\textbf{Mask alignment.} SB3 calls the step callback after \code{env.step} and before \code{rollout\_\allowbreak{}buffer.add}. The control center records $m(s_t)$ into buffer slot $t$ at that moment, then reads $m(s_{t+1})$ for the next slot, after any automatic reset. \S\ref{old:8} verifies the alignment.
+
+\textbf{Illegal-move handling} (\code{ILLEGAL\_\allowbreak{}MOVE\_\allowbreak{}HANDLING}; plain PPO training only):
+
+{\footnotesize
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{\dimexpr 0.088\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.264\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.360\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.288\linewidth-2\tabcolsep\relax}@{}}
+\toprule
+\textbf{Option} & \textbf{Transition after $a_t \notin \mathcal{L}(s_t)$} & \textbf{Reward} & \textbf{Flags} \\
+\midrule
+\endhead
+\code{"end\_\allowbreak{}game"} & episode ends, board unchanged (\code{terminate\_\allowbreak{}on\_\allowbreak{}invalid=True}) & $r_{\text{ill}}$ & $(\text{term}, \text{trunc}) = (1, 0)$: no bootstrap \\
+\code{"lose\_\allowbreak{}turn"} & $s_{t+1} = s_t$, $\tau_{t+1} = \tau_t + 1$ & $r_{\text{ill}}$ (timeout reward on the last turn, \S\ref{old:2.3}) & $(0, \ind[\tau_{t+1} \geq \knob{MAX\_TURNS}])$ \\
+\bottomrule
+\end{longtable}\addtocounter{table}{-1}
+}
+
+$r_{\text{ill}}$ is \code{PPO\_\allowbreak{}ILLEGAL\_\allowbreak{}MOVE\_\allowbreak{}REWARD}. It is written into both $\knob{REWARD\_INVALID\_SOFT}$ and $\knob{REWARD\_INVALID\_HARD}$ unless a run sets them explicitly. The default is $-3.2$, equal to $\knob{REWARD\_TIGER\_WIN}$, so an illegal move is as bad as losing. Since v1.3 a run or phase can set its own handling and legality weight (\code{"illegal\_move"}, \code{"legality\_coef"}), so one experiment can compare them.
+

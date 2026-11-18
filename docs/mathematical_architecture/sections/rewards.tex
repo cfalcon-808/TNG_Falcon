@@ -1,0 +1,172 @@
+\subsection{Goat-learner reward $r^{\text{goat}}_t$}\label{old:2.5}
+
+\code{\_\allowbreak{}sparse\_\allowbreak{}reward\_\allowbreak{}goat}, \code{env\_\allowbreak{}tng.py:616}. Features (all computed in \code{\_\allowbreak{}step\_\allowbreak{}goat\_\allowbreak{}transition}):
+
+{\footnotesize
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{\dimexpr 0.113\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.566\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.264\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.057\linewidth-2\tabcolsep\relax}@{}}
+\toprule
+\textbf{Symbol} & \textbf{Definition} & \textbf{Measured at} & \textbf{Code} \\
+\midrule
+\endhead
+$M^+_t$ & $M(b^+_t)$, tiger mobility after the goat action; $M^+_{-1} = M(b_0)$ & before the reply & \code{:999} \\
+$\Delta M_t$ & $M^+_{t-1} - M^+_t$ (positive = goats removed tiger options) & consecutive pre-reply boards & \code{:1011} \\
+$U(b)$ & number of cells with $b_i \in \{0,1\}$ that no tiger can reach by walking through \textbf{empty} cells & — & \code{:1755} \\
+$\Delta U_t$ & $U(b^+_t) - U(b^+_{t-1})$ & pre-reply boards & \code{:1015} \\
+$\Sigma(b)$ & $\sum_{i<j} \text{dist}(x_i, x_j)$ over tiger squares $x$; graph distance ignoring pieces & — & \code{:1830} \\
+$\Delta\Sigma_t$ & $\Sigma(b^+_{t-1}) - \Sigma(b^+_t)$ (positive = tigers pushed together) & pre-reply boards & \code{:1019} \\
+$\ell_t$ & near-lock: $\ind[0 < M^+_t \leq 2]$ & $b^+_t$ & \code{:1005} \\
+$Z^{\text{g}}_t$ & $\sum_{i \in K} \big(\knob{REWARD\_CENTER\_GOAT}\,\ind[b^+_{t,i}=1] + \knob{REWARD\_CENTER\_TIGER}\,\ind[b^+_{t,i}=2]\big)$, $K = \{0, 9, 10, 15, 16\}$ & $b^+_t$ & \code{:1022} \\
+$k_t$ & goats captured by the reply: $c_{t+1} - c_t$ & after the reply & \code{:1080} \\
+$h_t$ & earlier visits of the key $(b_{t+1}, c_{t+1}, \phi_{t+1})$ at post-reply checkpoints in this episode & after the reply & \code{:1107} \\
+$\eta_t$ & shaping decay: $\knob{GOAT\_SHAPING\_DECAY\_BASE}^{\,n^{\text{mv}}_{t+1}}$ if $\phi_{t+1} = 1$, else 1 & after the step & \code{:679} \\
+$\sigma_t$ & step cost: $\knob{REWARD\_STEP}$ if $\phi_t = 0$, else $\max\big(\knob{MOVE\_STEP\_BASE} + \knob{MOVE\_STEP\_SLOPE}\, n^{\text{mv}}_t,\ \knob{MOVE\_STEP\_MIN}\big)$ & before the action & \code{:949} \\
+\bottomrule
+\end{longtable}\addtocounter{table}{-1}
+}
+
+\textbf{Invalid actions and the goat win replace everything else:}
+
+\[
+r^{\text{goat}}_t = \begin{cases}
+\knob{REWARD\_INVALID\_SOFT} & \text{invalid\_soft (illegal placement)} \\
+\knob{REWARD\_INVALID\_HARD} & \text{invalid\_hard (illegal slide)} \\
+\knob{REWARD\_GOAT\_WIN} - \knob{GOAT\_WIN\_TURN\_DECAY}\cdot \tau_{t+1} & \text{goat win} \\
+\sum_k r^{(k)}_t & \text{otherwise}
+\end{cases}
+\]
+Let $\chi_t$ flag a losing ending:
+\[
+\chi_t = \ind\big[\text{reason} \in \{\text{capture threshold},\ \text{max\_timeout},\ \text{repeat\_timeout}\}\big].
+\] The decomposition matches the \code{info["reward\_\allowbreak{}*\_\allowbreak{}component"]} fields:
+
+{\footnotesize
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{\dimexpr 0.103\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.278\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.619\linewidth-2\tabcolsep\relax}@{}}
+\toprule
+\textbf{$k$} & \textbf{Component $r^{(k)}_t$} & \textbf{Formula} \\
+\midrule
+\endhead
+step & \code{reward\_\allowbreak{}step\_\allowbreak{}component} & $\sigma_t$ \\
+near-lock & \code{reward\_\allowbreak{}near\_\allowbreak{}lock\_\allowbreak{}component} & $(1-\chi_t)\ \knob{NEAR\_LOCK\_BONUS}\ \eta_t\ \ell_t$ \\
+block & \code{reward\_\allowbreak{}block\_\allowbreak{}component} & $(1-\chi_t)\, B_t$, with $B_t$ below \\
+bubble & \code{reward\_\allowbreak{}bubble\_\allowbreak{}component} & $(1-\chi_t)\ \knob{REWARD\_BUBBLE\_SPACE}\ \tanh(\Delta U_t)\ \eta_t\ \ind[\Delta U_t > 0]$ \\
+cluster & \code{reward\_\allowbreak{}cluster\_\allowbreak{}component} & $(1-\chi_t)\ \knob{REWARD\_CLUSTER\_TIGERS}\ \tanh(\Delta\Sigma_t)\ \eta_t\ \ind[\Delta\Sigma_t > 0]$ \\
+centre & \code{reward\_\allowbreak{}center\_\allowbreak{}component} & $(1-\chi_t)\ Z^{\text{g}}_t\ \ind[\phi_{t+1} = 0]$ \\
+goat eaten & \code{reward\_\allowbreak{}goat\_\allowbreak{}eaten\_\allowbreak{}component} & $\knob{REWARD\_GOAT\_EATEN}\ k_t$ \\
+repeat & \code{reward\_\allowbreak{}repeat\_\allowbreak{}component} & $(1-\chi_t)\ \knob{REWARD\_REPEAT\_STATE}\ h_t^2$ \\
+terminal & \code{reward\_\allowbreak{}terminal\_\allowbreak{}component} & $\knob{REWARD\_TIGER\_WIN}\cdot S_t$, with $S_t$ below \\
+(logged) & \code{reward\_\allowbreak{}decay\_\allowbreak{}mult} & $\eta_t$ (a multiplier, not added) \\
+\bottomrule
+\end{longtable}\addtocounter{table}{-1}
+}
+
+\[
+B_t = \begin{cases} \lvert\knob{REWARD\_BLOCK\_TIGER}\rvert\ \tanh(\Delta M_t)\ \eta_t & \Delta M_t > 0 \\ \lvert\knob{REWARD\_BLOCK\_TIGER}\rvert\ \knob{MOBILITY\_BACKSLIDE\_SCALE}\ \Delta M_t & \Delta M_t < 0 \\ 0 & \Delta M_t = 0 \end{cases}
+\]
+\[
+S_t = \begin{cases} 1 & \text{capture threshold} \\ \knob{MAX\_TIMEOUT\_SCALE} & \text{max\_timeout} \\ \knob{REPEAT\_STALL\_SCALE} & \text{repeat\_timeout} \\ 0 & \text{otherwise} \end{cases}
+\]
+Notes:
+
+\begin{itemize}
+\item Positive shaping is squashed by $\tanh$ and decayed by $\eta_t$. The mobility \emph{backslide} is linear in $\Delta M_t$ and not decayed. The step cost, centre term and capture penalty are never decayed.
+\item $U$ counts every goat cell as unreachable, because the search never enters a goat square. Every placement on a reachable cell therefore raises $U$ by at least 1, so $r^{(\text{bubble})}$ fires on most placements.
+\item The knob comment for $\knob{REWARD\_CLUSTER\_TIGERS}$ says ``spreading tigers apart'', but the code rewards a \emph{decrease} in $\Sigma$, i.e. tigers pushed together.
+\item The centre score is measured on $b^+_t$ (before the reply), but gated by the post-reply phase $\phi_{t+1}$. The step that places the 15th goat therefore earns no centre term.
+\item A \code{late} factor is computed and logged (\code{:1006}) but \textbf{not used} by the reward:
+\[
+\min\!\Big(\frac{\max(\tau_{t+1} - \knob{LATE\_GAME\_START\_TURN},\ 0)}{\knob{MAX\_TURNS} - \knob{LATE\_GAME\_START\_TURN}},\ 1\Big)
+\]
+\item The stall fires at $h_t = \knob{MAX\_REPEATS} - 1$; on that step the terminal term replaces the repeat penalty.
+\item In the lose-a-turn variant, an invalid attempt on the final turn gets $\knob{REWARD\_STEP} + \knob{REWARD\_TIGER\_WIN}\cdot\knob{MAX\_TIMEOUT\_SCALE}$. Its \code{info} has no \code{step\_\allowbreak{}penalty} and no features, so the defaults apply.
+\end{itemize}
+\subsection{Tiger-learner reward $r^{\text{tiger}}_t$}\label{old:2.6}
+
+\code{\_\allowbreak{}sparse\_\allowbreak{}reward\_\allowbreak{}tiger}, \code{env\_\allowbreak{}tng.py:790}. Features (from \code{\_\allowbreak{}step\_\allowbreak{}tiger\_\allowbreak{}transition}):
+
+{\footnotesize
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{\dimexpr 0.125\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.750\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.125\linewidth-2\tabcolsep\relax}@{}}
+\toprule
+\textbf{Symbol} & \textbf{Definition} & \textbf{Code} \\
+\midrule
+\endhead
+$k_t$ & goats captured by the tiger's own move ($0$ or $1$) & \code{:1198} \\
+$\Delta M^{\text{T}}_t$ & $M(b^+_t) - M(b^+_{t-1})$: mobility after this tiger move minus mobility after the previous tiger move ($M(b_0)$ at reset). The goat reply in between is included & \code{:1200–1203} \\
+$Z^{\text{t}}_t$ & $\lvert\knob{REWARD\_CENTER\_GOAT}\rvert\ \big(\#\{i \in K: b^+_{t,i} = 2\} - \#\{i \in K: b^+_{t,i} = 1\}\big)$ & \code{:1205–1210} \\
+\bottomrule
+\end{longtable}\addtocounter{table}{-1}
+}
+
+\[
+r^{\text{tiger}}_t = \begin{cases}
+\knob{REWARD\_INVALID\_SOFT} & \text{invalid\_soft (malformed action)} \\
+-\lvert\knob{REWARD\_INVALID\_HARD}\rvert & \text{invalid\_hard (illegal tiger move)} \\
+r^{\text{play}}_t & \text{otherwise}
+\end{cases}
+\]
+\begin{align*}
+r^{\text{play}}_t ={}& \knob{REWARD\_STEP} + \knob{REWARD\_TIGER\_CAPTURE}\ k_t + \lvert\knob{REWARD\_BLOCK\_TIGER}\rvert\ \Delta M^{\text{T}}_t \\
+&+ \ind[\phi_{t+1} = 0]\ Z^{\text{t}}_t + r^{\text{term}}_t
+\end{align*}
+{\small\[
+r^{\text{term}}_t = \begin{cases}
++\knob{REWARD\_TIGER\_WIN\_BONUS} & \text{capture threshold or no goat moves} \\
+-\knob{REWARD\_TIGER\_LOSS\_PENALTY} & \text{goat win} \\
+-\knob{REWARD\_TIGER\_LOSS\_PENALTY}\cdot\knob{MAX\_TIMEOUT\_SCALE} & \text{max\_timeout} \\
+0 & \text{otherwise}
+\end{cases}
+\]}
+Notes:
+
+\begin{itemize}
+\item Unlike the goat reward:
+\begin{itemize}
+\item the shaping terms are kept on terminal steps;
+\item mobility is linear (no $\tanh$, no decay);
+\item there is no movement-phase step ramp, no repeat penalty, and no \code{reward\_\allowbreak{}*} component logging. Only the total is returned, and the component fields stay at their zero defaults.
+\end{itemize}
+\item The tiger centre term reuses $\lvert\knob{REWARD\_CENTER\_GOAT}\rvert$ for both signs; $\knob{REWARD\_CENTER\_TIGER}$ is ignored.
+\item \code{invalid\_\allowbreak{}hard} returned $+\lvert\knob{REWARD\_INVALID\_HARD}\rvert$ before v1.1, rewarding illegal tiger moves. It is negative from v1.1 on (\code{env\_\allowbreak{}tng.py:822}).
+\item In the lose-a-turn variant, an invalid attempt on the final turn gets the step cost minus the timeout penalty, $\knob{REWARD\_STEP} - \knob{REWARD\_TIGER\_LOSS\_PENALTY}\cdot\knob{MAX\_TIMEOUT\_SCALE}$.
+\end{itemize}
+\subsection{Reward and game knobs (\code{DEFAULT\_\allowbreak{}KNOBS}, \code{env\_\allowbreak{}tng.py:78})}\label{old:2.7}
+
+Any knob can be overridden per run or phase with \code{reward\_\allowbreak{}overrides} / \code{REWARD\_\allowbreak{}OVERRIDES}. Fixed game constants: 23 squares, 15 goats to place, 6 captures to win, tigers start on $\{0, 3, 4\}$.
+
+{\small
+\begin{longtable}{@{}lll@{}}
+\toprule
+\textbf{Knob} & \textbf{Default} & \textbf{Used in} \\
+\midrule
+\endhead
+$\knob{REWARD\_GOAT\_WIN}$ & 3.2 & goat win, before turn decay \\
+$\knob{REWARD\_TIGER\_WIN}$ & −3.2 & goat terminal loss; scaled for timeouts \\
+$\knob{REWARD\_TIGER\_CAPTURE}$ & 0.35 & tiger: per capture \\
+$\knob{REWARD\_TIGER\_WIN\_BONUS}$ & 3.2 & tiger win \\
+$\knob{REWARD\_TIGER\_LOSS\_PENALTY}$ & 3.2 & tiger loss and timeout (subtracted) \\
+$\knob{REWARD\_STEP}$ & −0.001 & step cost: goat placement phase, every tiger step \\
+$\knob{REWARD\_GOAT\_EATEN}$ & −0.35 & goat: per goat captured \\
+$\knob{MAX\_TIMEOUT\_SCALE}$ & 1.5 & timeout multiplier (both roles) \\
+$\knob{REPEAT\_STALL\_SCALE}$ & 1.25 & goat repeat-stall multiplier \\
+$\knob{MAX\_TURNS}$ & 100 & turn limit (also the \code{max\_\allowbreak{}turns} argument) \\
+$\knob{MOVE\_STEP\_BASE}$ & −0.01 & goat movement-phase step cost, intercept \\
+$\knob{MOVE\_STEP\_SLOPE}$ & −0.01 & goat movement-phase step cost, per prior goat move \\
+$\knob{MOVE\_STEP\_MIN}$ & −0.6 & goat movement-phase step cost, floor \\
+$\knob{GOAT\_WIN\_TURN\_DECAY}$ & 0.01 & goat win reward lost per turn \\
+$\knob{REWARD\_BLOCK\_TIGER}$ & 0.08 & mobility shaping magnitude (both roles) \\
+$\knob{REWARD\_BUBBLE\_SPACE}$ & 0.02 & goat: unreachable-cell shaping \\
+$\knob{REWARD\_CLUSTER\_TIGERS}$ & 0.02 & goat: tiger-spread shaping \\
+$\knob{REWARD\_CENTER\_GOAT}$ & 0.03 & centre squares (goat; magnitude for tiger) \\
+$\knob{REWARD\_CENTER\_TIGER}$ & −0.03 & goat's centre score, per tiger on $K$ \\
+$\knob{NEAR\_LOCK\_BONUS}$ & 0.05 & goat near-lock bonus \\
+$\knob{LATE\_GAME\_START\_TURN}$ & 40 & \code{late} factor only (unused by the reward) \\
+$\knob{MOBILITY\_BACKSLIDE\_SCALE}$ & 0.5 & goat: penalty multiplier when $\Delta M_t < 0$ \\
+$\knob{GOAT\_SHAPING\_DECAY\_BASE}$ & 0.95 & base of $\eta_t$ \\
+$\knob{REWARD\_INVALID\_SOFT}$ & −0.05 & invalid\_soft \\
+$\knob{REWARD\_INVALID\_HARD}$ & −1.0 & invalid\_hard (tiger uses $-\lvert\cdot\rvert$) \\
+$\knob{REWARD\_REPEAT\_STATE}$ & −0.5 & goat repeat penalty, times $h_t^2$ \\
+$\knob{MAX\_REPEATS}$ & 4 & repeat-stall threshold \\
+$\knob{BASE\_TIGER\_CAPTURE\_BIAS}$ & 1.0 & greedy tiger: probability of preferring captures \\
+\bottomrule
+\end{longtable}\addtocounter{table}{-1}
+}
+

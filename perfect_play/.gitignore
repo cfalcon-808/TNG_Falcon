@@ -5,3 +5,4 @@ tables/*
 !tables/rules_proof.json
 !tables/check_all.json
 !tables/reachable.json
+!tables/model_comparison.json

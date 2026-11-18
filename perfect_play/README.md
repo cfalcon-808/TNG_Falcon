@@ -74,6 +74,7 @@ Each position's mover, captured count and goats placed come from the observation
 | `metadata.json` | rules hash, encodings, counts per layer, maximum plies and ply histograms, opening value |
 | `rules_proof.json`, `check_all.json`, `verification.json` | results of `prove_rules.py`, `check_all.py` and `verify_tables.py` |
 | `reachable.json` | from `reachable.py`: reachable positions per layer for goats-first and tigers-first games, with win/draw/loss counts, and the longest reachable forced wins with their games (also in [`games/`](games/)) |
+| `model_comparison.json` | from `compare_models.py`: a round robin of the trained models, the scripted opponents and two perfect players, with every move judged against the tables (blunders, conversions), models against models from balanced random openings, and the effect of the capture fix on win rates. Analysed in the [Mathematical Architecture](../docs/mathematical_architecture/TnG_Mathematical_Architecture.pdf), Section 12 |
 | `solve_log.txt` | the solver's log |
 
 ## Using it
@@ -217,5 +218,7 @@ python perfect_play/solve_placement_dtm.py --delete-u2   # placement ply counts 
                                                          # 2-bit tables, which are then deleted
 python perfect_play/check_all.py                 # independent check of every position (about 3 minutes)
 python perfect_play/reachable.py                 # reachable positions and longest reachable forced wins (1 minute)
+python perfect_play/compare_models.py            # models vs models and vs perfect play, every move judged (1 minute;
+                                                 # needs torch + sb3-contrib and the study models in artifacts/)
 python perfect_play/verify_tables.py --samples 3000 --games 200
 ```

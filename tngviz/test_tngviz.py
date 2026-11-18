@@ -21,6 +21,7 @@ import numpy as np  # noqa: E402
 from tngviz.game import (DEFAULT_TABLES, GOAT, MAX_REPEATS, PLY_LIMIT, TIGER, Analyzer, Game, Position,  # noqa: E402
                          env_tng, legal_moves, parse_position, plies_before, position_to_text, start_position)
 
+REPO = DEFAULT_TABLES.parent.parent
 HAVE_TABLES = (DEFAULT_TABLES / "metadata.json").exists() and (DEFAULT_TABLES / "pl_n0_G.u8").exists()
 
 
@@ -251,6 +252,26 @@ def test_models_play():
             app.step()
         sides = {m.side for m in app.game.moves}
         assert sides == {GOAT, TIGER}, "both models moved"
+    finally:
+        pygame.quit()
+
+
+def test_wrapped_game_text():
+    """A game copied from the PDF: fields wrapped over lines, with a stray page number in the moves."""
+    if not HAVE_TABLES:
+        print("  skipped: no tables")
+        return
+    import pygame
+    from tngviz.app import App, parse_args
+
+    text = (REPO / "perfect_play" / "games" / "tigers_first_goats_win_214.txt").read_text()
+    body = "\n".join(ln for ln in text.splitlines() if not ln.startswith("#"))
+    words = body.replace("mover=tiger", "\nmover=tiger").split(" ")
+    wrapped = " ".join(w + ("\n50\n" if i == 300 else "\n" if i % 9 == 8 else "") for i, w in enumerate(words))
+    app = App(parse_args(["--size", "1000x700"]))
+    try:
+        assert app._load_text(wrapped)
+        assert app.game.first == "tiger" and app.game.root.mover == "tiger" and len(app.game.moves) == 228
     finally:
         pygame.quit()
 

@@ -1,0 +1,4062 @@
+{
+ "games_per_pairing": 200,
+ "seed": 20000,
+ "first": "goat",
+ "limits": "TnGEnv: 200 plies, 4th repeat",
+ "models_from_random_openings": [
+  {
+   "goat": "NormalGoat",
+   "tiger": "Tiger vs NormalGoat",
+   "games": 200,
+   "results": {
+    "draw_repeat": 122,
+    "tiger_win": 75,
+    "draw_turn_limit": 3
+   },
+   "sides": {
+    "goat": {
+     "decisions": 5229,
+     "by_value": {
+      "draw": 4403,
+      "loss": 132,
+      "win": 694
+     },
+     "blunders": {
+      "D>L": 181,
+      "W>D": 177
+     },
+     "had_win_games": 67,
+     "converted_games": 0,
+     "games_with_a_blunder": 137,
+     "mean_first_blunder_ply": 28.875912408759124
+    },
+    "tiger": {
+     "decisions": 5229,
+     "by_value": {
+      "draw": 4399,
+      "win": 313,
+      "loss": 517
+     },
+     "blunders": {
+      "W>D": 104,
+      "D>L": 188
+     },
+     "had_win_games": 86,
+     "converted_games": 75,
+     "games_with_a_blunder": 97,
+     "mean_first_blunder_ply": 22.11340206185567
+    }
+   },
+   "mean_plies": 56.29
+  },
+  {
+   "goat": "NormalGoat",
+   "tiger": "Tiger vs SmartGoat",
+   "games": 200,
+   "results": {
+    "draw_repeat": 161,
+    "tiger_win": 38,
+    "goat_win": 1
+   },
+   "sides": {
+    "goat": {
+     "decisions": 5072,
+     "by_value": {
+      "draw": 4524,
+      "win": 474,
+      "loss": 74
+     },
+     "blunders": {
+      "W>D": 172,
+      "D>L": 115
+     },
+     "had_win_games": 73,
+     "converted_games": 1,
+     "games_with_a_blunder": 113,
+     "mean_first_blunder_ply": 23.008849557522122
+    },
+    "tiger": {
+     "decisions": 5071,
+     "by_value": {
+      "draw": 4581,
+      "win": 189,
+      "loss": 301
+     },
+     "blunders": {
+      "D>L": 183,
+      "W>D": 75
+     },
+     "had_win_games": 49,
+     "converted_games": 38,
+     "games_with_a_blunder": 100,
+     "mean_first_blunder_ply": 19.04
+    }
+   },
+   "mean_plies": 54.715
+  },
+  {
+   "goat": "NormalGoat",
+   "tiger": "RobustTiger",
+   "games": 200,
+   "results": {
+    "goat_win": 35,
+    "draw_repeat": 76,
+    "tiger_win": 89
+   },
+   "sides": {
+    "goat": {
+     "decisions": 5985,
+     "by_value": {
+      "draw": 5631,
+      "win": 276,
+      "loss": 78
+     },
+     "blunders": {
+      "D>L": 192,
+      "W>D": 108
+     },
+     "had_win_games": 80,
+     "converted_games": 35,
+     "games_with_a_blunder": 158,
+     "mean_first_blunder_ply": 47.734177215189874
+    },
+    "tiger": {
+     "decisions": 5950,
+     "by_value": {
+      "draw": 5547,
+      "win": 270,
+      "loss": 133
+     },
+     "blunders": {
+      "W>L": 35,
+      "W>D": 68,
+      "D>L": 115
+     },
+     "had_win_games": 127,
+     "converted_games": 89,
+     "games_with_a_blunder": 115,
+     "mean_first_blunder_ply": 47.69565217391305
+    }
+   },
+   "mean_plies": 63.675
+  },
+  {
+   "goat": "SmartGoat",
+   "tiger": "Tiger vs NormalGoat",
+   "games": 200,
+   "results": {
+    "tiger_win": 143,
+    "draw_repeat": 57
+   },
+   "sides": {
+    "goat": {
+     "decisions": 3842,
+     "by_value": {
+      "draw": 3318,
+      "loss": 371,
+      "win": 153
+     },
+     "blunders": {
+      "D>L": 394,
+      "W>D": 117
+     },
+     "had_win_games": 46,
+     "converted_games": 0,
+     "games_with_a_blunder": 184,
+     "mean_first_blunder_ply": 24.184782608695652
+    },
+    "tiger": {
+     "decisions": 3842,
+     "by_value": {
+      "draw": 3041,
+      "win": 765,
+      "loss": 36
+     },
+     "blunders": {
+      "W>D": 245,
+      "D>L": 120
+     },
+     "had_win_games": 161,
+     "converted_games": 143,
+     "games_with_a_blunder": 131,
+     "mean_first_blunder_ply": 23.015267175572518
+    }
+   },
+   "mean_plies": 42.42
+  },
+  {
+   "goat": "SmartGoat",
+   "tiger": "Tiger vs SmartGoat",
+   "games": 200,
+   "results": {
+    "draw_repeat": 35,
+    "tiger_win": 165
+   },
+   "sides": {
+    "goat": {
+     "decisions": 3350,
+     "by_value": {
+      "draw": 2999,
+      "loss": 252,
+      "win": 99
+     },
+     "blunders": {
+      "D>L": 344,
+      "W>D": 59
+     },
+     "had_win_games": 32,
+     "converted_games": 0,
+     "games_with_a_blunder": 191,
+     "mean_first_blunder_ply": 24.094240837696336
+    },
+    "tiger": {
+     "decisions": 3350,
+     "by_value": {
+      "draw": 2714,
+      "win": 596,
+      "loss": 40
+     },
+     "blunders": {
+      "D>L": 60,
+      "W>D": 177
+     },
+     "had_win_games": 176,
+     "converted_games": 165,
+     "games_with_a_blunder": 110,
+     "mean_first_blunder_ply": 22.4
+    }
+   },
+   "mean_plies": 37.5
+  },
+  {
+   "goat": "SmartGoat",
+   "tiger": "RobustTiger",
+   "games": 200,
+   "results": {
+    "tiger_win": 173,
+    "draw_repeat": 27
+   },
+   "sides": {
+    "goat": {
+     "decisions": 3565,
+     "by_value": {
+      "draw": 3295,
+      "loss": 189,
+      "win": 81
+     },
+     "blunders": {
+      "D>L": 373,
+      "W>D": 46
+     },
+     "had_win_games": 27,
+     "converted_games": 0,
+     "games_with_a_blunder": 188,
+     "mean_first_blunder_ply": 27.372340425531913
+    },
+    "tiger": {
+     "decisions": 3565,
+     "by_value": {
+      "draw": 2968,
+      "win": 562,
+      "loss": 35
+     },
+     "blunders": {
+      "W>D": 198,
+      "D>L": 48
+     },
+     "had_win_games": 184,
+     "converted_games": 173,
+     "games_with_a_blunder": 107,
+     "mean_first_blunder_ply": 27.149532710280372
+    }
+   },
+   "mean_plies": 39.65
+  },
+  {
+   "goat": "RobustGoat",
+   "tiger": "Tiger vs NormalGoat",
+   "games": 200,
+   "results": {
+    "draw_repeat": 116,
+    "tiger_win": 81,
+    "goat_win": 3
+   },
+   "sides": {
+    "goat": {
+     "decisions": 4791,
+     "by_value": {
+      "draw": 4406,
+      "win": 188,
+      "loss": 197
+     },
+     "blunders": {
+      "W>D": 89,
+      "D>L": 195
+     },
+     "had_win_games": 50,
+     "converted_games": 3,
+     "games_with_a_blunder": 123,
+     "mean_first_blunder_ply": 27.739837398373982
+    },
+    "tiger": {
+     "decisions": 4788,
+     "by_value": {
+      "draw": 4300,
+      "win": 392,
+      "loss": 96
+     },
+     "blunders": {
+      "D>L": 93,
+      "W>D": 111
+     },
+     "had_win_games": 96,
+     "converted_games": 81,
+     "games_with_a_blunder": 83,
+     "mean_first_blunder_ply": 24.27710843373494
+    }
+   },
+   "mean_plies": 51.895
+  },
+  {
+   "goat": "RobustGoat",
+   "tiger": "Tiger vs SmartGoat",
+   "games": 200,
+   "results": {
+    "draw_repeat": 114,
+    "tiger_win": 86
+   },
+   "sides": {
+    "goat": {
+     "decisions": 4587,
+     "by_value": {
+      "draw": 4130,
+      "loss": 123,
+      "win": 334
+     },
+     "blunders": {
+      "D>L": 165,
+      "W>D": 167
+     },
+     "had_win_games": 51,
+     "converted_games": 0,
+     "games_with_a_blunder": 134,
+     "mean_first_blunder_ply": 27.16417910447761
+    },
+    "tiger": {
+     "decisions": 4587,
+     "by_value": {
+      "draw": 4132,
+      "win": 288,
+      "loss": 167
+     },
+     "blunders": {
+      "D>L": 173,
+      "W>D": 77
+     },
+     "had_win_games": 96,
+     "converted_games": 86,
+     "games_with_a_blunder": 88,
+     "mean_first_blunder_ply": 21.613636363636363
+    }
+   },
+   "mean_plies": 49.87
+  },
+  {
+   "goat": "RobustGoat",
+   "tiger": "RobustTiger",
+   "games": 200,
+   "results": {
+    "tiger_win": 178,
+    "draw_repeat": 22
+   },
+   "sides": {
+    "goat": {
+     "decisions": 4185,
+     "by_value": {
+      "draw": 3956,
+      "loss": 107,
+      "win": 122
+     },
+     "blunders": {
+      "D>L": 319,
+      "W>D": 71
+     },
+     "had_win_games": 42,
+     "converted_games": 0,
+     "games_with_a_blunder": 190,
+     "mean_first_blunder_ply": 32.32631578947368
+    },
+    "tiger": {
+     "decisions": 4185,
+     "by_value": {
+      "draw": 3708,
+      "win": 426,
+      "loss": 51
+     },
+     "blunders": {
+      "D>L": 71,
+      "W>D": 141
+     },
+     "had_win_games": 183,
+     "converted_games": 178,
+     "games_with_a_blunder": 110,
+     "mean_first_blunder_ply": 28.490909090909092
+    }
+   },
+   "mean_plies": 45.85
+  },
+  {
+   "goat": "PPO+nll 0.5 (10M)",
+   "tiger": "Tiger vs NormalGoat",
+   "games": 200,
+   "results": {
+    "draw_repeat": 116,
+    "tiger_win": 80,
+    "goat_win": 4
+   },
+   "sides": {
+    "goat": {
+     "decisions": 5061,
+     "by_value": {
+      "draw": 4432,
+      "win": 345,
+      "loss": 284
+     },
+     "blunders": {
+      "W>D": 156,
+      "D>L": 372
+     },
+     "had_win_games": 69,
+     "converted_games": 4,
+     "games_with_a_blunder": 159,
+     "mean_first_blunder_ply": 28.47798742138365
+    },
+    "tiger": {
+     "decisions": 5057,
+     "by_value": {
+      "draw": 4216,
+      "loss": 185,
+      "win": 656
+     },
+     "blunders": {
+      "D>L": 164,
+      "W>D": 275
+     },
+     "had_win_games": 123,
+     "converted_games": 80,
+     "games_with_a_blunder": 126,
+     "mean_first_blunder_ply": 25.19047619047619
+    }
+   },
+   "mean_plies": 54.59
+  },
+  {
+   "goat": "PPO+nll 0.5 (10M)",
+   "tiger": "Tiger vs SmartGoat",
+   "games": 200,
+   "results": {
+    "draw_repeat": 107,
+    "tiger_win": 90,
+    "goat_win": 3
+   },
+   "sides": {
+    "goat": {
+     "decisions": 5172,
+     "by_value": {
+      "draw": 4608,
+      "win": 275,
+      "loss": 289
+     },
+     "blunders": {
+      "W>D": 148,
+      "D>L": 375
+     },
+     "had_win_games": 68,
+     "converted_games": 3,
+     "games_with_a_blunder": 162,
+     "mean_first_blunder_ply": 30.246913580246915
+    },
+    "tiger": {
+     "decisions": 5169,
+     "by_value": {
+      "draw": 4381,
+      "win": 664,
+      "loss": 124
+     },
+     "blunders": {
+      "D>L": 153,
+      "W>D": 274
+     },
+     "had_win_games": 131,
+     "converted_games": 90,
+     "games_with_a_blunder": 132,
+     "mean_first_blunder_ply": 27.439393939393938
+    }
+   },
+   "mean_plies": 55.705
+  },
+  {
+   "goat": "PPO+nll 0.5 (10M)",
+   "tiger": "RobustTiger",
+   "games": 200,
+   "results": {
+    "draw_repeat": 71,
+    "tiger_win": 128,
+    "goat_win": 1
+   },
+   "sides": {
+    "goat": {
+     "decisions": 4341,
+     "by_value": {
+      "draw": 4069,
+      "loss": 155,
+      "win": 117
+     },
+     "blunders": {
+      "D>L": 312,
+      "W>D": 36
+     },
+     "had_win_games": 28,
+     "converted_games": 1,
+     "games_with_a_blunder": 160,
+     "mean_first_blunder_ply": 32.05
+    },
+    "tiger": {
+     "decisions": 4340,
+     "by_value": {
+      "draw": 3793,
+      "win": 467,
+      "loss": 80
+     },
+     "blunders": {
+      "W>D": 180,
+      "D>L": 39
+     },
+     "had_win_games": 143,
+     "converted_games": 128,
+     "games_with_a_blunder": 105,
+     "mean_first_blunder_ply": 29.571428571428573
+    }
+   },
+   "mean_plies": 47.405
+  },
+  {
+   "goat": "ReLU Maskable (10M)",
+   "tiger": "Tiger vs NormalGoat",
+   "games": 200,
+   "results": {
+    "tiger_win": 123,
+    "draw_repeat": 71,
+    "goat_win": 6
+   },
+   "sides": {
+    "goat": {
+     "decisions": 4237,
+     "by_value": {
+      "draw": 3663,
+      "loss": 320,
+      "win": 254
+     },
+     "blunders": {
+      "D>L": 349,
+      "W>D": 114
+     },
+     "had_win_games": 60,
+     "converted_games": 6,
+     "games_with_a_blunder": 169,
+     "mean_first_blunder_ply": 25.810650887573964
+    },
+    "tiger": {
+     "decisions": 4231,
+     "by_value": {
+      "draw": 3428,
+      "win": 669,
+      "loss": 134
+     },
+     "blunders": {
+      "W>D": 218,
+      "D>L": 121
+     },
+     "had_win_games": 144,
+     "converted_games": 123,
+     "games_with_a_blunder": 116,
+     "mean_first_blunder_ply": 22.620689655172413
+    }
+   },
+   "mean_plies": 46.34
+  },
+  {
+   "goat": "ReLU Maskable (10M)",
+   "tiger": "Tiger vs SmartGoat",
+   "games": 200,
+   "results": {
+    "draw_repeat": 51,
+    "tiger_win": 147,
+    "goat_win": 2
+   },
+   "sides": {
+    "goat": {
+     "decisions": 3867,
+     "by_value": {
+      "draw": 3186,
+      "loss": 317,
+      "win": 364
+     },
+     "blunders": {
+      "D>L": 413,
+      "W>D": 144
+     },
+     "had_win_games": 75,
+     "converted_games": 2,
+     "games_with_a_blunder": 192,
+     "mean_first_blunder_ply": 22.9375
+    },
+    "tiger": {
+     "decisions": 3865,
+     "by_value": {
+      "draw": 2917,
+      "win": 730,
+      "loss": 218
+     },
+     "blunders": {
+      "W>D": 260,
+      "D>L": 150
+     },
+     "had_win_games": 172,
+     "converted_games": 147,
+     "games_with_a_blunder": 133,
+     "mean_first_blunder_ply": 21.25563909774436
+    }
+   },
+   "mean_plies": 42.66
+  },
+  {
+   "goat": "ReLU Maskable (10M)",
+   "tiger": "RobustTiger",
+   "games": 200,
+   "results": {
+    "tiger_win": 169,
+    "draw_repeat": 31
+   },
+   "sides": {
+    "goat": {
+     "decisions": 3619,
+     "by_value": {
+      "draw": 3195,
+      "loss": 244,
+      "win": 180
+     },
+     "blunders": {
+      "D>L": 375,
+      "W>D": 88
+     },
+     "had_win_games": 59,
+     "converted_games": 0,
+     "games_with_a_blunder": 191,
+     "mean_first_blunder_ply": 24.638743455497384
+    },
+    "tiger": {
+     "decisions": 3619,
+     "by_value": {
+      "draw": 2908,
+      "win": 619,
+      "loss": 92
+     },
+     "blunders": {
+      "W>D": 195,
+      "D>L": 88
+     },
+     "had_win_games": 185,
+     "converted_games": 169,
+     "games_with_a_blunder": 123,
+     "mean_first_blunder_ply": 22.6260162601626
+    }
+   },
+   "mean_plies": 40.19
+  }
+ ],
+ "capture_fix": [
+  {
+   "goat": "NormalGoat",
+   "tiger": "Greedy",
+   "games": 1000,
+   "results": {
+    "tiger_win": 72,
+    "goat_win": 774,
+    "draw_turn_limit": 69,
+    "draw_repeat": 85
+   },
+   "sides": {
+    "goat": {
+     "decisions": 65502,
+     "by_value": {
+      "draw": 9793,
+      "win": 55689,
+      "loss": 20
+     },
+     "blunders": {
+      "W>D": 3771,
+      "D>L": 87
+     },
+     "had_win_games": 997,
+     "converted_games": 774,
+     "games_with_a_blunder": 872,
+     "mean_first_blunder_ply": 14.31651376146789
+    },
+    "tiger": {
+     "decisions": 64728,
+     "by_value": {
+      "draw": 13477,
+      "loss": 51144,
+      "win": 107
+     },
+     "blunders": {
+      "D>L": 4680,
+      "W>D": 15
+     },
+     "had_win_games": 72,
+     "converted_games": 72,
+     "games_with_a_blunder": 998,
+     "mean_first_blunder_ply": 3.8657314629258517
+    }
+   },
+   "mean_plies": 130.23,
+   "legacy_capture": false
+  },
+  {
+   "goat": "NormalGoat",
+   "tiger": "Greedy",
+   "games": 1000,
+   "results": {
+    "draw_turn_limit": 96,
+    "goat_win": 791,
+    "draw_repeat": 82,
+    "tiger_win": 31
+   },
+   "sides": {
+    "goat": {
+     "decisions": 0,
+     "by_value": {},
+     "blunders": {},
+     "had_win_games": 0,
+     "converted_games": 0,
+     "games_with_a_blunder": 0,
+     "mean_first_blunder_ply": null
+    },
+    "tiger": {
+     "decisions": 0,
+     "by_value": {},
+     "blunders": {},
+     "had_win_games": 0,
+     "converted_games": 0,
+     "games_with_a_blunder": 0,
+     "mean_first_blunder_ply": null
+    }
+   },
+   "mean_plies": 134.097,
+   "legacy_capture": true
+  },
+  {
+   "goat": "NormalGoat",
+   "tiger": "Smart",
+   "games": 1000,
+   "results": {
+    "tiger_win": 568,
+    "draw_repeat": 412,
+    "goat_win": 16,
+    "draw_turn_limit": 4
+   },
+   "sides": {
+    "goat": {
+     "decisions": 31578,
+     "by_value": {
+      "draw": 30480,
+      "loss": 200,
+      "win": 898
+     },
+     "blunders": {
+      "D>L": 670,
+      "W>D": 128
+     },
+     "had_win_games": 78,
+     "converted_games": 16,
+     "games_with_a_blunder": 622,
+     "mean_first_blunder_ply": 56.21221864951769
+    },
+    "tiger": {
+     "decisions": 31562,
+     "by_value": {
+      "draw": 29938,
+      "win": 870,
+      "loss": 754
+     },
+     "blunders": {
+      "W>D": 102,
+      "D>L": 155
+     },
+     "had_win_games": 573,
+     "converted_games": 568,
+     "games_with_a_blunder": 136,
+     "mean_first_blunder_ply": 48.0
+    }
+   },
+   "mean_plies": 63.14,
+   "legacy_capture": false
+  },
+  {
+   "goat": "NormalGoat",
+   "tiger": "Smart",
+   "games": 1000,
+   "results": {
+    "tiger_win": 553,
+    "draw_repeat": 417,
+    "goat_win": 24,
+    "draw_turn_limit": 6
+   },
+   "sides": {
+    "goat": {
+     "decisions": 0,
+     "by_value": {},
+     "blunders": {},
+     "had_win_games": 0,
+     "converted_games": 0,
+     "games_with_a_blunder": 0,
+     "mean_first_blunder_ply": null
+    },
+    "tiger": {
+     "decisions": 0,
+     "by_value": {},
+     "blunders": {},
+     "had_win_games": 0,
+     "converted_games": 0,
+     "games_with_a_blunder": 0,
+     "mean_first_blunder_ply": null
+    }
+   },
+   "mean_plies": 64.392,
+   "legacy_capture": true
+  },
+  {
+   "goat": "SmartGoat",
+   "tiger": "Greedy",
+   "games": 1000,
+   "results": {
+    "tiger_win": 845,
+    "goat_win": 44,
+    "draw_repeat": 98,
+    "draw_turn_limit": 13
+   },
+   "sides": {
+    "goat": {
+     "decisions": 29932,
+     "by_value": {
+      "draw": 20817,
+      "win": 8896,
+      "loss": 219
+     },
+     "blunders": {
+      "W>D": 2878,
+      "D>L": 1017
+     },
+     "had_win_games": 775,
+     "converted_games": 44,
+     "games_with_a_blunder": 995,
+     "mean_first_blunder_ply": 8.721608040201005
+    },
+    "tiger": {
+     "decisions": 29888,
+     "by_value": {
+      "draw": 22678,
+      "loss": 5974,
+      "win": 1236
+     },
+     "blunders": {
+      "D>L": 2964,
+      "W>D": 172
+     },
+     "had_win_games": 845,
+     "converted_games": 845,
+     "games_with_a_blunder": 799,
+     "mean_first_blunder_ply": 3.848560700876095
+    }
+   },
+   "mean_plies": 59.82,
+   "legacy_capture": false
+  },
+  {
+   "goat": "SmartGoat",
+   "tiger": "Greedy",
+   "games": 1000,
+   "results": {
+    "tiger_win": 761,
+    "goat_win": 83,
+    "draw_turn_limit": 31,
+    "draw_repeat": 125
+   },
+   "sides": {
+    "goat": {
+     "decisions": 0,
+     "by_value": {},
+     "blunders": {},
+     "had_win_games": 0,
+     "converted_games": 0,
+     "games_with_a_blunder": 0,
+     "mean_first_blunder_ply": null
+    },
+    "tiger": {
+     "decisions": 0,
+     "by_value": {},
+     "blunders": {},
+     "had_win_games": 0,
+     "converted_games": 0,
+     "games_with_a_blunder": 0,
+     "mean_first_blunder_ply": null
+    }
+   },
+   "mean_plies": 66.975,
+   "legacy_capture": true
+  },
+  {
+   "goat": "SmartGoat",
+   "tiger": "Smart",
+   "games": 1000,
+   "results": {
+    "goat_win": 856,
+    "tiger_win": 106,
+    "draw_repeat": 38
+   },
+   "sides": {
+    "goat": {
+     "decisions": 57614,
+     "by_value": {
+      "draw": 41708,
+      "win": 15871,
+      "loss": 35
+     },
+     "blunders": {
+      "W>D": 3579,
+      "D>L": 118
+     },
+     "had_win_games": 973,
+     "converted_games": 856,
+     "games_with_a_blunder": 916,
+     "mean_first_blunder_ply": 17.473799126637555
+    },
+    "tiger": {
+     "decisions": 56758,
+     "by_value": {
+      "draw": 45169,
+      "loss": 11436,
+      "win": 153
+     },
+     "blunders": {
+      "D>L": 4452,
+      "W>D": 12
+     },
+     "had_win_games": 106,
+     "converted_games": 106,
+     "games_with_a_blunder": 975,
+     "mean_first_blunder_ply": 19.4
+    }
+   },
+   "mean_plies": 114.372,
+   "legacy_capture": false
+  },
+  {
+   "goat": "SmartGoat",
+   "tiger": "Smart",
+   "games": 1000,
+   "results": {
+    "goat_win": 939,
+    "draw_repeat": 39,
+    "tiger_win": 17,
+    "draw_turn_limit": 5
+   },
+   "sides": {
+    "goat": {
+     "decisions": 0,
+     "by_value": {},
+     "blunders": {},
+     "had_win_games": 0,
+     "converted_games": 0,
+     "games_with_a_blunder": 0,
+     "mean_first_blunder_ply": null
+    },
+    "tiger": {
+     "decisions": 0,
+     "by_value": {},
+     "blunders": {},
+     "had_win_games": 0,
+     "converted_games": 0,
+     "games_with_a_blunder": 0,
+     "mean_first_blunder_ply": null
+    }
+   },
+   "mean_plies": 119.555,
+   "legacy_capture": true
+  },
+  {
+   "goat": "RobustGoat",
+   "tiger": "Greedy",
+   "games": 1000,
+   "results": {
+    "tiger_win": 289,
+    "goat_win": 635,
+    "draw_repeat": 62,
+    "draw_turn_limit": 14
+   },
+   "sides": {
+    "goat": {
+     "decisions": 56434,
+     "by_value": {
+      "draw": 23293,
+      "win": 33074,
+      "loss": 67
+     },
+     "blunders": {
+      "W>D": 2548,
+      "D>L": 370
+     },
+     "had_win_games": 933,
+     "converted_games": 635,
+     "games_with_a_blunder": 830,
+     "mean_first_blunder_ply": 25.20722891566265
+    },
+    "tiger": {
+     "decisions": 55799,
+     "by_value": {
+      "draw": 25471,
+      "loss": 29891,
+      "win": 437
+     },
+     "blunders": {
+      "D>L": 3228,
+      "W>D": 81
+     },
+     "had_win_games": 290,
+     "converted_games": 289,
+     "games_with_a_blunder": 945,
+     "mean_first_blunder_ply": 13.397883597883597
+    }
+   },
+   "mean_plies": 112.233,
+   "legacy_capture": false
+  },
+  {
+   "goat": "RobustGoat",
+   "tiger": "Greedy",
+   "games": 1000,
+   "results": {
+    "goat_win": 822,
+    "tiger_win": 87,
+    "draw_repeat": 68,
+    "draw_turn_limit": 23
+   },
+   "sides": {
+    "goat": {
+     "decisions": 0,
+     "by_value": {},
+     "blunders": {},
+     "had_win_games": 0,
+     "converted_games": 0,
+     "games_with_a_blunder": 0,
+     "mean_first_blunder_ply": null
+    },
+    "tiger": {
+     "decisions": 0,
+     "by_value": {},
+     "blunders": {},
+     "had_win_games": 0,
+     "converted_games": 0,
+     "games_with_a_blunder": 0,
+     "mean_first_blunder_ply": null
+    }
+   },
+   "mean_plies": 120.496,
+   "legacy_capture": true
+  },
+  {
+   "goat": "RobustGoat",
+   "tiger": "Smart",
+   "games": 1000,
+   "results": {
+    "tiger_win": 316,
+    "goat_win": 607,
+    "draw_repeat": 74,
+    "draw_turn_limit": 3
+   },
+   "sides": {
+    "goat": {
+     "decisions": 49515,
+     "by_value": {
+      "draw": 25131,
+      "win": 24254,
+      "loss": 130
+     },
+     "blunders": {
+      "W>D": 1461,
+      "D>L": 388
+     },
+     "had_win_games": 830,
+     "converted_games": 607,
+     "games_with_a_blunder": 699,
+     "mean_first_blunder_ply": 36.07725321888412
+    },
+    "tiger": {
+     "decisions": 48908,
+     "by_value": {
+      "draw": 26204,
+      "loss": 22186,
+      "win": 518
+     },
+     "blunders": {
+      "D>L": 2107,
+      "W>D": 72
+     },
+     "had_win_games": 316,
+     "converted_games": 316,
+     "games_with_a_blunder": 862,
+     "mean_first_blunder_ply": 32.05568445475638
+    }
+   },
+   "mean_plies": 98.423,
+   "legacy_capture": false
+  },
+  {
+   "goat": "RobustGoat",
+   "tiger": "Smart",
+   "games": 1000,
+   "results": {
+    "goat_win": 818,
+    "draw_repeat": 73,
+    "tiger_win": 103,
+    "draw_turn_limit": 6
+   },
+   "sides": {
+    "goat": {
+     "decisions": 0,
+     "by_value": {},
+     "blunders": {},
+     "had_win_games": 0,
+     "converted_games": 0,
+     "games_with_a_blunder": 0,
+     "mean_first_blunder_ply": null
+    },
+    "tiger": {
+     "decisions": 0,
+     "by_value": {},
+     "blunders": {},
+     "had_win_games": 0,
+     "converted_games": 0,
+     "games_with_a_blunder": 0,
+     "mean_first_blunder_ply": null
+    }
+   },
+   "mean_plies": 110.036,
+   "legacy_capture": true
+  },
+  {
+   "goat": "PPO+nll 0.5 (10M)",
+   "tiger": "Greedy",
+   "games": 1000,
+   "results": {
+    "goat_win": 764,
+    "tiger_win": 217,
+    "draw_repeat": 19
+   },
+   "sides": {
+    "goat": {
+     "decisions": 18505,
+     "by_value": {
+      "draw": 5587,
+      "win": 12846,
+      "loss": 72
+     },
+     "blunders": {
+      "W>D": 1009,
+      "D>L": 251
+     },
+     "had_win_games": 975,
+     "converted_games": 764,
+     "games_with_a_blunder": 531,
+     "mean_first_blunder_ply": 8.783427495291901
+    },
+    "tiger": {
+     "decisions": 17741,
+     "by_value": {
+      "draw": 6345,
+      "loss": 11073,
+      "win": 323
+     },
+     "blunders": {
+      "D>L": 1789,
+      "W>D": 34
+     },
+     "had_win_games": 217,
+     "converted_games": 217,
+     "games_with_a_blunder": 981,
+     "mean_first_blunder_ply": 3.964322120285423
+    }
+   },
+   "mean_plies": 36.246,
+   "legacy_capture": false
+  },
+  {
+   "goat": "PPO+nll 0.5 (10M)",
+   "tiger": "Greedy",
+   "games": 1000,
+   "results": {
+    "goat_win": 765,
+    "tiger_win": 216,
+    "draw_repeat": 19
+   },
+   "sides": {
+    "goat": {
+     "decisions": 0,
+     "by_value": {},
+     "blunders": {},
+     "had_win_games": 0,
+     "converted_games": 0,
+     "games_with_a_blunder": 0,
+     "mean_first_blunder_ply": null
+    },
+    "tiger": {
+     "decisions": 0,
+     "by_value": {},
+     "blunders": {},
+     "had_win_games": 0,
+     "converted_games": 0,
+     "games_with_a_blunder": 0,
+     "mean_first_blunder_ply": null
+    }
+   },
+   "mean_plies": 36.211,
+   "legacy_capture": true
+  },
+  {
+   "goat": "PPO+nll 0.5 (10M)",
+   "tiger": "Smart",
+   "games": 1000,
+   "results": {
+    "goat_win": 946,
+    "draw_repeat": 41,
+    "tiger_win": 13
+   },
+   "sides": {
+    "goat": {
+     "decisions": 28432,
+     "by_value": {
+      "draw": 23274,
+      "win": 5151,
+      "loss": 7
+     },
+     "blunders": {
+      "W>D": 1258,
+      "D>L": 16
+     },
+     "had_win_games": 983,
+     "converted_games": 946,
+     "games_with_a_blunder": 766,
+     "mean_first_blunder_ply": 15.211488250652742
+    },
+    "tiger": {
+     "decisions": 27486,
+     "by_value": {
+      "draw": 24516,
+      "loss": 2947,
+      "win": 23
+     },
+     "blunders": {
+      "D>L": 2204,
+      "W>D": 3
+     },
+     "had_win_games": 13,
+     "converted_games": 13,
+     "games_with_a_blunder": 986,
+     "mean_first_blunder_ply": 17.72819472616633
+    }
+   },
+   "mean_plies": 55.918,
+   "legacy_capture": false
+  },
+  {
+   "goat": "PPO+nll 0.5 (10M)",
+   "tiger": "Smart",
+   "games": 1000,
+   "results": {
+    "goat_win": 946,
+    "draw_repeat": 41,
+    "tiger_win": 13
+   },
+   "sides": {
+    "goat": {
+     "decisions": 0,
+     "by_value": {},
+     "blunders": {},
+     "had_win_games": 0,
+     "converted_games": 0,
+     "games_with_a_blunder": 0,
+     "mean_first_blunder_ply": null
+    },
+    "tiger": {
+     "decisions": 0,
+     "by_value": {},
+     "blunders": {},
+     "had_win_games": 0,
+     "converted_games": 0,
+     "games_with_a_blunder": 0,
+     "mean_first_blunder_ply": null
+    }
+   },
+   "mean_plies": 55.922,
+   "legacy_capture": true
+  },
+  {
+   "goat": "ReLU Maskable (10M)",
+   "tiger": "Greedy",
+   "games": 1000,
+   "results": {
+    "goat_win": 866,
+    "tiger_win": 127,
+    "draw_repeat": 7
+   },
+   "sides": {
+    "goat": {
+     "decisions": 18394,
+     "by_value": {
+      "draw": 4180,
+      "win": 14169,
+      "loss": 45
+     },
+     "blunders": {
+      "W>D": 1009,
+      "D>L": 151
+     },
+     "had_win_games": 993,
+     "converted_games": 866,
+     "games_with_a_blunder": 575,
+     "mean_first_blunder_ply": 7.245217391304347
+    },
+    "tiger": {
+     "decisions": 17528,
+     "by_value": {
+      "draw": 5038,
+      "loss": 12294,
+      "win": 196
+     },
+     "blunders": {
+      "D>L": 1878,
+      "W>D": 24
+     },
+     "had_win_games": 127,
+     "converted_games": 127,
+     "games_with_a_blunder": 995,
+     "mean_first_blunder_ply": 3.842211055276382
+    }
+   },
+   "mean_plies": 35.922,
+   "legacy_capture": false
+  },
+  {
+   "goat": "ReLU Maskable (10M)",
+   "tiger": "Greedy",
+   "games": 1000,
+   "results": {
+    "goat_win": 866,
+    "tiger_win": 128,
+    "draw_repeat": 6
+   },
+   "sides": {
+    "goat": {
+     "decisions": 0,
+     "by_value": {},
+     "blunders": {},
+     "had_win_games": 0,
+     "converted_games": 0,
+     "games_with_a_blunder": 0,
+     "mean_first_blunder_ply": null
+    },
+    "tiger": {
+     "decisions": 0,
+     "by_value": {},
+     "blunders": {},
+     "had_win_games": 0,
+     "converted_games": 0,
+     "games_with_a_blunder": 0,
+     "mean_first_blunder_ply": null
+    }
+   },
+   "mean_plies": 35.948,
+   "legacy_capture": true
+  },
+  {
+   "goat": "ReLU Maskable (10M)",
+   "tiger": "Smart",
+   "games": 1000,
+   "results": {
+    "goat_win": 839,
+    "tiger_win": 151,
+    "draw_repeat": 10
+   },
+   "sides": {
+    "goat": {
+     "decisions": 18799,
+     "by_value": {
+      "draw": 10951,
+      "win": 7791,
+      "loss": 57
+     },
+     "blunders": {
+      "W>D": 1250,
+      "D>L": 179
+     },
+     "had_win_games": 902,
+     "converted_games": 839,
+     "games_with_a_blunder": 749,
+     "mean_first_blunder_ply": 19.391188251001335
+    },
+    "tiger": {
+     "decisions": 17960,
+     "by_value": {
+      "draw": 12022,
+      "loss": 5702,
+      "win": 236
+     },
+     "blunders": {
+      "D>L": 2094,
+      "W>D": 28
+     },
+     "had_win_games": 151,
+     "converted_games": 151,
+     "games_with_a_blunder": 919,
+     "mean_first_blunder_ply": 13.79651795429815
+    }
+   },
+   "mean_plies": 36.759,
+   "legacy_capture": false
+  },
+  {
+   "goat": "ReLU Maskable (10M)",
+   "tiger": "Smart",
+   "games": 1000,
+   "results": {
+    "goat_win": 841,
+    "tiger_win": 150,
+    "draw_repeat": 9
+   },
+   "sides": {
+    "goat": {
+     "decisions": 0,
+     "by_value": {},
+     "blunders": {},
+     "had_win_games": 0,
+     "converted_games": 0,
+     "games_with_a_blunder": 0,
+     "mean_first_blunder_ply": null
+    },
+    "tiger": {
+     "decisions": 0,
+     "by_value": {},
+     "blunders": {},
+     "had_win_games": 0,
+     "converted_games": 0,
+     "games_with_a_blunder": 0,
+     "mean_first_blunder_ply": null
+    }
+   },
+   "mean_plies": 36.771,
+   "legacy_capture": true
+  }
+ ],
+ "goat_players": [
+  "Perfect",
+  "Perfect (plain)",
+  "Random",
+  "NormalGoat",
+  "SmartGoat",
+  "RobustGoat",
+  "PPO+nll 0.5 (10M)",
+  "ReLU Maskable (10M)"
+ ],
+ "tiger_players": [
+  "Perfect",
+  "Perfect (plain)",
+  "Random",
+  "Greedy",
+  "Smart",
+  "Tiger vs NormalGoat",
+  "Tiger vs SmartGoat",
+  "RobustTiger"
+ ],
+ "model_files": {
+  "NormalGoat": "stable_models/models/Goats/mppo_NormalGoat030726.zip",
+  "SmartGoat": "stable_models/models/Goats/mppo_SmartGoat030726.zip",
+  "RobustGoat": "stable_models/models/Goats/mppo_RobustGoat030726.zip",
+  "PPO+nll 0.5 (10M)": "artifacts/legality_study/ppo_clip_nll05_s42/baseline/models/phase_01_final.zip",
+  "ReLU Maskable (10M)": "artifacts/legality_study/relu_maskable_s42/baseline/models/phase_01_final.zip",
+  "Tiger vs NormalGoat": "stable_models/models/Tigers/best_tiger_vs_normal_goat_10M_20260307_220408.zip",
+  "Tiger vs SmartGoat": "stable_models/models/Tigers/best_tiger_vs_smart_goat_10M_20260307_225859.zip",
+  "RobustTiger": "stable_models/models/Tigers/mppo_RobustTiger030726.zip"
+ },
+ "seconds": 56.8,
+ "pairings": [
+  {
+   "goat": "Perfect",
+   "tiger": "Perfect",
+   "games": 200,
+   "results": {
+    "draw_turn_limit": 200
+   },
+   "sides": {
+    "goat": {
+     "decisions": 20000,
+     "by_value": {
+      "draw": 20000
+     },
+     "blunders": {},
+     "had_win_games": 0,
+     "converted_games": 0,
+     "games_with_a_blunder": 0,
+     "mean_first_blunder_ply": null
+    },
+    "tiger": {
+     "decisions": 20000,
+     "by_value": {
+      "draw": 20000
+     },
+     "blunders": {},
+     "had_win_games": 0,
+     "converted_games": 0,
+     "games_with_a_blunder": 0,
+     "mean_first_blunder_ply": null
+    }
+   },
+   "mean_plies": 200.0
+  },
+  {
+   "goat": "Perfect",
+   "tiger": "Perfect (plain)",
+   "games": 200,
+   "results": {
+    "draw_turn_limit": 200
+   },
+   "sides": {
+    "goat": {
+     "decisions": 20000,
+     "by_value": {
+      "draw": 20000
+     },
+     "blunders": {},
+     "had_win_games": 0,
+     "converted_games": 0,
+     "games_with_a_blunder": 0,
+     "mean_first_blunder_ply": null
+    },
+    "tiger": {
+     "decisions": 20000,
+     "by_value": {
+      "draw": 20000
+     },
+     "blunders": {},
+     "had_win_games": 0,
+     "converted_games": 0,
+     "games_with_a_blunder": 0,
+     "mean_first_blunder_ply": null
+    }
+   },
+   "mean_plies": 200.0
+  },
+  {
+   "goat": "Perfect",
+   "tiger": "Random",
+   "games": 200,
+   "results": {
+    "goat_win": 199,
+    "draw_turn_limit": 1
+   },
+   "sides": {
+    "goat": {
+     "decisions": 3128,
+     "by_value": {
+      "draw": 536,
+      "win": 2592
+     },
+     "blunders": {},
+     "had_win_games": 199,
+     "converted_games": 199,
+     "games_with_a_blunder": 0,
+     "mean_first_blunder_ply": null
+    },
+    "tiger": {
+     "decisions": 2929,
+     "by_value": {
+      "draw": 536,
+      "loss": 2393
+     },
+     "blunders": {
+      "D>L": 199
+     },
+     "had_win_games": 0,
+     "converted_games": 0,
+     "games_with_a_blunder": 199,
+     "mean_first_blunder_ply": 3.3819095477386933
+    }
+   },
+   "mean_plies": 30.285
+  },
+  {
+   "goat": "Perfect",
+   "tiger": "Greedy",
+   "games": 200,
+   "results": {
+    "goat_win": 131,
+    "draw_turn_limit": 68,
+    "draw_repeat": 1
+   },
+   "sides": {
+    "goat": {
+     "decisions": 8845,
+     "by_value": {
+      "draw": 7099,
+      "win": 1746
+     },
+     "blunders": {},
+     "had_win_games": 131,
+     "converted_games": 131,
+     "games_with_a_blunder": 0,
+     "mean_first_blunder_ply": null
+    },
+    "tiger": {
+     "decisions": 8714,
+     "by_value": {
+      "draw": 7099,
+      "loss": 1615
+     },
+     "blunders": {
+      "D>L": 131
+     },
+     "had_win_games": 0,
+     "converted_games": 0,
+     "games_with_a_blunder": 131,
+     "mean_first_blunder_ply": 3.1526717557251906
+    }
+   },
+   "mean_plies": 87.795
+  },
+  {
+   "goat": "Perfect",
+   "tiger": "Smart",
+   "games": 200,
+   "results": {
+    "draw_turn_limit": 169,
+    "goat_win": 27,
+    "draw_repeat": 4
+   },
+   "sides": {
+    "goat": {
+     "decisions": 17586,
+     "by_value": {
+      "draw": 17316,
+      "win": 270
+     },
+     "blunders": {},
+     "had_win_games": 27,
+     "converted_games": 27,
+     "games_with_a_blunder": 0,
+     "mean_first_blunder_ply": null
+    },
+    "tiger": {
+     "decisions": 17559,
+     "by_value": {
+      "draw": 17316,
+      "loss": 243
+     },
+     "blunders": {
+      "D>L": 27
+     },
+     "had_win_games": 0,
+     "converted_games": 0,
+     "games_with_a_blunder": 27,
+     "mean_first_blunder_ply": 12.407407407407407
+    }
+   },
+   "mean_plies": 175.725
+  },
+  {
+   "goat": "Perfect",
+   "tiger": "Tiger vs NormalGoat",
+   "games": 200,
+   "results": {
+    "goat_win": 200
+   },
+   "sides": {
+    "goat": {
+     "decisions": 3130,
+     "by_value": {
+      "draw": 1158,
+      "win": 1972
+     },
+     "blunders": {},
+     "had_win_games": 200,
+     "converted_games": 200,
+     "games_with_a_blunder": 0,
+     "mean_first_blunder_ply": null
+    },
+    "tiger": {
+     "decisions": 2930,
+     "by_value": {
+      "draw": 1158,
+      "loss": 1772
+     },
+     "blunders": {
+      "D>L": 200
+     },
+     "had_win_games": 0,
+     "converted_games": 0,
+     "games_with_a_blunder": 200,
+     "mean_first_blunder_ply": 10.58
+    }
+   },
+   "mean_plies": 30.3
+  },
+  {
+   "goat": "Perfect",
+   "tiger": "Tiger vs SmartGoat",
+   "games": 200,
+   "results": {
+    "goat_win": 200
+   },
+   "sides": {
+    "goat": {
+     "decisions": 3242,
+     "by_value": {
+      "draw": 848,
+      "win": 2394
+     },
+     "blunders": {},
+     "had_win_games": 200,
+     "converted_games": 200,
+     "games_with_a_blunder": 0,
+     "mean_first_blunder_ply": null
+    },
+    "tiger": {
+     "decisions": 3042,
+     "by_value": {
+      "draw": 848,
+      "loss": 2194
+     },
+     "blunders": {
+      "D>L": 200
+     },
+     "had_win_games": 0,
+     "converted_games": 0,
+     "games_with_a_blunder": 200,
+     "mean_first_blunder_ply": 7.48
+    }
+   },
+   "mean_plies": 31.42
+  },
+  {
+   "goat": "Perfect",
+   "tiger": "RobustTiger",
+   "games": 200,
+   "results": {
+    "goat_win": 200
+   },
+   "sides": {
+    "goat": {
+     "decisions": 3105,
+     "by_value": {
+      "draw": 400,
+      "win": 2705
+     },
+     "blunders": {},
+     "had_win_games": 200,
+     "converted_games": 200,
+     "games_with_a_blunder": 0,
+     "mean_first_blunder_ply": null
+    },
+    "tiger": {
+     "decisions": 2905,
+     "by_value": {
+      "draw": 400,
+      "loss": 2505
+     },
+     "blunders": {
+      "D>L": 200
+     },
+     "had_win_games": 0,
+     "converted_games": 0,
+     "games_with_a_blunder": 200,
+     "mean_first_blunder_ply": 3.0
+    }
+   },
+   "mean_plies": 30.05
+  },
+  {
+   "goat": "Perfect (plain)",
+   "tiger": "Perfect",
+   "games": 200,
+   "results": {
+    "draw_turn_limit": 200
+   },
+   "sides": {
+    "goat": {
+     "decisions": 20000,
+     "by_value": {
+      "draw": 20000
+     },
+     "blunders": {},
+     "had_win_games": 0,
+     "converted_games": 0,
+     "games_with_a_blunder": 0,
+     "mean_first_blunder_ply": null
+    },
+    "tiger": {
+     "decisions": 20000,
+     "by_value": {
+      "draw": 20000
+     },
+     "blunders": {},
+     "had_win_games": 0,
+     "converted_games": 0,
+     "games_with_a_blunder": 0,
+     "mean_first_blunder_ply": null
+    }
+   },
+   "mean_plies": 200.0
+  },
+  {
+   "goat": "Perfect (plain)",
+   "tiger": "Perfect (plain)",
+   "games": 200,
+   "results": {
+    "draw_turn_limit": 198,
+    "draw_repeat": 2
+   },
+   "sides": {
+    "goat": {
+     "decisions": 19970,
+     "by_value": {
+      "draw": 19970
+     },
+     "blunders": {},
+     "had_win_games": 0,
+     "converted_games": 0,
+     "games_with_a_blunder": 0,
+     "mean_first_blunder_ply": null
+    },
+    "tiger": {
+     "decisions": 19970,
+     "by_value": {
+      "draw": 19970
+     },
+     "blunders": {},
+     "had_win_games": 0,
+     "converted_games": 0,
+     "games_with_a_blunder": 0,
+     "mean_first_blunder_ply": null
+    }
+   },
+   "mean_plies": 199.7
+  },
+  {
+   "goat": "Perfect (plain)",
+   "tiger": "Random",
+   "games": 200,
+   "results": {
+    "draw_turn_limit": 88,
+    "goat_win": 111,
+    "draw_repeat": 1
+   },
+   "sides": {
+    "goat": {
+     "decisions": 10838,
+     "by_value": {
+      "draw": 9654,
+      "win": 1184
+     },
+     "blunders": {},
+     "had_win_games": 111,
+     "converted_games": 111,
+     "games_with_a_blunder": 0,
+     "mean_first_blunder_ply": null
+    },
+    "tiger": {
+     "decisions": 10727,
+     "by_value": {
+      "draw": 9654,
+      "loss": 1073
+     },
+     "blunders": {
+      "D>L": 111
+     },
+     "had_win_games": 0,
+     "converted_games": 0,
+     "games_with_a_blunder": 111,
+     "mean_first_blunder_ply": 13.018018018018019
+    }
+   },
+   "mean_plies": 107.825
+  },
+  {
+   "goat": "Perfect (plain)",
+   "tiger": "Greedy",
+   "games": 200,
+   "results": {
+    "goat_win": 35,
+    "draw_turn_limit": 164,
+    "draw_repeat": 1
+   },
+   "sides": {
+    "goat": {
+     "decisions": 17021,
+     "by_value": {
+      "draw": 16580,
+      "win": 441
+     },
+     "blunders": {},
+     "had_win_games": 35,
+     "converted_games": 35,
+     "games_with_a_blunder": 0,
+     "mean_first_blunder_ply": null
+    },
+    "tiger": {
+     "decisions": 16986,
+     "by_value": {
+      "draw": 16580,
+      "loss": 406
+     },
+     "blunders": {
+      "D>L": 35
+     },
+     "had_win_games": 0,
+     "converted_games": 0,
+     "games_with_a_blunder": 35,
+     "mean_first_blunder_ply": 6.0285714285714285
+    }
+   },
+   "mean_plies": 170.035
+  },
+  {
+   "goat": "Perfect (plain)",
+   "tiger": "Smart",
+   "games": 200,
+   "results": {
+    "draw_turn_limit": 163,
+    "draw_repeat": 34,
+    "goat_win": 3
+   },
+   "sides": {
+    "goat": {
+     "decisions": 18388,
+     "by_value": {
+      "draw": 18337,
+      "win": 51
+     },
+     "blunders": {},
+     "had_win_games": 3,
+     "converted_games": 3,
+     "games_with_a_blunder": 0,
+     "mean_first_blunder_ply": null
+    },
+    "tiger": {
+     "decisions": 18385,
+     "by_value": {
+      "draw": 18337,
+      "loss": 48
+     },
+     "blunders": {
+      "D>L": 3
+     },
+     "had_win_games": 0,
+     "converted_games": 0,
+     "games_with_a_blunder": 3,
+     "mean_first_blunder_ply": 9.666666666666666
+    }
+   },
+   "mean_plies": 183.865
+  },
+  {
+   "goat": "Perfect (plain)",
+   "tiger": "Tiger vs NormalGoat",
+   "games": 200,
+   "results": {
+    "draw_turn_limit": 75,
+    "draw_repeat": 98,
+    "goat_win": 27
+   },
+   "sides": {
+    "goat": {
+     "decisions": 14289,
+     "by_value": {
+      "draw": 14019,
+      "win": 270
+     },
+     "blunders": {},
+     "had_win_games": 27,
+     "converted_games": 27,
+     "games_with_a_blunder": 0,
+     "mean_first_blunder_ply": null
+    },
+    "tiger": {
+     "decisions": 14262,
+     "by_value": {
+      "draw": 14019,
+      "loss": 243
+     },
+     "blunders": {
+      "D>L": 27
+     },
+     "had_win_games": 0,
+     "converted_games": 0,
+     "games_with_a_blunder": 27,
+     "mean_first_blunder_ply": 18.40740740740741
+    }
+   },
+   "mean_plies": 142.755
+  },
+  {
+   "goat": "Perfect (plain)",
+   "tiger": "Tiger vs SmartGoat",
+   "games": 200,
+   "results": {
+    "draw_repeat": 76,
+    "draw_turn_limit": 103,
+    "goat_win": 21
+   },
+   "sides": {
+    "goat": {
+     "decisions": 15457,
+     "by_value": {
+      "draw": 15254,
+      "win": 203
+     },
+     "blunders": {},
+     "had_win_games": 21,
+     "converted_games": 21,
+     "games_with_a_blunder": 0,
+     "mean_first_blunder_ply": null
+    },
+    "tiger": {
+     "decisions": 15436,
+     "by_value": {
+      "draw": 15254,
+      "loss": 182
+     },
+     "blunders": {
+      "D>L": 21
+     },
+     "had_win_games": 0,
+     "converted_games": 0,
+     "games_with_a_blunder": 21,
+     "mean_first_blunder_ply": 20.142857142857142
+    }
+   },
+   "mean_plies": 154.465
+  },
+  {
+   "goat": "Perfect (plain)",
+   "tiger": "RobustTiger",
+   "games": 200,
+   "results": {
+    "draw_turn_limit": 97,
+    "draw_repeat": 86,
+    "goat_win": 17
+   },
+   "sides": {
+    "goat": {
+     "decisions": 15344,
+     "by_value": {
+      "draw": 15178,
+      "win": 166
+     },
+     "blunders": {},
+     "had_win_games": 17,
+     "converted_games": 17,
+     "games_with_a_blunder": 0,
+     "mean_first_blunder_ply": null
+    },
+    "tiger": {
+     "decisions": 15327,
+     "by_value": {
+      "draw": 15178,
+      "loss": 149
+     },
+     "blunders": {
+      "D>L": 17
+     },
+     "had_win_games": 0,
+     "converted_games": 0,
+     "games_with_a_blunder": 17,
+     "mean_first_blunder_ply": 19.941176470588236
+    }
+   },
+   "mean_plies": 153.355
+  },
+  {
+   "goat": "Random",
+   "tiger": "Perfect",
+   "games": 200,
+   "results": {
+    "tiger_win": 200
+   },
+   "sides": {
+    "goat": {
+     "decisions": 4343,
+     "by_value": {
+      "draw": 4194,
+      "loss": 149
+     },
+     "blunders": {
+      "D>L": 200
+     },
+     "had_win_games": 0,
+     "converted_games": 0,
+     "games_with_a_blunder": 200,
+     "mean_first_blunder_ply": 39.94
+    },
+    "tiger": {
+     "decisions": 4343,
+     "by_value": {
+      "draw": 3994,
+      "win": 349
+     },
+     "blunders": {},
+     "had_win_games": 200,
+     "converted_games": 200,
+     "games_with_a_blunder": 0,
+     "mean_first_blunder_ply": null
+    }
+   },
+   "mean_plies": 43.43
+  },
+  {
+   "goat": "Random",
+   "tiger": "Perfect (plain)",
+   "games": 200,
+   "results": {
+    "tiger_win": 200
+   },
+   "sides": {
+    "goat": {
+     "decisions": 5364,
+     "by_value": {
+      "draw": 5166,
+      "loss": 198
+     },
+     "blunders": {
+      "D>L": 200
+     },
+     "had_win_games": 0,
+     "converted_games": 0,
+     "games_with_a_blunder": 200,
+     "mean_first_blunder_ply": 49.66
+    },
+    "tiger": {
+     "decisions": 5364,
+     "by_value": {
+      "draw": 4966,
+      "win": 398
+     },
+     "blunders": {},
+     "had_win_games": 200,
+     "converted_games": 200,
+     "games_with_a_blunder": 0,
+     "mean_first_blunder_ply": null
+    }
+   },
+   "mean_plies": 53.64
+  },
+  {
+   "goat": "Random",
+   "tiger": "Random",
+   "games": 200,
+   "results": {
+    "tiger_win": 200
+   },
+   "sides": {
+    "goat": {
+     "decisions": 7145,
+     "by_value": {
+      "draw": 6191,
+      "loss": 493,
+      "win": 461
+     },
+     "blunders": {
+      "D>L": 861,
+      "W>D": 352
+     },
+     "had_win_games": 110,
+     "converted_games": 0,
+     "games_with_a_blunder": 200,
+     "mean_first_blunder_ply": 27.29
+    },
+    "tiger": {
+     "decisions": 7145,
+     "by_value": {
+      "draw": 5682,
+      "win": 1354,
+      "loss": 109
+     },
+     "blunders": {
+      "W>D": 661,
+      "D>L": 352
+     },
+     "had_win_games": 200,
+     "converted_games": 200,
+     "games_with_a_blunder": 185,
+     "mean_first_blunder_ply": 25.562162162162164
+    }
+   },
+   "mean_plies": 71.45
+  },
+  {
+   "goat": "Random",
+   "tiger": "Greedy",
+   "games": 200,
+   "results": {
+    "tiger_win": 200
+   },
+   "sides": {
+    "goat": {
+     "decisions": 2999,
+     "by_value": {
+      "draw": 2859,
+      "win": 84,
+      "loss": 56
+     },
+     "blunders": {
+      "W>D": 72,
+      "D>L": 257
+     },
+     "had_win_games": 35,
+     "converted_games": 0,
+     "games_with_a_blunder": 200,
+     "mean_first_blunder_ply": 22.5
+    },
+    "tiger": {
+     "decisions": 2999,
+     "by_value": {
+      "draw": 2674,
+      "win": 313,
+      "loss": 12
+     },
+     "blunders": {
+      "D>L": 72,
+      "W>D": 57
+     },
+     "had_win_games": 200,
+     "converted_games": 200,
+     "games_with_a_blunder": 68,
+     "mean_first_blunder_ply": 15.911764705882353
+    }
+   },
+   "mean_plies": 29.99
+  },
+  {
+   "goat": "Random",
+   "tiger": "Smart",
+   "games": 200,
+   "results": {
+    "tiger_win": 200
+   },
+   "sides": {
+    "goat": {
+     "decisions": 2851,
+     "by_value": {
+      "draw": 2772,
+      "loss": 73,
+      "win": 6
+     },
+     "blunders": {
+      "D>L": 242,
+      "W>D": 4
+     },
+     "had_win_games": 3,
+     "converted_games": 0,
+     "games_with_a_blunder": 200,
+     "mean_first_blunder_ply": 24.82
+    },
+    "tiger": {
+     "decisions": 2851,
+     "by_value": {
+      "draw": 2534,
+      "win": 315,
+      "loss": 2
+     },
+     "blunders": {
+      "W>D": 42,
+      "D>L": 4
+     },
+     "had_win_games": 200,
+     "converted_games": 200,
+     "games_with_a_blunder": 39,
+     "mean_first_blunder_ply": 24.794871794871796
+    }
+   },
+   "mean_plies": 28.51
+  },
+  {
+   "goat": "Random",
+   "tiger": "Tiger vs NormalGoat",
+   "games": 200,
+   "results": {
+    "tiger_win": 199,
+    "draw_repeat": 1
+   },
+   "sides": {
+    "goat": {
+     "decisions": 6243,
+     "by_value": {
+      "draw": 5647,
+      "loss": 498,
+      "win": 98
+     },
+     "blunders": {
+      "D>L": 606,
+      "W>D": 76
+     },
+     "had_win_games": 27,
+     "converted_games": 0,
+     "games_with_a_blunder": 200,
+     "mean_first_blunder_ply": 42.93
+    },
+    "tiger": {
+     "decisions": 6243,
+     "by_value": {
+      "draw": 5117,
+      "win": 1104,
+      "loss": 22
+     },
+     "blunders": {
+      "W>D": 407,
+      "D>L": 76
+     },
+     "had_win_games": 199,
+     "converted_games": 199,
+     "games_with_a_blunder": 156,
+     "mean_first_blunder_ply": 41.96153846153846
+    }
+   },
+   "mean_plies": 62.43
+  },
+  {
+   "goat": "Random",
+   "tiger": "Tiger vs SmartGoat",
+   "games": 200,
+   "results": {
+    "tiger_win": 200
+   },
+   "sides": {
+    "goat": {
+     "decisions": 6340,
+     "by_value": {
+      "draw": 5835,
+      "loss": 438,
+      "win": 67
+     },
+     "blunders": {
+      "D>L": 656,
+      "W>D": 47
+     },
+     "had_win_games": 21,
+     "converted_games": 0,
+     "games_with_a_blunder": 200,
+     "mean_first_blunder_ply": 45.18
+    },
+    "tiger": {
+     "decisions": 6340,
+     "by_value": {
+      "draw": 5226,
+      "win": 1094,
+      "loss": 20
+     },
+     "blunders": {
+      "W>D": 456,
+      "D>L": 47
+     },
+     "had_win_games": 200,
+     "converted_games": 200,
+     "games_with_a_blunder": 154,
+     "mean_first_blunder_ply": 44.935064935064936
+    }
+   },
+   "mean_plies": 63.4
+  },
+  {
+   "goat": "Random",
+   "tiger": "RobustTiger",
+   "games": 200,
+   "results": {
+    "tiger_win": 199,
+    "draw_repeat": 1
+   },
+   "sides": {
+    "goat": {
+     "decisions": 5521,
+     "by_value": {
+      "draw": 5242,
+      "loss": 249,
+      "win": 30
+     },
+     "blunders": {
+      "D>L": 528,
+      "W>D": 27
+     },
+     "had_win_games": 17,
+     "converted_games": 0,
+     "games_with_a_blunder": 199,
+     "mean_first_blunder_ply": 42.37185929648241
+    },
+    "tiger": {
+     "decisions": 5521,
+     "by_value": {
+      "draw": 4741,
+      "win": 777,
+      "loss": 3
+     },
+     "blunders": {
+      "W>D": 329,
+      "D>L": 27
+     },
+     "had_win_games": 199,
+     "converted_games": 199,
+     "games_with_a_blunder": 145,
+     "mean_first_blunder_ply": 42.737931034482756
+    }
+   },
+   "mean_plies": 55.21
+  },
+  {
+   "goat": "NormalGoat",
+   "tiger": "Perfect",
+   "games": 200,
+   "results": {
+    "draw_repeat": 174,
+    "tiger_win": 23,
+    "draw_turn_limit": 3
+   },
+   "sides": {
+    "goat": {
+     "decisions": 8599,
+     "by_value": {
+      "draw": 8577,
+      "loss": 22
+     },
+     "blunders": {
+      "D>L": 23
+     },
+     "had_win_games": 0,
+     "converted_games": 0,
+     "games_with_a_blunder": 23,
+     "mean_first_blunder_ply": 91.47826086956522
+    },
+    "tiger": {
+     "decisions": 8599,
+     "by_value": {
+      "draw": 8554,
+      "win": 45
+     },
+     "blunders": {},
+     "had_win_games": 23,
+     "converted_games": 23,
+     "games_with_a_blunder": 0,
+     "mean_first_blunder_ply": null
+    }
+   },
+   "mean_plies": 85.99
+  },
+  {
+   "goat": "NormalGoat",
+   "tiger": "Perfect (plain)",
+   "games": 200,
+   "results": {
+    "draw_repeat": 174,
+    "tiger_win": 19,
+    "draw_turn_limit": 7
+   },
+   "sides": {
+    "goat": {
+     "decisions": 8761,
+     "by_value": {
+      "draw": 8745,
+      "loss": 16
+     },
+     "blunders": {
+      "D>L": 19
+     },
+     "had_win_games": 0,
+     "converted_games": 0,
+     "games_with_a_blunder": 19,
+     "mean_first_blunder_ply": 107.47368421052632
+    },
+    "tiger": {
+     "decisions": 8761,
+     "by_value": {
+      "draw": 8726,
+      "win": 35
+     },
+     "blunders": {},
+     "had_win_games": 19,
+     "converted_games": 19,
+     "games_with_a_blunder": 0,
+     "mean_first_blunder_ply": null
+    }
+   },
+   "mean_plies": 87.61
+  },
+  {
+   "goat": "NormalGoat",
+   "tiger": "Random",
+   "games": 200,
+   "results": {
+    "goat_win": 158,
+    "draw_repeat": 21,
+    "draw_turn_limit": 19,
+    "tiger_win": 2
+   },
+   "sides": {
+    "goat": {
+     "decisions": 13726,
+     "by_value": {
+      "draw": 1605,
+      "win": 12119,
+      "loss": 2
+     },
+     "blunders": {
+      "W>D": 818,
+      "D>L": 8
+     },
+     "had_win_games": 200,
+     "converted_games": 158,
+     "games_with_a_blunder": 177,
+     "mean_first_blunder_ply": 12.64406779661017
+    },
+    "tiger": {
+     "decisions": 13568,
+     "by_value": {
+      "draw": 2415,
+      "loss": 11143,
+      "win": 10
+     },
+     "blunders": {
+      "D>L": 1016,
+      "W>D": 6
+     },
+     "had_win_games": 2,
+     "converted_games": 2,
+     "games_with_a_blunder": 200,
+     "mean_first_blunder_ply": 3.78
+    }
+   },
+   "mean_plies": 136.47
+  },
+  {
+   "goat": "NormalGoat",
+   "tiger": "Greedy",
+   "games": 200,
+   "results": {
+    "goat_win": 150,
+    "draw_repeat": 20,
+    "tiger_win": 17,
+    "draw_turn_limit": 13
+   },
+   "sides": {
+    "goat": {
+     "decisions": 13053,
+     "by_value": {
+      "draw": 1950,
+      "win": 11100,
+      "loss": 3
+     },
+     "blunders": {
+      "W>D": 743,
+      "D>L": 19
+     },
+     "had_win_games": 200,
+     "converted_games": 150,
+     "games_with_a_blunder": 177,
+     "mean_first_blunder_ply": 12.745762711864407
+    },
+    "tiger": {
+     "decisions": 12903,
+     "by_value": {
+      "draw": 2674,
+      "loss": 10207,
+      "win": 22
+     },
+     "blunders": {
+      "D>L": 925,
+      "W>D": 2
+     },
+     "had_win_games": 17,
+     "converted_games": 17,
+     "games_with_a_blunder": 200,
+     "mean_first_blunder_ply": 4.22
+    }
+   },
+   "mean_plies": 129.78
+  },
+  {
+   "goat": "NormalGoat",
+   "tiger": "Smart",
+   "games": 200,
+   "results": {
+    "draw_repeat": 83,
+    "tiger_win": 113,
+    "draw_turn_limit": 1,
+    "goat_win": 3
+   },
+   "sides": {
+    "goat": {
+     "decisions": 6307,
+     "by_value": {
+      "draw": 6045,
+      "loss": 50,
+      "win": 212
+     },
+     "blunders": {
+      "D>L": 138,
+      "W>D": 23
+     },
+     "had_win_games": 17,
+     "converted_games": 3,
+     "games_with_a_blunder": 124,
+     "mean_first_blunder_ply": 54.54838709677419
+    },
+    "tiger": {
+     "decisions": 6304,
+     "by_value": {
+      "draw": 5930,
+      "win": 188,
+      "loss": 186
+     },
+     "blunders": {
+      "W>D": 25,
+      "D>L": 29
+     },
+     "had_win_games": 114,
+     "converted_games": 113,
+     "games_with_a_blunder": 30,
+     "mean_first_blunder_ply": 46.4
+    }
+   },
+   "mean_plies": 63.055
+  },
+  {
+   "goat": "NormalGoat",
+   "tiger": "Tiger vs NormalGoat",
+   "games": 1,
+   "results": {
+    "draw_repeat": 1
+   },
+   "sides": {
+    "goat": {
+     "decisions": 27,
+     "by_value": {
+      "draw": 27
+     },
+     "blunders": {},
+     "had_win_games": 0,
+     "converted_games": 0,
+     "games_with_a_blunder": 0,
+     "mean_first_blunder_ply": null
+    },
+    "tiger": {
+     "decisions": 27,
+     "by_value": {
+      "draw": 27
+     },
+     "blunders": {},
+     "had_win_games": 0,
+     "converted_games": 0,
+     "games_with_a_blunder": 0,
+     "mean_first_blunder_ply": null
+    }
+   },
+   "mean_plies": 54.0
+  },
+  {
+   "goat": "NormalGoat",
+   "tiger": "Tiger vs SmartGoat",
+   "games": 1,
+   "results": {
+    "draw_repeat": 1
+   },
+   "sides": {
+    "goat": {
+     "decisions": 21,
+     "by_value": {
+      "draw": 20,
+      "win": 1
+     },
+     "blunders": {
+      "W>D": 1
+     },
+     "had_win_games": 1,
+     "converted_games": 0,
+     "games_with_a_blunder": 1,
+     "mean_first_blunder_ply": 18.0
+    },
+    "tiger": {
+     "decisions": 21,
+     "by_value": {
+      "draw": 21
+     },
+     "blunders": {
+      "D>L": 1
+     },
+     "had_win_games": 0,
+     "converted_games": 0,
+     "games_with_a_blunder": 1,
+     "mean_first_blunder_ply": 17.0
+    }
+   },
+   "mean_plies": 42.0
+  },
+  {
+   "goat": "NormalGoat",
+   "tiger": "RobustTiger",
+   "games": 1,
+   "results": {
+    "tiger_win": 1
+   },
+   "sides": {
+    "goat": {
+     "decisions": 36,
+     "by_value": {
+      "draw": 36
+     },
+     "blunders": {
+      "D>L": 1
+     },
+     "had_win_games": 0,
+     "converted_games": 0,
+     "games_with_a_blunder": 1,
+     "mean_first_blunder_ply": 70.0
+    },
+    "tiger": {
+     "decisions": 36,
+     "by_value": {
+      "draw": 35,
+      "win": 1
+     },
+     "blunders": {},
+     "had_win_games": 1,
+     "converted_games": 1,
+     "games_with_a_blunder": 0,
+     "mean_first_blunder_ply": null
+    }
+   },
+   "mean_plies": 72.0
+  },
+  {
+   "goat": "SmartGoat",
+   "tiger": "Perfect",
+   "games": 200,
+   "results": {
+    "tiger_win": 167,
+    "draw_turn_limit": 17,
+    "draw_repeat": 16
+   },
+   "sides": {
+    "goat": {
+     "decisions": 9581,
+     "by_value": {
+      "draw": 9477,
+      "loss": 104
+     },
+     "blunders": {
+      "D>L": 168
+     },
+     "had_win_games": 0,
+     "converted_games": 0,
+     "games_with_a_blunder": 168,
+     "mean_first_blunder_ply": 80.25
+    },
+    "tiger": {
+     "decisions": 9581,
+     "by_value": {
+      "draw": 9309,
+      "win": 272
+     },
+     "blunders": {},
+     "had_win_games": 168,
+     "converted_games": 167,
+     "games_with_a_blunder": 0,
+     "mean_first_blunder_ply": null
+    }
+   },
+   "mean_plies": 95.81
+  },
+  {
+   "goat": "SmartGoat",
+   "tiger": "Perfect (plain)",
+   "games": 200,
+   "results": {
+    "draw_repeat": 42,
+    "tiger_win": 129,
+    "draw_turn_limit": 29
+   },
+   "sides": {
+    "goat": {
+     "decisions": 11365,
+     "by_value": {
+      "draw": 11268,
+      "loss": 97
+     },
+     "blunders": {
+      "D>L": 130
+     },
+     "had_win_games": 0,
+     "converted_games": 0,
+     "games_with_a_blunder": 130,
+     "mean_first_blunder_ply": 97.2
+    },
+    "tiger": {
+     "decisions": 11365,
+     "by_value": {
+      "draw": 11138,
+      "win": 227
+     },
+     "blunders": {},
+     "had_win_games": 130,
+     "converted_games": 129,
+     "games_with_a_blunder": 0,
+     "mean_first_blunder_ply": null
+    }
+   },
+   "mean_plies": 113.65
+  },
+  {
+   "goat": "SmartGoat",
+   "tiger": "Random",
+   "games": 200,
+   "results": {
+    "draw_turn_limit": 62,
+    "draw_repeat": 57,
+    "tiger_win": 66,
+    "goat_win": 15
+   },
+   "sides": {
+    "goat": {
+     "decisions": 14467,
+     "by_value": {
+      "draw": 10323,
+      "win": 4006,
+      "loss": 138
+     },
+     "blunders": {
+      "W>D": 1308,
+      "D>L": 310
+     },
+     "had_win_games": 194,
+     "converted_games": 15,
+     "games_with_a_blunder": 200,
+     "mean_first_blunder_ply": 10.0
+    },
+    "tiger": {
+     "decisions": 14452,
+     "by_value": {
+      "draw": 11321,
+      "loss": 2683,
+      "win": 448
+     },
+     "blunders": {
+      "D>L": 1354,
+      "W>D": 241
+     },
+     "had_win_games": 73,
+     "converted_games": 66,
+     "games_with_a_blunder": 200,
+     "mean_first_blunder_ply": 6.91
+    }
+   },
+   "mean_plies": 144.595
+  },
+  {
+   "goat": "SmartGoat",
+   "tiger": "Greedy",
+   "games": 200,
+   "results": {
+    "tiger_win": 170,
+    "draw_repeat": 19,
+    "draw_turn_limit": 3,
+    "goat_win": 8
+   },
+   "sides": {
+    "goat": {
+     "decisions": 6084,
+     "by_value": {
+      "draw": 4199,
+      "win": 1839,
+      "loss": 46
+     },
+     "blunders": {
+      "W>D": 666,
+      "D>L": 202
+     },
+     "had_win_games": 151,
+     "converted_games": 8,
+     "games_with_a_blunder": 200,
+     "mean_first_blunder_ply": 7.97
+    },
+    "tiger": {
+     "decisions": 6076,
+     "by_value": {
+      "draw": 4663,
+      "loss": 1165,
+      "win": 248
+     },
+     "blunders": {
+      "D>L": 684,
+      "W>D": 32
+     },
+     "had_win_games": 170,
+     "converted_games": 170,
+     "games_with_a_blunder": 156,
+     "mean_first_blunder_ply": 3.5128205128205128
+    }
+   },
+   "mean_plies": 60.8
+  },
+  {
+   "goat": "SmartGoat",
+   "tiger": "Smart",
+   "games": 200,
+   "results": {
+    "goat_win": 165,
+    "tiger_win": 31,
+    "draw_repeat": 4
+   },
+   "sides": {
+    "goat": {
+     "decisions": 11468,
+     "by_value": {
+      "draw": 8463,
+      "win": 3003,
+      "loss": 2
+     },
+     "blunders": {
+      "W>D": 738,
+      "D>L": 34
+     },
+     "had_win_games": 194,
+     "converted_games": 165,
+     "games_with_a_blunder": 185,
+     "mean_first_blunder_ply": 15.664864864864866
+    },
+    "tiger": {
+     "decisions": 11303,
+     "by_value": {
+      "draw": 9167,
+      "loss": 2100,
+      "win": 36
+     },
+     "blunders": {
+      "D>L": 904,
+      "W>D": 3
+     },
+     "had_win_games": 31,
+     "converted_games": 31,
+     "games_with_a_blunder": 196,
+     "mean_first_blunder_ply": 18.755102040816325
+    }
+   },
+   "mean_plies": 113.855
+  },
+  {
+   "goat": "SmartGoat",
+   "tiger": "Tiger vs NormalGoat",
+   "games": 1,
+   "results": {
+    "tiger_win": 1
+   },
+   "sides": {
+    "goat": {
+     "decisions": 27,
+     "by_value": {
+      "draw": 25,
+      "loss": 2
+     },
+     "blunders": {
+      "D>L": 1
+     },
+     "had_win_games": 0,
+     "converted_games": 0,
+     "games_with_a_blunder": 1,
+     "mean_first_blunder_ply": 48.0
+    },
+    "tiger": {
+     "decisions": 27,
+     "by_value": {
+      "draw": 24,
+      "win": 3
+     },
+     "blunders": {},
+     "had_win_games": 1,
+     "converted_games": 1,
+     "games_with_a_blunder": 0,
+     "mean_first_blunder_ply": null
+    }
+   },
+   "mean_plies": 54.0
+  },
+  {
+   "goat": "SmartGoat",
+   "tiger": "Tiger vs SmartGoat",
+   "games": 1,
+   "results": {
+    "tiger_win": 1
+   },
+   "sides": {
+    "goat": {
+     "decisions": 16,
+     "by_value": {
+      "draw": 16
+     },
+     "blunders": {
+      "D>L": 2
+     },
+     "had_win_games": 0,
+     "converted_games": 0,
+     "games_with_a_blunder": 1,
+     "mean_first_blunder_ply": 28.0
+    },
+    "tiger": {
+     "decisions": 16,
+     "by_value": {
+      "draw": 14,
+      "win": 2
+     },
+     "blunders": {
+      "W>D": 1
+     },
+     "had_win_games": 1,
+     "converted_games": 1,
+     "games_with_a_blunder": 1,
+     "mean_first_blunder_ply": 29.0
+    }
+   },
+   "mean_plies": 32.0
+  },
+  {
+   "goat": "SmartGoat",
+   "tiger": "RobustTiger",
+   "games": 1,
+   "results": {
+    "tiger_win": 1
+   },
+   "sides": {
+    "goat": {
+     "decisions": 27,
+     "by_value": {
+      "draw": 25,
+      "loss": 2
+     },
+     "blunders": {
+      "D>L": 2
+     },
+     "had_win_games": 0,
+     "converted_games": 0,
+     "games_with_a_blunder": 1,
+     "mean_first_blunder_ply": 46.0
+    },
+    "tiger": {
+     "decisions": 27,
+     "by_value": {
+      "draw": 23,
+      "win": 4
+     },
+     "blunders": {
+      "W>D": 1
+     },
+     "had_win_games": 1,
+     "converted_games": 1,
+     "games_with_a_blunder": 1,
+     "mean_first_blunder_ply": 51.0
+    }
+   },
+   "mean_plies": 54.0
+  },
+  {
+   "goat": "RobustGoat",
+   "tiger": "Perfect",
+   "games": 200,
+   "results": {
+    "draw_repeat": 132,
+    "tiger_win": 59,
+    "draw_turn_limit": 9
+   },
+   "sides": {
+    "goat": {
+     "decisions": 10215,
+     "by_value": {
+      "draw": 10170,
+      "loss": 45
+     },
+     "blunders": {
+      "D>L": 59
+     },
+     "had_win_games": 0,
+     "converted_games": 0,
+     "games_with_a_blunder": 59,
+     "mean_first_blunder_ply": 72.27118644067797
+    },
+    "tiger": {
+     "decisions": 10215,
+     "by_value": {
+      "draw": 10111,
+      "win": 104
+     },
+     "blunders": {},
+     "had_win_games": 59,
+     "converted_games": 59,
+     "games_with_a_blunder": 0,
+     "mean_first_blunder_ply": null
+    }
+   },
+   "mean_plies": 102.15
+  },
+  {
+   "goat": "RobustGoat",
+   "tiger": "Perfect (plain)",
+   "games": 200,
+   "results": {
+    "draw_repeat": 145,
+    "tiger_win": 41,
+    "draw_turn_limit": 14
+   },
+   "sides": {
+    "goat": {
+     "decisions": 10865,
+     "by_value": {
+      "draw": 10844,
+      "loss": 21
+     },
+     "blunders": {
+      "D>L": 41
+     },
+     "had_win_games": 0,
+     "converted_games": 0,
+     "games_with_a_blunder": 41,
+     "mean_first_blunder_ply": 105.70731707317073
+    },
+    "tiger": {
+     "decisions": 10865,
+     "by_value": {
+      "draw": 10803,
+      "win": 62
+     },
+     "blunders": {},
+     "had_win_games": 41,
+     "converted_games": 41,
+     "games_with_a_blunder": 0,
+     "mean_first_blunder_ply": null
+    }
+   },
+   "mean_plies": 108.65
+  },
+  {
+   "goat": "RobustGoat",
+   "tiger": "Random",
+   "games": 200,
+   "results": {
+    "draw_repeat": 29,
+    "goat_win": 135,
+    "draw_turn_limit": 14,
+    "tiger_win": 22
+   },
+   "sides": {
+    "goat": {
+     "decisions": 13053,
+     "by_value": {
+      "draw": 5466,
+      "win": 7547,
+      "loss": 40
+     },
+     "blunders": {
+      "W>D": 870,
+      "D>L": 73
+     },
+     "had_win_games": 194,
+     "converted_games": 135,
+     "games_with_a_blunder": 171,
+     "mean_first_blunder_ply": 20.912280701754387
+    },
+    "tiger": {
+     "decisions": 12918,
+     "by_value": {
+      "draw": 6263,
+      "loss": 6542,
+      "win": 113
+     },
+     "blunders": {
+      "D>L": 1031,
+      "W>D": 51
+     },
+     "had_win_games": 24,
+     "converted_games": 22,
+     "games_with_a_blunder": 199,
+     "mean_first_blunder_ply": 17.894472361809044
+    }
+   },
+   "mean_plies": 129.855
+  },
+  {
+   "goat": "RobustGoat",
+   "tiger": "Greedy",
+   "games": 200,
+   "results": {
+    "draw_repeat": 13,
+    "goat_win": 131,
+    "tiger_win": 53,
+    "draw_turn_limit": 3
+   },
+   "sides": {
+    "goat": {
+     "decisions": 11648,
+     "by_value": {
+      "draw": 4990,
+      "win": 6651,
+      "loss": 7
+     },
+     "blunders": {
+      "W>D": 534,
+      "D>L": 75
+     },
+     "had_win_games": 183,
+     "converted_games": 131,
+     "games_with_a_blunder": 173,
+     "mean_first_blunder_ply": 25.745664739884393
+    },
+    "tiger": {
+     "decisions": 11517,
+     "by_value": {
+      "draw": 5449,
+      "loss": 5986,
+      "win": 82
+     },
+     "blunders": {
+      "D>L": 674,
+      "W>D": 22
+     },
+     "had_win_games": 53,
+     "converted_games": 53,
+     "games_with_a_blunder": 185,
+     "mean_first_blunder_ply": 15.183783783783785
+    }
+   },
+   "mean_plies": 115.825
+  },
+  {
+   "goat": "RobustGoat",
+   "tiger": "Smart",
+   "games": 200,
+   "results": {
+    "goat_win": 131,
+    "draw_repeat": 11,
+    "tiger_win": 58
+   },
+   "sides": {
+    "goat": {
+     "decisions": 10228,
+     "by_value": {
+      "draw": 4992,
+      "win": 5214,
+      "loss": 22
+     },
+     "blunders": {
+      "W>D": 312,
+      "D>L": 71
+     },
+     "had_win_games": 173,
+     "converted_games": 131,
+     "games_with_a_blunder": 142,
+     "mean_first_blunder_ply": 36.070422535211264
+    },
+    "tiger": {
+     "decisions": 10097,
+     "by_value": {
+      "draw": 5233,
+      "loss": 4771,
+      "win": 93
+     },
+     "blunders": {
+      "D>L": 452,
+      "W>D": 13
+     },
+     "had_win_games": 58,
+     "converted_games": 58,
+     "games_with_a_blunder": 180,
+     "mean_first_blunder_ply": 33.05555555555556
+    }
+   },
+   "mean_plies": 101.625
+  },
+  {
+   "goat": "RobustGoat",
+   "tiger": "Tiger vs NormalGoat",
+   "games": 1,
+   "results": {
+    "tiger_win": 1
+   },
+   "sides": {
+    "goat": {
+     "decisions": 25,
+     "by_value": {
+      "draw": 24,
+      "loss": 1
+     },
+     "blunders": {
+      "D>L": 1
+     },
+     "had_win_games": 0,
+     "converted_games": 0,
+     "games_with_a_blunder": 1,
+     "mean_first_blunder_ply": 46.0
+    },
+    "tiger": {
+     "decisions": 25,
+     "by_value": {
+      "draw": 23,
+      "win": 2
+     },
+     "blunders": {},
+     "had_win_games": 1,
+     "converted_games": 1,
+     "games_with_a_blunder": 0,
+     "mean_first_blunder_ply": null
+    }
+   },
+   "mean_plies": 50.0
+  },
+  {
+   "goat": "RobustGoat",
+   "tiger": "Tiger vs SmartGoat",
+   "games": 1,
+   "results": {
+    "tiger_win": 1
+   },
+   "sides": {
+    "goat": {
+     "decisions": 33,
+     "by_value": {
+      "draw": 30,
+      "loss": 3
+     },
+     "blunders": {
+      "D>L": 5
+     },
+     "had_win_games": 0,
+     "converted_games": 0,
+     "games_with_a_blunder": 1,
+     "mean_first_blunder_ply": 50.0
+    },
+    "tiger": {
+     "decisions": 33,
+     "by_value": {
+      "draw": 25,
+      "win": 8
+     },
+     "blunders": {
+      "W>D": 4
+     },
+     "had_win_games": 1,
+     "converted_games": 1,
+     "games_with_a_blunder": 1,
+     "mean_first_blunder_ply": 53.0
+    }
+   },
+   "mean_plies": 66.0
+  },
+  {
+   "goat": "RobustGoat",
+   "tiger": "RobustTiger",
+   "games": 1,
+   "results": {
+    "tiger_win": 1
+   },
+   "sides": {
+    "goat": {
+     "decisions": 18,
+     "by_value": {
+      "draw": 16,
+      "loss": 2
+     },
+     "blunders": {
+      "D>L": 1
+     },
+     "had_win_games": 0,
+     "converted_games": 0,
+     "games_with_a_blunder": 1,
+     "mean_first_blunder_ply": 30.0
+    },
+    "tiger": {
+     "decisions": 18,
+     "by_value": {
+      "draw": 15,
+      "win": 3
+     },
+     "blunders": {},
+     "had_win_games": 1,
+     "converted_games": 1,
+     "games_with_a_blunder": 0,
+     "mean_first_blunder_ply": null
+    }
+   },
+   "mean_plies": 36.0
+  },
+  {
+   "goat": "PPO+nll 0.5 (10M)",
+   "tiger": "Perfect",
+   "games": 200,
+   "results": {
+    "tiger_win": 196,
+    "draw_repeat": 4
+   },
+   "sides": {
+    "goat": {
+     "decisions": 5632,
+     "by_value": {
+      "draw": 5483,
+      "loss": 149
+     },
+     "blunders": {
+      "D>L": 196
+     },
+     "had_win_games": 0,
+     "converted_games": 0,
+     "games_with_a_blunder": 196,
+     "mean_first_blunder_ply": 52.83673469387755
+    },
+    "tiger": {
+     "decisions": 5632,
+     "by_value": {
+      "draw": 5287,
+      "win": 345
+     },
+     "blunders": {},
+     "had_win_games": 196,
+     "converted_games": 196,
+     "games_with_a_blunder": 0,
+     "mean_first_blunder_ply": null
+    }
+   },
+   "mean_plies": 56.32
+  },
+  {
+   "goat": "PPO+nll 0.5 (10M)",
+   "tiger": "Perfect (plain)",
+   "games": 200,
+   "results": {
+    "tiger_win": 185,
+    "draw_repeat": 15
+   },
+   "sides": {
+    "goat": {
+     "decisions": 6872,
+     "by_value": {
+      "draw": 6711,
+      "loss": 161
+     },
+     "blunders": {
+      "D>L": 185
+     },
+     "had_win_games": 0,
+     "converted_games": 0,
+     "games_with_a_blunder": 185,
+     "mean_first_blunder_ply": 64.56216216216217
+    },
+    "tiger": {
+     "decisions": 6872,
+     "by_value": {
+      "draw": 6526,
+      "win": 346
+     },
+     "blunders": {},
+     "had_win_games": 185,
+     "converted_games": 185,
+     "games_with_a_blunder": 0,
+     "mean_first_blunder_ply": null
+    }
+   },
+   "mean_plies": 68.72
+  },
+  {
+   "goat": "PPO+nll 0.5 (10M)",
+   "tiger": "Random",
+   "games": 200,
+   "results": {
+    "goat_win": 163,
+    "tiger_win": 28,
+    "draw_repeat": 5,
+    "draw_turn_limit": 4
+   },
+   "sides": {
+    "goat": {
+     "decisions": 4689,
+     "by_value": {
+      "draw": 1623,
+      "win": 3032,
+      "loss": 34
+     },
+     "blunders": {
+      "W>D": 314,
+      "D>L": 144
+     },
+     "had_win_games": 200,
+     "converted_games": 163,
+     "games_with_a_blunder": 116,
+     "mean_first_blunder_ply": 7.224137931034483
+    },
+    "tiger": {
+     "decisions": 4526,
+     "by_value": {
+      "draw": 1793,
+      "loss": 2555,
+      "win": 178
+     },
+     "blunders": {
+      "D>L": 481,
+      "W>D": 116
+     },
+     "had_win_games": 32,
+     "converted_games": 28,
+     "games_with_a_blunder": 200,
+     "mean_first_blunder_ply": 3.96
+    }
+   },
+   "mean_plies": 46.075
+  },
+  {
+   "goat": "PPO+nll 0.5 (10M)",
+   "tiger": "Greedy",
+   "games": 200,
+   "results": {
+    "goat_win": 145,
+    "tiger_win": 54,
+    "draw_repeat": 1
+   },
+   "sides": {
+    "goat": {
+     "decisions": 3794,
+     "by_value": {
+      "draw": 1258,
+      "win": 2518,
+      "loss": 18
+     },
+     "blunders": {
+      "W>D": 222,
+      "D>L": 76,
+      "W>L": 1
+     },
+     "had_win_games": 193,
+     "converted_games": 145,
+     "games_with_a_blunder": 124,
+     "mean_first_blunder_ply": 8.661290322580646
+    },
+    "tiger": {
+     "decisions": 3649,
+     "by_value": {
+      "draw": 1404,
+      "loss": 2150,
+      "win": 95
+     },
+     "blunders": {
+      "D>L": 369,
+      "W>D": 23
+     },
+     "had_win_games": 54,
+     "converted_games": 54,
+     "games_with_a_blunder": 199,
+     "mean_first_blunder_ply": 4.477386934673367
+    }
+   },
+   "mean_plies": 37.215
+  },
+  {
+   "goat": "PPO+nll 0.5 (10M)",
+   "tiger": "Smart",
+   "games": 200,
+   "results": {
+    "goat_win": 191,
+    "draw_repeat": 7,
+    "tiger_win": 2
+   },
+   "sides": {
+    "goat": {
+     "decisions": 5656,
+     "by_value": {
+      "draw": 4539,
+      "win": 1116,
+      "loss": 1
+     },
+     "blunders": {
+      "W>D": 266,
+      "D>L": 2
+     },
+     "had_win_games": 197,
+     "converted_games": 191,
+     "games_with_a_blunder": 160,
+     "mean_first_blunder_ply": 15.25
+    },
+    "tiger": {
+     "decisions": 5465,
+     "by_value": {
+      "draw": 4803,
+      "loss": 659,
+      "win": 3
+     },
+     "blunders": {
+      "D>L": 457
+     },
+     "had_win_games": 2,
+     "converted_games": 2,
+     "games_with_a_blunder": 197,
+     "mean_first_blunder_ply": 15.304568527918782
+    }
+   },
+   "mean_plies": 55.605
+  },
+  {
+   "goat": "PPO+nll 0.5 (10M)",
+   "tiger": "Tiger vs NormalGoat",
+   "games": 1,
+   "results": {
+    "draw_repeat": 1
+   },
+   "sides": {
+    "goat": {
+     "decisions": 41,
+     "by_value": {
+      "draw": 32,
+      "loss": 9
+     },
+     "blunders": {
+      "D>L": 3
+     },
+     "had_win_games": 0,
+     "converted_games": 0,
+     "games_with_a_blunder": 1,
+     "mean_first_blunder_ply": 58.0
+    },
+    "tiger": {
+     "decisions": 41,
+     "by_value": {
+      "draw": 29,
+      "win": 12
+     },
+     "blunders": {
+      "W>D": 2
+     },
+     "had_win_games": 1,
+     "converted_games": 0,
+     "games_with_a_blunder": 1,
+     "mean_first_blunder_ply": 59.0
+    }
+   },
+   "mean_plies": 82.0
+  },
+  {
+   "goat": "PPO+nll 0.5 (10M)",
+   "tiger": "Tiger vs SmartGoat",
+   "games": 1,
+   "results": {
+    "tiger_win": 1
+   },
+   "sides": {
+    "goat": {
+     "decisions": 28,
+     "by_value": {
+      "draw": 22,
+      "win": 5,
+      "loss": 1
+     },
+     "blunders": {
+      "W>D": 2,
+      "D>L": 2
+     },
+     "had_win_games": 1,
+     "converted_games": 0,
+     "games_with_a_blunder": 1,
+     "mean_first_blunder_ply": 12.0
+    },
+    "tiger": {
+     "decisions": 28,
+     "by_value": {
+      "draw": 22,
+      "loss": 3,
+      "win": 3
+     },
+     "blunders": {
+      "D>L": 2,
+      "W>D": 1
+     },
+     "had_win_games": 1,
+     "converted_games": 1,
+     "games_with_a_blunder": 1,
+     "mean_first_blunder_ply": 11.0
+    }
+   },
+   "mean_plies": 56.0
+  },
+  {
+   "goat": "PPO+nll 0.5 (10M)",
+   "tiger": "RobustTiger",
+   "games": 1,
+   "results": {
+    "draw_repeat": 1
+   },
+   "sides": {
+    "goat": {
+     "decisions": 22,
+     "by_value": {
+      "draw": 22
+     },
+     "blunders": {},
+     "had_win_games": 0,
+     "converted_games": 0,
+     "games_with_a_blunder": 0,
+     "mean_first_blunder_ply": null
+    },
+    "tiger": {
+     "decisions": 22,
+     "by_value": {
+      "draw": 22
+     },
+     "blunders": {},
+     "had_win_games": 0,
+     "converted_games": 0,
+     "games_with_a_blunder": 0,
+     "mean_first_blunder_ply": null
+    }
+   },
+   "mean_plies": 44.0
+  },
+  {
+   "goat": "ReLU Maskable (10M)",
+   "tiger": "Perfect",
+   "games": 200,
+   "results": {
+    "tiger_win": 168,
+    "draw_repeat": 32
+   },
+   "sides": {
+    "goat": {
+     "decisions": 4845,
+     "by_value": {
+      "draw": 4724,
+      "loss": 121
+     },
+     "blunders": {
+      "D>L": 168
+     },
+     "had_win_games": 0,
+     "converted_games": 0,
+     "games_with_a_blunder": 168,
+     "mean_first_blunder_ply": 43.44047619047619
+    },
+    "tiger": {
+     "decisions": 4845,
+     "by_value": {
+      "draw": 4556,
+      "win": 289
+     },
+     "blunders": {},
+     "had_win_games": 168,
+     "converted_games": 168,
+     "games_with_a_blunder": 0,
+     "mean_first_blunder_ply": null
+    }
+   },
+   "mean_plies": 48.45
+  },
+  {
+   "goat": "ReLU Maskable (10M)",
+   "tiger": "Perfect (plain)",
+   "games": 200,
+   "results": {
+    "tiger_win": 166,
+    "draw_repeat": 34
+   },
+   "sides": {
+    "goat": {
+     "decisions": 5408,
+     "by_value": {
+      "draw": 5249,
+      "loss": 159
+     },
+     "blunders": {
+      "D>L": 166
+     },
+     "had_win_games": 0,
+     "converted_games": 0,
+     "games_with_a_blunder": 166,
+     "mean_first_blunder_ply": 49.30120481927711
+    },
+    "tiger": {
+     "decisions": 5408,
+     "by_value": {
+      "draw": 5083,
+      "win": 325
+     },
+     "blunders": {},
+     "had_win_games": 166,
+     "converted_games": 166,
+     "games_with_a_blunder": 0,
+     "mean_first_blunder_ply": null
+    }
+   },
+   "mean_plies": 54.08
+  },
+  {
+   "goat": "ReLU Maskable (10M)",
+   "tiger": "Random",
+   "games": 200,
+   "results": {
+    "goat_win": 180,
+    "tiger_win": 18,
+    "draw_repeat": 2
+   },
+   "sides": {
+    "goat": {
+     "decisions": 3875,
+     "by_value": {
+      "draw": 904,
+      "win": 2927,
+      "loss": 44
+     },
+     "blunders": {
+      "W>D": 262,
+      "D>L": 60
+     },
+     "had_win_games": 199,
+     "converted_games": 180,
+     "games_with_a_blunder": 126,
+     "mean_first_blunder_ply": 6.873015873015873
+    },
+    "tiger": {
+     "decisions": 3695,
+     "by_value": {
+      "draw": 1106,
+      "loss": 2485,
+      "win": 104
+     },
+     "blunders": {
+      "D>L": 444,
+      "W>D": 42
+     },
+     "had_win_games": 18,
+     "converted_games": 18,
+     "games_with_a_blunder": 200,
+     "mean_first_blunder_ply": 3.89
+    }
+   },
+   "mean_plies": 37.85
+  },
+  {
+   "goat": "ReLU Maskable (10M)",
+   "tiger": "Greedy",
+   "games": 200,
+   "results": {
+    "goat_win": 173,
+    "tiger_win": 26,
+    "draw_repeat": 1
+   },
+   "sides": {
+    "goat": {
+     "decisions": 3674,
+     "by_value": {
+      "draw": 808,
+      "win": 2854,
+      "loss": 12
+     },
+     "blunders": {
+      "W>D": 215,
+      "D>L": 27
+     },
+     "had_win_games": 197,
+     "converted_games": 173,
+     "games_with_a_blunder": 128,
+     "mean_first_blunder_ply": 7.90625
+    },
+    "tiger": {
+     "decisions": 3501,
+     "by_value": {
+      "draw": 996,
+      "loss": 2466,
+      "win": 39
+     },
+     "blunders": {
+      "D>L": 389,
+      "W>D": 1
+     },
+     "had_win_games": 26,
+     "converted_games": 26,
+     "games_with_a_blunder": 197,
+     "mean_first_blunder_ply": 3.761421319796954
+    }
+   },
+   "mean_plies": 35.875
+  },
+  {
+   "goat": "ReLU Maskable (10M)",
+   "tiger": "Smart",
+   "games": 200,
+   "results": {
+    "goat_win": 171,
+    "tiger_win": 27,
+    "draw_repeat": 2
+   },
+   "sides": {
+    "goat": {
+     "decisions": 3724,
+     "by_value": {
+      "draw": 2035,
+      "win": 1676,
+      "loss": 13
+     },
+     "blunders": {
+      "W>D": 259,
+      "D>L": 32
+     },
+     "had_win_games": 185,
+     "converted_games": 171,
+     "games_with_a_blunder": 145,
+     "mean_first_blunder_ply": 18.082758620689656
+    },
+    "tiger": {
+     "decisions": 3553,
+     "by_value": {
+      "draw": 2262,
+      "loss": 1246,
+      "win": 45
+     },
+     "blunders": {
+      "D>L": 431,
+      "W>D": 5
+     },
+     "had_win_games": 27,
+     "converted_games": 27,
+     "games_with_a_blunder": 187,
+     "mean_first_blunder_ply": 12.614973262032086
+    }
+   },
+   "mean_plies": 36.385
+  },
+  {
+   "goat": "ReLU Maskable (10M)",
+   "tiger": "Tiger vs NormalGoat",
+   "games": 1,
+   "results": {
+    "draw_repeat": 1
+   },
+   "sides": {
+    "goat": {
+     "decisions": 29,
+     "by_value": {
+      "draw": 29
+     },
+     "blunders": {},
+     "had_win_games": 0,
+     "converted_games": 0,
+     "games_with_a_blunder": 0,
+     "mean_first_blunder_ply": null
+    },
+    "tiger": {
+     "decisions": 29,
+     "by_value": {
+      "draw": 29
+     },
+     "blunders": {},
+     "had_win_games": 0,
+     "converted_games": 0,
+     "games_with_a_blunder": 0,
+     "mean_first_blunder_ply": null
+    }
+   },
+   "mean_plies": 58.0
+  },
+  {
+   "goat": "ReLU Maskable (10M)",
+   "tiger": "Tiger vs SmartGoat",
+   "games": 1,
+   "results": {
+    "tiger_win": 1
+   },
+   "sides": {
+    "goat": {
+     "decisions": 28,
+     "by_value": {
+      "draw": 24,
+      "win": 4
+     },
+     "blunders": {
+      "W>D": 2,
+      "D>L": 2
+     },
+     "had_win_games": 1,
+     "converted_games": 0,
+     "games_with_a_blunder": 1,
+     "mean_first_blunder_ply": 20.0
+    },
+    "tiger": {
+     "decisions": 28,
+     "by_value": {
+      "draw": 24,
+      "loss": 2,
+      "win": 2
+     },
+     "blunders": {
+      "D>L": 2,
+      "W>D": 1
+     },
+     "had_win_games": 1,
+     "converted_games": 1,
+     "games_with_a_blunder": 1,
+     "mean_first_blunder_ply": 17.0
+    }
+   },
+   "mean_plies": 56.0
+  },
+  {
+   "goat": "ReLU Maskable (10M)",
+   "tiger": "RobustTiger",
+   "games": 1,
+   "results": {
+    "tiger_win": 1
+   },
+   "sides": {
+    "goat": {
+     "decisions": 18,
+     "by_value": {
+      "draw": 17,
+      "loss": 1
+     },
+     "blunders": {
+      "D>L": 1
+     },
+     "had_win_games": 0,
+     "converted_games": 0,
+     "games_with_a_blunder": 1,
+     "mean_first_blunder_ply": 32.0
+    },
+    "tiger": {
+     "decisions": 18,
+     "by_value": {
+      "draw": 16,
+      "win": 2
+     },
+     "blunders": {},
+     "had_win_games": 1,
+     "converted_games": 1,
+     "games_with_a_blunder": 0,
+     "mean_first_blunder_ply": null
+    }
+   },
+   "mean_plies": 36.0
+  }
+ ]
+}

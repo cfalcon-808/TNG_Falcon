@@ -7,7 +7,7 @@
 - Illegal moves: an illegal move ends the game with reward −3.2.
 
 The full specification and the math are in
-[`docs/TRAINING_MATHEMATICS.md`](../../TRAINING_MATHEMATICS.md) (§5.3–5.4, §6.4, §9). The model file and
+the [Mathematical Architecture](../../mathematical_architecture/TnG_Mathematical_Architecture.pdf) (Sections 6.3–6.4, 7.4 and 11). The model file and
 its reproduction notes stay local in `artifacts/legality_study/` (ignored by git).
 
 **Results** (1,000 games per cell, deterministic play): win rate 0.754 vs greedy and 0.947 vs smart with

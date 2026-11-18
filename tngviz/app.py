@@ -668,9 +668,10 @@ class App:
     def _load_text(self, text: str) -> bool:
         """Load a position ('tigers=… goats=… captured=… mover=…') or a game copied with Copy game."""
         try:
-            start = re.search(r"start:\s*(.+)", text)
+            # fields may be wrapped over several lines (e.g. text copied from a PDF)
+            start = re.search(r"start:\s*(.+?)(?=\s*(?:first:|moves:|result:|\Z))", text, re.S)
             first = re.search(r"first:\s*(goat|tiger)", text)
-            moves = re.search(r"moves:\s*(.*)", text)
+            moves = re.search(r"moves:\s*(.*?)(?=\s*result:|\Z)", text, re.S)
             if moves is None:
                 root = parse_position(text)
                 self._new_game(root)
@@ -682,7 +683,7 @@ class App:
             self.game = Game(root, self.first)
             self.annotations = {}
             for tok in moves.group(1).split():
-                if re.fullmatch(r"\d+\.|…|\.\.\.", tok):
+                if re.fullmatch(r"\d+\.?|…|\.\.\.", tok):      # turn numbers; a bare number is a stray page number
                     continue
                 match = [m for m in legal_moves(self.game.pos)
                          if tok in (m.text("numbers"), m.text("names"))]
